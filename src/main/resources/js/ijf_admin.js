@@ -7,13 +7,59 @@ ijf.admin = {
 	cwfAdmin_thisTable:"",
 	cwfAdmin_form:null,
 
-	renderFormAdmin:function()
+
+    readConfigFormFile:function(inFile)
+	{
+		var input = event.target;
+
+		var reader = new FileReader();
+		reader.onload = function(){
+		   try
+ 		   {
+			  //need to parse this out, //clear extjs and render Form Admin.
+			  var tForm = JSON.parse(reader.result);
+
+			  var thisF = {};
+
+			  thisF.name = ijf.admin.cwfAdmin_form.name;
+			  thisF.formType = ijf.admin.cwfAdmin_form.formType;
+			  thisF.formSet = ijf.admin.cwfAdmin_form.formSet;
+			  thisF.testIssue = ijf.admin.cwfAdmin_form.testIssue;
+			  thisF.id = ijf.admin.cwfAdmin_form.id;
+
+				if(tForm.hasOwnProperty("formSettings")) thisF.rawSettings = JSON.parse(JSON.parse(tForm.formSettings));
+				if(tForm.hasOwnProperty("fields")) thisF.rawFields = JSON.parse(JSON.parse(tForm.fields));
+                thisF.settings=[];
+				if(!thisF.rawSettings) thisF.rawSettings=[];
+				if(!thisF.rawFields) thisF.rawFields=[];
+				thisF.rawSettings.forEach(function(s){
+					if(!s.name) return;
+					thisF.settings[s.name]=s.value;
+				});
+  			    thisF.fields=[];
+				thisF.rawFields.forEach(function(s){
+					if(!s.formCell) return;
+					thisF.fields[s.formCell]=s;
+				});
+
+			  ijfUtils.clearExt();
+			  Ext.destroy(ijf.admin.cwfAdmin_settingsPanel);
+			  ijf.admin.renderFormAdmin(thisF);
+			  ijfUtils.modalDialogMessage("WARNING","You have loaded a form configuration file.  To store these settings you must Save the settings; doing so will overwirte the settings and fields of this form on the server.  Refresh browser to undo.");
+			}
+			catch(e)
+			{
+				ijfUtils.modalDialogMessage("Error","Problem loading the form file: " + e.message);
+			}
+
+		};
+  		reader.readAsText(input.files[0]);
+	},
+
+	renderFormAdmin:function(inForm)
 	{
 		var outStr = "Editing form: " + g_formId + "<br>";
 		outStr = outStr + "Item for data binding: " + ijf.currentItem.key + "<br>";
-
-		var thisForm;
-		//now generate the form from the spec.....
 
 		if((g_formId=="") || (!ijf.currentItem))
 		{
@@ -27,10 +73,9 @@ ijf.admin = {
 		else
 		{
 
-
-			thisForm = ijf.fw.forms[g_formId];
-			cwfAdmin_form = thisForm;
-			this.cwfAdmin_form = thisForm;
+			var thisForm = inForm; //ijf.fw.forms[g_formId];
+			//cwfAdmin_form = thisForm;
+			ijf.admin.cwfAdmin_form = thisForm;
 			//based on the form, it should get edit or add meta...
 
 		    if(!ijf.jiraEditMeta.hasOwnProperty(ijf.main.itemId))
@@ -49,10 +94,12 @@ ijf.admin = {
 		var formTypeLookup = ["Edit","Add"];
 		var formType = "Edit";
 
-		if(cwfAdmin_form.formType) formType =cwfAdmin_form.formType;
+	     var fileLoad = "<form enctype='multipart/form-data' id='adminattachmentUploadFormId'><input id='adminattachmentUploadFileId' type='file' name='file' onChange='ijf.admin.readConfigFormFile(event)';></form>";
+
+		if(ijf.admin.cwfAdmin_form.formType) formType =ijf.admin.cwfAdmin_form.formType;
 		var cntPanel = new Ext.FormPanel({
 			labelAlign: 'left',
-			title: "IdealFed.com JIRA Form Designer: " + cwfAdmin_form.name,
+			title: "IdealFed.com JIRA Form Designer: " + ijf.admin.cwfAdmin_form.name,
 			border :false,
 			layout: 'vbox',
 			frame:false,
@@ -70,6 +117,7 @@ ijf.admin = {
 				labelWidth: 100,
 				margin: '4 0 0 10',
 				fieldLabel: "Form Name",
+				fieldStyle: "background:lightgray",
 				readOnly: true,
 				labelSeparator: ijfUtils.helpLink("formName"),
 				labelStyle: "color:darkblue",
@@ -78,7 +126,7 @@ ijf.admin = {
 				id: "adminFormSettings_formNameId",
 				listeners: {
 					change: function(f, n, o){
-						cwfAdmin_form.name = n;
+						ijf.admin.cwfAdmin_form.name = n;
 						f.addCls("cwf-dirty");
 					}
 				}},
@@ -89,6 +137,7 @@ ijf.admin = {
 					margin: '4 0 0 10',
 					readOnly: true,
 					fieldLabel: "Test Issue",
+					fieldStyle: "background:lightgray",
 					labelSeparator: ijfUtils.helpLink("testIssue"),
   				    labelStyle: "color:darkblue",
 					width: 200,
@@ -96,7 +145,7 @@ ijf.admin = {
 					id: "adminFormSettings_testIssueId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.testIssue = n;
+							ijf.admin.cwfAdmin_form.testIssue = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -109,6 +158,7 @@ ijf.admin = {
 					margin: '4 0 0 10',
 					readOnly: true,
 					fieldLabel: "Form Type",
+					fieldStyle: "background:lightgray",
 					labelSeparator: ijfUtils.helpLink("formType"),
 					labelStyle: "color:darkblue",
 					triggerAction: 'all',
@@ -117,7 +167,7 @@ ijf.admin = {
 					id: "adminFormSettings_formTypeId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.formType = n;
+							ijf.admin.cwfAdmin_form.formType = n;
 							f.addCls("cwf-dirty");
 										}}
 				},
@@ -132,14 +182,67 @@ ijf.admin = {
 					width: 400,
 					margin: '4 0 0 10',
 					readOnly: true,
-					value: cwfAdmin_form.formSet.projectName,
+					value: ijf.admin.cwfAdmin_form.formSet.projectName,
 					id: "adminFormSettings_formGroupId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.formSet.projectName = n;
+							ijf.admin.cwfAdmin_form.formSet.projectName = n;
 							f.addCls("cwf-dirty");
 						}}
-				}],
+				},{
+					html: fileLoad,
+					frame: false,
+					hidden: true,
+					border: false,
+					xtype: "panel"}],
+				buttons: [
+				{
+				            xtype: 'button',
+				            fieldLabel: 'ccc',
+				            text: 'Upload Form',
+				            id: 'ijfAdminUploadButtonId',
+				            listeners: {
+				                click: function(f,n,o){
+									$('#adminattachmentUploadFileId').trigger('click');
+				                }
+				            }
+        			},
+				{
+				            xtype: 'button',
+				            fieldLabel: 'ccc',
+				            text: 'Download Form',
+				            id: 'ijfAdminDownloadButtonId',
+				            listeners: {
+				                click: function(f,n,o){
+
+									var settingsOut = new Array();
+									var fieldsOut = new Array();
+									for(var j in ijf.admin.cwfAdmin_form.settings)
+									{
+										if(!ijf.admin.cwfAdmin_form.settings.hasOwnProperty(j)) continue;
+										settingsOut.push({name:j,value:thisForm.settings[j],comment:""});
+									};
+									for(var j in ijf.admin.cwfAdmin_form.fields)
+									{
+										if(!ijf.admin.cwfAdmin_form.fields.hasOwnProperty(j)) continue;
+										fieldsOut.push(thisForm.fields[j]);
+									};
+									var jOut = {
+										id: ijf.admin.cwfAdmin_form.id,
+										testIssue: ijf.admin.cwfAdmin_form.testIssue,
+										formType: ijf.admin.cwfAdmin_form.formType,
+										name: ijf.admin.cwfAdmin_form.name,
+										fields: JSON.stringify(JSON.stringify(fieldsOut)),
+										formSettings: JSON.stringify(JSON.stringify(settingsOut))
+										};
+									//output....ijf.admin.cwfAdmin_form
+										var outStr = JSON.stringify(jOut);
+										var blob = new Blob([outStr], {type: "text/plain;charset=utf-8"});
+										saveAs(blob,ijf.admin.cwfAdmin_form.name + ".txt")
+				                }
+				            }
+        			}
+				],
 				header:{
 				                titlePosition: 0,
 				                items:[{
@@ -160,8 +263,15 @@ ijf.admin = {
 								{xtype:'button',
 								  text: "Open Form",
 									handler: function(){
-										ijfUtils.clearAll();
-										ijf.admin.renderForm("ijfContent",true);
+										if(ijf.admin.cwfAdmin_form.testIssue)
+										{
+											var tUrl = g_root + '/plugins/servlet/jforms?itemId='+ijf.admin.cwfAdmin_form.testIssue+'&formId='+ijf.admin.cwfAdmin_form.name;
+										}
+										else
+										{
+											var tUrl = g_root + '/plugins/servlet/jforms?formId='+ijf.admin.cwfAdmin_form.name;
+										}
+										window.open(tUrl);
 									}},
 								{xtype:'button',
 								text:"Save Settings",
@@ -200,7 +310,7 @@ ijf.admin = {
 				id: "adminFormSettings_rowsId",
 				listeners: {
 					change: function(f, n, o){
-						cwfAdmin_form.settings["rows"] = n;
+						ijf.admin.cwfAdmin_form.settings["rows"] = n;
 						f.addCls("cwf-dirty");
 					}
 				}},
@@ -214,7 +324,7 @@ ijf.admin = {
 					id: "adminFormSettings_colsId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.settings["columns"] = n;
+							ijf.admin.cwfAdmin_form.settings["columns"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -228,7 +338,7 @@ ijf.admin = {
 					id: "adminFormSettings_colSpanId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.settings["columnSpans"] = n;
+							ijf.admin.cwfAdmin_form.settings["columnSpans"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -242,7 +352,7 @@ ijf.admin = {
 					id: "adminFormSettings_colWidthId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.settings["columnWidths"] = n;
+							ijf.admin.cwfAdmin_form.settings["columnWidths"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -257,7 +367,7 @@ ijf.admin = {
 					id: "adminFormSettings_headerLeftId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.settings["headerLeft"] = n;
+							ijf.admin.cwfAdmin_form.settings["headerLeft"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -271,7 +381,7 @@ ijf.admin = {
 					id: "adminFormSettings_headerCenterId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.settings["headerCenter"] = n;
+							ijf.admin.cwfAdmin_form.settings["headerCenter"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -285,7 +395,7 @@ ijf.admin = {
 					id: "adminFormSettings_headerRightId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.settings["headerRight"] = n;
+							ijf.admin.cwfAdmin_form.settings["headerRight"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -299,7 +409,7 @@ ijf.admin = {
 					id: "adminFormSettings_outerStyleId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.settings["outerContainerStyle"] = n;
+							ijf.admin.cwfAdmin_form.settings["outerContainerStyle"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -313,7 +423,7 @@ ijf.admin = {
 					id: "adminFormSettings_innerStyleId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.settings["outerTableStyle"] = n;
+							ijf.admin.cwfAdmin_form.settings["outerTableStyle"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -327,7 +437,7 @@ ijf.admin = {
 					id: "adminFormSettings_titleStyleId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.settings["title_style"] = n;
+							ijf.admin.cwfAdmin_form.settings["title_style"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -341,7 +451,7 @@ ijf.admin = {
 					id: "adminFormSettings_tabTitleId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.settings["tabTitle"] = n;
+							ijf.admin.cwfAdmin_form.settings["tabTitle"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -355,7 +465,7 @@ ijf.admin = {
 					id: "adminFormSettings_onLoadId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.settings["onLoad"] = n;
+							ijf.admin.cwfAdmin_form.settings["onLoad"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -369,7 +479,7 @@ ijf.admin = {
 					id: "adminFormSettings_batchSaveId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_form.settings["batchSave"] = n;
+							ijf.admin.cwfAdmin_form.settings["batchSave"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				}]
@@ -418,7 +528,7 @@ ijf.admin = {
 			});
 		}
 
-		cwfAdmin_thisField = {};
+		ijf.admin.cwfAdmin_thisField = {};
 
 		var fieldStore = new Ext.data.Store({
 			model: 'gridFieldFieldsArray'
@@ -431,7 +541,7 @@ ijf.admin = {
 			{
 				fArray.push({"cell":f,"type":thisForm.fields[f].controlType,"source":thisForm.fields[f].dataSource});
 				cwfAdmin_fieldId = f;
-				cwfAdmin_thisField = thisForm.fields[f];
+				ijf.admin.cwfAdmin_thisField = thisForm.fields[f];
 			}
 		}
 		fieldStore.loadData(fArray);
@@ -451,7 +561,7 @@ ijf.admin = {
 					listView.getView().refresh();
 					rec = Ext.create('fieldFieldsArray');
 					rec.data.formCell=ts;
-					cwfAdmin_form.fields[ts]=rec.data;
+					ijf.admin.cwfAdmin_form.fields[ts]=rec.data;
 
 				}
 			});
@@ -464,7 +574,7 @@ ijf.admin = {
 					var s = listView.getSelectionModel().getSelection();
 					for(var i = 0, r; r = s[i]; i++){
 						listView.getStore().remove(r);
-						delete cwfAdmin_form.fields[r.data.cell];
+						delete ijf.admin.cwfAdmin_form.fields[r.data.cell];
 					}
 					listView.getView().refresh();
 				}
@@ -479,7 +589,7 @@ ijf.admin = {
 					{
 						fArray.push({"cell":f,"type":thisForm.fields[f].controlType,"source":thisForm.fields[f].dataSource});
 						cwfAdmin_fieldId = f;
-						cwfAdmin_thisField = thisForm.fields[f];
+						ijf.admin.cwfAdmin_thisField = thisForm.fields[f];
 					}
 				}
 				fieldStore.loadData(fArray);
@@ -544,26 +654,26 @@ ijf.admin = {
 					}
 					else
 					{
-					cwfAdmin_thisField = cwfAdmin_form.fields[cwfAdmin_fieldId];
-					Ext.getCmp("adminFormFields_captionId").setValue(cwfAdmin_thisField["caption"]);
-					Ext.getCmp("adminFormFields_controlTypeId").setValue(cwfAdmin_thisField["controlType"]);
-					Ext.getCmp("adminFormFields_formCellId").setValue(cwfAdmin_thisField["formCell"]);
-					Ext.getCmp("adminFormFields_dataSourceId").setValue(cwfAdmin_thisField["dataSource"]);
-					Ext.getCmp("adminFormFields_dataReferenceId").setValue(cwfAdmin_thisField["dataReference"]);
-					Ext.getCmp("adminFormFields_styleId").setValue(cwfAdmin_thisField["style"]);
-					Ext.getCmp("adminFormFields_panelStyleId").setValue(cwfAdmin_thisField["panelStyle"]);
-					Ext.getCmp("adminFormFields_labelStyleId").setValue(cwfAdmin_thisField["labelStyle"]);
-					Ext.getCmp("adminFormFields_referenceFilterId").setValue(cwfAdmin_thisField["referenceFilter"]);
-					Ext.getCmp("adminFormFields_regExId").setValue(cwfAdmin_thisField["regEx"]);
-					Ext.getCmp("adminFormFields_regExMessageId").setValue(cwfAdmin_thisField["regExMessage"]);
-					Ext.getCmp("adminFormFields_tableWidthsId").setValue(cwfAdmin_thisField["tableWidths"]);
-					Ext.getCmp("adminFormFields_tableHeadersId").setValue(cwfAdmin_thisField["tableHeaders"]);
-					Ext.getCmp("adminFormFields_tableDblClickId").setValue(cwfAdmin_thisField["tableDblClick"]);
-					Ext.getCmp("adminFormFields_eventId").setValue(cwfAdmin_thisField["event"]);
-					Ext.getCmp("adminFormFields_toolTipId").setValue(cwfAdmin_thisField["toolTip"]);
-					Ext.getCmp("adminFormFields_dataReference2Id").setValue(cwfAdmin_thisField["dataReference2"]);
-					Ext.getCmp("adminFormFields_renderIfId").setValue(cwfAdmin_thisField["renderIf"]);
-					Ext.getCmp("adminFormFields_fieldStyleId").setValue(cwfAdmin_thisField["fieldStyle"]);
+					ijf.admin.cwfAdmin_thisField = ijf.admin.cwfAdmin_form.fields[cwfAdmin_fieldId];
+					Ext.getCmp("adminFormFields_captionId").setValue(ijf.admin.cwfAdmin_thisField["caption"]);
+					Ext.getCmp("adminFormFields_controlTypeId").setValue(ijf.admin.cwfAdmin_thisField["controlType"]);
+					Ext.getCmp("adminFormFields_formCellId").setValue(ijf.admin.cwfAdmin_thisField["formCell"]);
+					Ext.getCmp("adminFormFields_dataSourceId").setValue(ijf.admin.cwfAdmin_thisField["dataSource"]);
+					Ext.getCmp("adminFormFields_dataReferenceId").setValue(ijf.admin.cwfAdmin_thisField["dataReference"]);
+					Ext.getCmp("adminFormFields_styleId").setValue(ijf.admin.cwfAdmin_thisField["style"]);
+					Ext.getCmp("adminFormFields_panelStyleId").setValue(ijf.admin.cwfAdmin_thisField["panelStyle"]);
+					Ext.getCmp("adminFormFields_labelStyleId").setValue(ijf.admin.cwfAdmin_thisField["labelStyle"]);
+					Ext.getCmp("adminFormFields_referenceFilterId").setValue(ijf.admin.cwfAdmin_thisField["referenceFilter"]);
+					Ext.getCmp("adminFormFields_regExId").setValue(ijf.admin.cwfAdmin_thisField["regEx"]);
+					Ext.getCmp("adminFormFields_regExMessageId").setValue(ijf.admin.cwfAdmin_thisField["regExMessage"]);
+					Ext.getCmp("adminFormFields_tableWidthsId").setValue(ijf.admin.cwfAdmin_thisField["tableWidths"]);
+					Ext.getCmp("adminFormFields_tableHeadersId").setValue(ijf.admin.cwfAdmin_thisField["tableHeaders"]);
+					Ext.getCmp("adminFormFields_tableDblClickId").setValue(ijf.admin.cwfAdmin_thisField["tableDblClick"]);
+					Ext.getCmp("adminFormFields_eventId").setValue(ijf.admin.cwfAdmin_thisField["event"]);
+					Ext.getCmp("adminFormFields_toolTipId").setValue(ijf.admin.cwfAdmin_thisField["toolTip"]);
+					Ext.getCmp("adminFormFields_dataReference2Id").setValue(ijf.admin.cwfAdmin_thisField["dataReference2"]);
+					Ext.getCmp("adminFormFields_renderIfId").setValue(ijf.admin.cwfAdmin_thisField["renderIf"]);
+					Ext.getCmp("adminFormFields_fieldStyleId").setValue(ijf.admin.cwfAdmin_thisField["fieldStyle"]);
 					}
 				}
 			}
@@ -592,11 +702,11 @@ ijf.admin = {
 				labelWidth: 100,
 				fieldLabel: "Caption",
 				width: 500,
-				value: cwfAdmin_thisField["caption"],
+				value: ijf.admin.cwfAdmin_thisField["caption"],
 				id: "adminFormFields_captionId",
 				listeners: {
 					change: function(f, n, o){
-						cwfAdmin_thisField["caption"] = n;
+						ijf.admin.cwfAdmin_thisField["caption"] = n;
 					}}
 			},
 				{
@@ -608,11 +718,11 @@ ijf.admin = {
 					fieldLabel: "Control Type",
 					triggerAction: 'all',
 					width: 400,
-					value: cwfAdmin_thisField["controlType"],
+					value: ijf.admin.cwfAdmin_thisField["controlType"],
 					id: "adminFormFields_controlTypeId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["controlType"] = n;
+							ijf.admin.cwfAdmin_thisField["controlType"] = n;
 						}}
 				},
 				{
@@ -621,11 +731,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Cell",
 					width: 500,
-					value: cwfAdmin_thisField["formCell"],
+					value: ijf.admin.cwfAdmin_thisField["formCell"],
 					id: "adminFormFields_formCellId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["formCell"] = n;
+							ijf.admin.cwfAdmin_thisField["formCell"] = n;
 						}}
 				},
 				{
@@ -637,11 +747,11 @@ ijf.admin = {
 					store: sectionLookup,
 					fieldLabel: "Data Source",
 					width: 400,
-					value: cwfAdmin_thisField["dataSource"],
+					value: ijf.admin.cwfAdmin_thisField["dataSource"],
 					id: "adminFormFields_dataSourceId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["dataSource"] = n;
+							ijf.admin.cwfAdmin_thisField["dataSource"] = n;
 						}}
 				},
 				{
@@ -650,11 +760,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Data Reference",
 					width: 500,
-					value: cwfAdmin_thisField["dataReference"],
+					value: ijf.admin.cwfAdmin_thisField["dataReference"],
 					id: "adminFormFields_dataReferenceId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["dataReference"] = n;
+							ijf.admin.cwfAdmin_thisField["dataReference"] = n;
 						}}
 				},
 
@@ -665,11 +775,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Outer Style",
 					width: 500,
-					value: cwfAdmin_thisField["style"],
+					value: ijf.admin.cwfAdmin_thisField["style"],
 					id: "adminFormFields_styleId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["style"] = n;
+							ijf.admin.cwfAdmin_thisField["style"] = n;
 						}}
 				},
 				{
@@ -678,11 +788,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Inner Style",
 					width: 500,
-					value: cwfAdmin_thisField["panelStyle"],
+					value: ijf.admin.cwfAdmin_thisField["panelStyle"],
 					id: "adminFormFields_panelStyleId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["panelStyle"] = n;
+							ijf.admin.cwfAdmin_thisField["panelStyle"] = n;
 						}}
 				},
 				{
@@ -691,11 +801,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Field Style",
 					width: 500,
-					value: cwfAdmin_thisField["fieldStyle"],
+					value: ijf.admin.cwfAdmin_thisField["fieldStyle"],
 					id: "adminFormFields_fieldStyleId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["fieldStyle"] = n;
+							ijf.admin.cwfAdmin_thisField["fieldStyle"] = n;
 						}}
 				},
 				{
@@ -704,11 +814,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Label Style",
 					width: 500,
-					value: cwfAdmin_thisField["labelStyle"],
+					value: ijf.admin.cwfAdmin_thisField["labelStyle"],
 					id: "adminFormFields_labelStyleId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["labelStyle"] = n;
+							ijf.admin.cwfAdmin_thisField["labelStyle"] = n;
 						}}
 				},
 				{
@@ -717,11 +827,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Reference Filter",
 					width: 500,
-					value: cwfAdmin_thisField["referenceFilter"],
+					value: ijf.admin.cwfAdmin_thisField["referenceFilter"],
 					id: "adminFormFields_referenceFilterId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["referenceFilter"] = n;
+							ijf.admin.cwfAdmin_thisField["referenceFilter"] = n;
 						}}
 				},
 				{
@@ -730,11 +840,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "RegEx Valid.",
 					width: 500,
-					value: cwfAdmin_thisField["regEx"],
+					value: ijf.admin.cwfAdmin_thisField["regEx"],
 					id: "adminFormFields_regExId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["regEx"] = n;
+							ijf.admin.cwfAdmin_thisField["regEx"] = n;
 						}}
 				},
 				{
@@ -743,11 +853,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "RegEx Mess.",
 					width: 500,
-					value: cwfAdmin_thisField["regExMessage"],
+					value: ijf.admin.cwfAdmin_thisField["regExMessage"],
 					id: "adminFormFields_regExMessageId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["regExMessage"] = n;
+							ijf.admin.cwfAdmin_thisField["regExMessage"] = n;
 						}}
 				},
 				{
@@ -756,11 +866,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Tb. Col. Widths",
 					width: 500,
-					value: cwfAdmin_thisField["tableWidths"],
+					value: ijf.admin.cwfAdmin_thisField["tableWidths"],
 					id: "adminFormFields_tableWidthsId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["tableWidths"] = n;
+							ijf.admin.cwfAdmin_thisField["tableWidths"] = n;
 						}}
 				},
 				{
@@ -769,11 +879,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Tb. Col. Heads",
 					width: 500,
-					value: cwfAdmin_thisField["tableHeaders"],
+					value: ijf.admin.cwfAdmin_thisField["tableHeaders"],
 					id: "adminFormFields_tableHeadersId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["tableHeaders"] = n;
+							ijf.admin.cwfAdmin_thisField["tableHeaders"] = n;
 						}}
 				},
 				{
@@ -782,11 +892,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Tb. Dbl Clk",
 					width: 500,
-					value: cwfAdmin_thisField["tableDblClick"],
+					value: ijf.admin.cwfAdmin_thisField["tableDblClick"],
 					id: "adminFormFields_tableDblClickId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["tableDblClick"] = n;
+							ijf.admin.cwfAdmin_thisField["tableDblClick"] = n;
 						}}
 				},
 				{
@@ -795,11 +905,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Event",
 					width: 500,
-					value: cwfAdmin_thisField["event"],
+					value: ijf.admin.cwfAdmin_thisField["event"],
 					id: "adminFormFields_eventId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["event"] = n;
+							ijf.admin.cwfAdmin_thisField["event"] = n;
 						}}
 				},
 				{
@@ -808,11 +918,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Tool Tip",
 					width: 500,
-					value: cwfAdmin_thisField["toolTip"],
+					value: ijf.admin.cwfAdmin_thisField["toolTip"],
 					id: "adminFormFields_toolTipId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["toolTip"] = n;
+							ijf.admin.cwfAdmin_thisField["toolTip"] = n;
 						}}
 				},
 				{
@@ -821,11 +931,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Data Ref2",
 					width: 500,
-					value: cwfAdmin_thisField["dataReference2"],
+					value: ijf.admin.cwfAdmin_thisField["dataReference2"],
 					id: "adminFormFields_dataReference2Id",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["dataReference2"] = n;
+							ijf.admin.cwfAdmin_thisField["dataReference2"] = n;
 						}}
 				},
 				{
@@ -834,11 +944,11 @@ ijf.admin = {
 					labelWidth: 100,
 					fieldLabel: "Render If",
 					width: 500,
-					value: cwfAdmin_thisField["renderIf"],
+					value: ijf.admin.cwfAdmin_thisField["renderIf"],
 					id: "adminFormFields_renderIfId",
 					listeners: {
 						change: function(f, n, o){
-							cwfAdmin_thisField["renderIf"] = n;
+							ijf.admin.cwfAdmin_thisField["renderIf"] = n;
 						}}
 				}
 
@@ -886,7 +996,7 @@ ijf.admin = {
 
 
 		var snips = [];
-		cwfAdmin_form.formSet.snippets.forEach(function(s)
+		ijf.admin.cwfAdmin_form.formSet.snippets.forEach(function(s)
 		{
 			if(s.name)
 			snips.push({
@@ -1048,7 +1158,7 @@ ijf.admin = {
 			items: [snippetPanel]
 		});
 
-		var cwfAdmin_settingsPanel = new Ext.FormPanel({
+		ijf.admin.cwfAdmin_settingsPanel = new Ext.FormPanel({
 			frame: false,
 			border: false,
 			width: 910,
@@ -1062,7 +1172,7 @@ ijf.admin = {
 			items: [cntPanel, pnl, cwfAdmin_fieldsPanel, cwfAdmin_snippetPanel]
 		});
 
-		cwfAdmin_settingsPanel.render(document.getElementById("ijfCraft1"));
+		ijf.admin.cwfAdmin_settingsPanel.render(document.getElementById("ijfCraft1"));
 
 /*
 
@@ -1678,57 +1788,57 @@ ijf.admin = {
 		//we need to define what newData actually is
 		var adminErrorMessage= "OK";
 
-		for(var j in cwfAdmin_form.settings)
+		for(var j in ijf.admin.cwfAdmin_form.settings)
 		{
-			if(!cwfAdmin_form.settings.hasOwnProperty(j)) continue;
-			settingsOut.push({name:j,value:cwfAdmin_form.settings[j],comment:""});
+			if(!ijf.admin.cwfAdmin_form.settings.hasOwnProperty(j)) continue;
+			settingsOut.push({name:j,value:ijf.admin.cwfAdmin_form.settings[j],comment:""});
 		};
 		//add the businessRules to retain....
 		/*
-		for (var i in cwfAdmin_form.businessRules)
+		for (var i in ijf.admin.cwfAdmin_form.businessRules)
 		{
-			if(!cwfAdmin_form.businessRules.hasOwnProperty(i)) continue;
-			jOut.push({name:"businessRule",value:cwfAdmin_form.businessRules[i].rule,comment:cwfAdmin_form.businessRules[i].message});
+			if(!ijf.admin.cwfAdmin_form.businessRules.hasOwnProperty(i)) continue;
+			jOut.push({name:"businessRule",value:ijf.admin.cwfAdmin_form.businessRules[i].rule,comment:ijf.admin.cwfAdmin_form.businessRules[i].message});
 		}
 		*/
 
 		//each data row of thing...
 		//we need to define what newData actually is
-		for(var j in cwfAdmin_form.fields)
+		for(var j in ijf.admin.cwfAdmin_form.fields)
 		{
-			if(!cwfAdmin_form.fields.hasOwnProperty(j)) continue;
+			if(!ijf.admin.cwfAdmin_form.fields.hasOwnProperty(j)) continue;
 
 			var fRow = {};
 
-			fRow["formCell"] = cwfAdmin_form.fields[j]["formCell"];
-			fRow["caption"] = cwfAdmin_form.fields[j]["caption"];
-			fRow["controlType"] = cwfAdmin_form.fields[j]["controlType"];
-			fRow["dataSource"] = cwfAdmin_form.fields[j]["dataSource"];
-			fRow["dataReference"] = cwfAdmin_form.fields[j]["dataReference"];
-			fRow["style"] = cwfAdmin_form.fields[j]["style"];
-			fRow["labelStyle"] = cwfAdmin_form.fields[j]["labelStyle"];
-			fRow["panelStyle"] = cwfAdmin_form.fields[j]["panelStyle"];
-			fRow["referenceFilter"] = cwfAdmin_form.fields[j]["referenceFilter"];
-			fRow["tableHeaders"] = cwfAdmin_form.fields[j]["tableHeaders"];
-			fRow["tableColumns"] = cwfAdmin_form.fields[j]["tableColumns"];
-			fRow["tableWidths"] = cwfAdmin_form.fields[j]["tableWidths"];
-			fRow["tableHeaders"] = cwfAdmin_form.fields[j]["tableHeaders"];
-			fRow["tableDblClick"] = cwfAdmin_form.fields[j]["tableDblClick"];
-			fRow["event"] = cwfAdmin_form.fields[j]["event"];
-			fRow["toolTip"] = cwfAdmin_form.fields[j]["toolTip"];
-			fRow["dataReference2"] = cwfAdmin_form.fields[j]["dataReference2"];
-			fRow["renderIf"] = cwfAdmin_form.fields[j]["renderIf"];
-			fRow["persistInItem"] = cwfAdmin_form.fields[j]["persistInItem"];
-			fRow["tableColumnsStyles"] = cwfAdmin_form.fields[j]["tableColumnsStyles"];
-			fRow["fieldStyle"] = cwfAdmin_form.fields[j]["fieldStyle"];
-			fRow["regEx"] = cwfAdmin_form.fields[j]["regEx"];
-			fRow["regExMessage"] = cwfAdmin_form.fields[j]["regExMessage"];
+			fRow["formCell"] = ijf.admin.cwfAdmin_form.fields[j]["formCell"];
+			fRow["caption"] = ijf.admin.cwfAdmin_form.fields[j]["caption"];
+			fRow["controlType"] = ijf.admin.cwfAdmin_form.fields[j]["controlType"];
+			fRow["dataSource"] = ijf.admin.cwfAdmin_form.fields[j]["dataSource"];
+			fRow["dataReference"] = ijf.admin.cwfAdmin_form.fields[j]["dataReference"];
+			fRow["style"] = ijf.admin.cwfAdmin_form.fields[j]["style"];
+			fRow["labelStyle"] = ijf.admin.cwfAdmin_form.fields[j]["labelStyle"];
+			fRow["panelStyle"] = ijf.admin.cwfAdmin_form.fields[j]["panelStyle"];
+			fRow["referenceFilter"] = ijf.admin.cwfAdmin_form.fields[j]["referenceFilter"];
+			fRow["tableHeaders"] = ijf.admin.cwfAdmin_form.fields[j]["tableHeaders"];
+			fRow["tableColumns"] = ijf.admin.cwfAdmin_form.fields[j]["tableColumns"];
+			fRow["tableWidths"] = ijf.admin.cwfAdmin_form.fields[j]["tableWidths"];
+			fRow["tableHeaders"] = ijf.admin.cwfAdmin_form.fields[j]["tableHeaders"];
+			fRow["tableDblClick"] = ijf.admin.cwfAdmin_form.fields[j]["tableDblClick"];
+			fRow["event"] = ijf.admin.cwfAdmin_form.fields[j]["event"];
+			fRow["toolTip"] = ijf.admin.cwfAdmin_form.fields[j]["toolTip"];
+			fRow["dataReference2"] = ijf.admin.cwfAdmin_form.fields[j]["dataReference2"];
+			fRow["renderIf"] = ijf.admin.cwfAdmin_form.fields[j]["renderIf"];
+			fRow["persistInItem"] = ijf.admin.cwfAdmin_form.fields[j]["persistInItem"];
+			fRow["tableColumnsStyles"] = ijf.admin.cwfAdmin_form.fields[j]["tableColumnsStyles"];
+			fRow["fieldStyle"] = ijf.admin.cwfAdmin_form.fields[j]["fieldStyle"];
+			fRow["regEx"] = ijf.admin.cwfAdmin_form.fields[j]["regEx"];
+			fRow["regExMessage"] = ijf.admin.cwfAdmin_form.fields[j]["regExMessage"];
 
 			fieldsOut.push(fRow);
 		}
 
 
-		var thisForm = ijf.fw.forms[g_formId];
+		var thisForm = ijf.admin.cwfAdmin_form; //ijf.fw.forms[g_formId];
 
 		//fieldsJson = fieldsJson.replace(/\"/g,"\\\"");
 		//settingsJson = settingsJson.replace(/\"/g,"\\\"");
@@ -1766,20 +1876,20 @@ ijf.admin = {
 
 		//outer style
 
-		ijfUtils.setElementWithStyleString("ijfOuterContainer",cwfAdmin_form.settings["outerContainerStyle"]);
+		ijfUtils.setElementWithStyleString("ijfOuterContainer",ijf.admin.cwfAdmin_form.settings["outerContainerStyle"]);
 
-		ijfUtils.renderHeader(inContainerId,cwfAdmin_form);
+		ijfUtils.renderHeader(inContainerId,ijf.admin.cwfAdmin_form);
 
-        ijfUtils.setElementWithStyleString("ijfHead",cwfAdmin_form.settings["title_style"]);
+        ijfUtils.setElementWithStyleString("ijfHead",ijf.admin.cwfAdmin_form.settings["title_style"]);
 
 	   var colSpans = {};
 	   var rowsWithSpans = {};
 
 		try
 		{
-			if (cwfAdmin_form.settings["columnSpans"]!=null)
+			if (ijf.admin.cwfAdmin_form.settings["columnSpans"]!=null)
 			{
-				var cSpans = cwfAdmin_form.settings["columnSpans"].split(";");
+				var cSpans = ijf.admin.cwfAdmin_form.settings["columnSpans"].split(";");
 				if(cSpans[0]!="")
 				{
 					for(var k in cSpans)
@@ -1798,13 +1908,13 @@ ijf.admin = {
 			colSpans={};
 		}
 
-		ijfUtils.setContent(inContainerId,cwfAdmin_form.settings["rows"],cwfAdmin_form.settings["columns"],colSpans,cellsOnly);
+		ijfUtils.setContent(inContainerId,ijf.admin.cwfAdmin_form.settings["rows"],ijf.admin.cwfAdmin_form.settings["columns"],colSpans,cellsOnly);
 
 
-		if (cwfAdmin_form.settings["columnWidths"]!=null)
+		if (ijf.admin.cwfAdmin_form.settings["columnWidths"]!=null)
 		{
 
-			var colwidths = cwfAdmin_form.settings["columnWidths"].split(";");
+			var colwidths = ijf.admin.cwfAdmin_form.settings["columnWidths"].split(";");
 
 			for(var i in colwidths)
 			{
@@ -1812,7 +1922,7 @@ ijf.admin = {
 				if(!colwidths.hasOwnProperty(i)) continue;
 				var wPair = colwidths[i].split(":");
 
-				var rows = cwfAdmin_form.settings["rows"]/1+1;
+				var rows = ijf.admin.cwfAdmin_form.settings["rows"]/1+1;
 
 				for (var i = 1; i<rows;i++)
 				{
@@ -1825,16 +1935,16 @@ ijf.admin = {
 		}
 
 
-        ijfUtils.setElementWithStyleString(inContainerId + "_ijfContentTableId", cwfAdmin_form.settings["outerTableStyle"]);
+        ijfUtils.setElementWithStyleString(inContainerId + "_ijfContentTableId", ijf.admin.cwfAdmin_form.settings["outerTableStyle"]);
 
 
 		//for each field.. apply the field.
 
-		for (var f in cwfAdmin_form.fields)
+		for (var f in ijf.admin.cwfAdmin_form.fields)
 		{
 
-			if(!cwfAdmin_form.fields.hasOwnProperty(f)) continue;
-			var thisField = cwfAdmin_form.fields[f];
+			if(!ijf.admin.cwfAdmin_form.fields.hasOwnProperty(f)) continue;
+			var thisField = ijf.admin.cwfAdmin_form.fields[f];
 
 			var frmCell = thisField.formCell.split(",");
 			var targetCell =  inContainerId+"_"+frmCell[0]+"_"+frmCell[1];

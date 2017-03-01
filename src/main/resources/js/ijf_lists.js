@@ -243,7 +243,7 @@ renderItemList_Borderlayout:function(inContainerId)
             }});
 
 	cButtons.push({
-		text:'Craft Form',
+		text:'Design Form',
 		xtype: 'button',
 		margin: '0 3 0 3',
 		handler: function(){

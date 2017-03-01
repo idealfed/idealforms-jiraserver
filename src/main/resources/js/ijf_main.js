@@ -42,7 +42,7 @@ var updateErrorMessage = "Sorry but an update request failed.  Please refresh yo
 var gSaveIncludesFile = false;
 
 
-function init()
+function init(inConfigVersion)
 {
     ijfUtils.showProgress();
 
@@ -61,7 +61,7 @@ function init()
     ijfUtils.footLog("Calling load configuration...");
 
 
-    jQuery.ajax(g_root + '/plugins/servlet/jforms?ijfAction=getConfig', {
+    jQuery.ajax(g_root + '/plugins/servlet/jforms?ijfAction=getConfig&version='+inConfigVersion, {
         success: function(data) {
             //jQuery('#main').html($(data).find('#main *'));
             ijfUtils.footLog("Successful load");
@@ -76,7 +76,6 @@ function init()
             ijf.main.itemList = new Array();
             ijf.main.gNodes = new Array();
             ijf.main.gCats = new Array();
-
             try
             {
  				var cleanDoubleDouble = data.replace(/\"\"/g,"\"");
@@ -125,9 +124,11 @@ function init()
 
         },
         error: function(e) {
-
             ijfUtils.footLog("Failed first init load " + e.message);
             ijfUtils.hideProgress();
+            if(!ijf.main.controlSet) ijf.main.controlSet=[];
+            ijfUtils.renderAdminButtons('ijfContent');
+
         }
     });
 
@@ -151,8 +152,8 @@ function processSetup(inContainerId)
 
     if ((ijf.main.itemId=='') && (g_formId==""))
     {
-		ijf.lists.renderItemList_Borderlayout(inContainerId);
 		ijfUtils.renderAdminButtons(inContainerId);
+		ijf.lists.renderItemList_Borderlayout(inContainerId);
 		return;
 	}
 
@@ -280,7 +281,6 @@ function renderForm(inContainerId, inFormId, isNested, item)
 	//based on the form, it should get edit or add meta...
 
 	//look to see if form is add or edit? based on form type, load meta if necessary
-
 	if(item)
 	{
 		if(thisForm.formType=="Edit")
@@ -312,7 +312,7 @@ function renderForm(inContainerId, inFormId, isNested, item)
     //test if craft and redirect if so
     if(g_craft=="true")
     {
-        ijf.admin.renderFormAdmin();
+        ijf.admin.renderFormAdmin(ijf.fw.forms[g_formId]);
         return;
     }
 

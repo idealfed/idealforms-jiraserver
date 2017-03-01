@@ -340,8 +340,26 @@ footLog(inMsg)
         jQuery('#ijfDebug').prepend("<br>"+tNow+"&nbsp;&nbsp"+inMsg);
     }
 },
-
-
+applyVersionHistory(inId)
+{
+	ijfUtils.clearExt();
+	ijf.main.init(inId);
+	ijfUtils.modalDialogMessage("RECOVERY","You have loaded a MEMORY ONLY configuration version.  To apply this configuration you must Download the configuration, then upload the configuration.<br><br>Note, only opening form in this window will use the memory configuration.");
+},
+showSaveHistory()
+{
+	var tDiv = document.getElementById('ijfJsonUpload');
+	var saveHistory = ijfUtils.jiraApiSync("GET","/plugins/servlet/jforms","ijfAction=getVersions");
+	var saveData = JSON.parse(saveHistory);
+	var TblStart = "<table><tr><td>User</td><td>Date</td><td>Click to Apply</td></tr>";
+	var outStr = saveData.resultSet.reduce(function(bStr, s){
+		if(!s.author) return bStr;
+		bStr+= "<tr><td>"+s.author +"</td><td>" + s.created + "</td><td><a href=JAVASCRIPT:ijfUtils.applyVersionHistory("+s.id+")>Click to apply "+s.id+"</a></td></tr>";
+		return bStr;
+	},TblStart);
+	outStr += "</table>";
+	tDiv.innerHTML = outStr;
+},
 renderAdminButtons:function(inContainerId)
 {
     //todo if owner manager do this...
@@ -352,9 +370,9 @@ renderAdminButtons:function(inContainerId)
     {
 
         //Craft section, if debug or if in craft mode...
-		var fileLoad = "Upload Config File: <input type='file' accept='text/plain' onchange='ijfUtils.readConfigFile(event)'><br>";
-		fileLoad += "Download Config File: <input type='button' value='Download' onclick='ijfUtils.writeConfigFile()'>";
-
+		var fileLoad = "View Save History(last 20): <input type='button' value='Save History' onclick='ijfUtils.showSaveHistory()'><br>";
+		fileLoad += "Upload Entire Config File: <input type='file' accept='text/plain' onchange='ijfUtils.readConfigFile(event)'><br>";
+		fileLoad += "Download Entire Config to a File: <input type='button' value='Download' onclick='ijfUtils.writeConfigFile()'>";
         var pnl = new Ext.FormPanel({
 			layout:'vbox',
             items: [{
@@ -382,7 +400,8 @@ writeConfigFile:function()
 	var outStr = ijfUtils.getConfigJson();
 	var blob = new Blob([outStr], {type: "text/plain;charset=utf-8"});
 	saveAs(blob,"ijfFormsConfig.txt")
-},
+}
+,
 readConfigFile:function(event)
 {
 	    var input = event.target;
@@ -398,7 +417,7 @@ writeFullConfig:function(inConfig, doReset)
 {
 		var outJsonConfig = inConfig.replace(/\%/g,"~pct~");
 
-	    var outConfig = '{"ijfConfig":'+inConfig+'}';
+	    var outConfig = '{"ijfConfig":'+outJsonConfig+'}';
 
 	    var initResp = "";
 	    jQuery.ajax({
@@ -418,7 +437,7 @@ writeFullConfig:function(inConfig, doReset)
 					if(doReset)
 					{
 						ijfUtils.clearExt();
-	            	    ijf.main.init();
+	            	    ijf.main.init(0);
 				    }
 				},
 				error: function(e) {
@@ -441,7 +460,7 @@ getConfigJson:function()
 			if(!fs.settings.hasOwnProperty(j)) continue;
 			settingsOut.push({name:j,value:thisForm.settings[j],comment:""});
 		};
-		//process the fs
+
 		var outForms = [];
 		var fsOut = {
 			id: fs.id,
@@ -449,6 +468,12 @@ getConfigJson:function()
 			projectName: fs.projectName,
 			projectId: fs.projectId,
 			settings: JSON.stringify(JSON.stringify(settingsOut)),
+			snippets: fs.snippets.map(function(s){
+					return {
+								name: s.name,
+								snippet: JSON.stringify(s.snippet)
+							};
+			}),
 			forms: fs.forms.reduce(function(outForms,thisForm){
 					//process the Form
 					if(!thisForm.name) return outForms;
@@ -481,6 +506,7 @@ getConfigJson:function()
 },outFormSets);
 
 var outStr = JSON.stringify(outFormSets);
+
 return outStr;
 },
 clearAll:function()
