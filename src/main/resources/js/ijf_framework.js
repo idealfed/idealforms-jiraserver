@@ -90,7 +90,13 @@ setup:function (setup)
 			thisfs.projectName = sf.projectName;
 			thisfs.projectId = sf.projectId;
 			thisfs.snippets = sf.snippets;
-			if(sf.hasOwnProperty("settings")) thisfs.settings = JSON.parse(sf.settings);
+			if(sf.hasOwnProperty("settings")) thisfs.rawSettings = JSON.parse(sf.settings);
+			thisfs.settings=[];
+			if(!thisfs.rawSettings) thisfs.rawSettings=[];
+			thisfs.rawSettings.forEach(function(s){
+				if(!s.name) return;
+				thisfs.settings[s.name]=s.value;
+			});
 			thisfs.forms = sf.forms.map(function(f){
 				if(!f.name) return {};
 				var thisF = {};

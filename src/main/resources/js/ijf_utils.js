@@ -142,7 +142,7 @@ var ijfUtils = {
 			error: onError
 		});
 	},
-    saveJiraFormSync(inJson){
+    saveJiraFormSync(inJson,ijfAction){
 		var retVal = "";
 
 		var outJson = inJson.replace(/\%/g,"~pct~");
@@ -153,7 +153,7 @@ var ijfUtils = {
 				url: g_root + '/plugins/servlet/jforms',
 				data: {
 					jsonConfig: outJson,
-					action: "saveFormConfig"
+					action: ijfAction
 				},
 				timeout: 60000,
 				success: function(data) {
@@ -169,50 +169,6 @@ var ijfUtils = {
 					}
 					if(jRet.status=="OK")
 					{
-						//ijfUtils.modalDialogMessage("Information Message","Settings saved.  You must reload other pages to see changes.");
-						retVal = "OK";
-					}
-					else
-					{
-						//ijfUtils.modalDialogMessage("Information Message","Sorry, something went wrong saving the settings. \n" + jRet.status);
-						retVal = "Failed to save " + jRet.status;
-					}
-				},
-				error: function(e) {
-					ijfUtils.footLog("Failed init data set! " + e.message);
-					//ijfUtils.modalDialogMessage("Information Message","Sorry, something went wrong saving the settings. " + e.message);
-					retVal = "Failed to save " + e.message;
-				}
-			});
-			return retVal;
-		},
-saveSnippetFormSync(inJson){
-		var retVal = "";
-
-		var outJson = inJson.replace(/\%/g,"~pct~");
-
-		jQuery.ajax({
-				async: false,
-				type: 'POST',
-				url: g_root + '/plugins/servlet/jforms',
-				data: {
-					jsonConfig: outJson,
-					action: "saveSnippet"
-				},
-				timeout: 60000,
-				success: function(data) {
-				ijfUtils.hideProgress();
-
-					ijfUtils.footLog("Saved snippet data " + data);
-					try{
-					    var jRet = JSON.parse(data);
-				    }
-				    catch(e)
-				    {
-						jRet = {status:data};
-					}
-					if(jRet.status=="OK")
-					{
 						retVal = "OK";
 					}
 					else
@@ -227,7 +183,7 @@ saveSnippetFormSync(inJson){
 			});
 			return retVal;
 		},
-		getFieldDef:function(issueKey, inFieldName)
+	getFieldDef:function(issueKey, inFieldName)
 		{
 			if(inFieldName=="Status")
 			{

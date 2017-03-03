@@ -1126,7 +1126,7 @@ ijf.admin = {
 								snippet: JSON.stringify(rec.get('snippet'))
 							};
 							var sJson = JSON.stringify(sendData);
-							var sRes = ijfUtils.saveSnippetFormSync(sJson);
+							var sRes = ijfUtils.saveJiraFormSync(sJson,"saveSnippet");
 							if(sRes=="OK")
 							{
 								rec.set('status','Saved');
@@ -1858,7 +1858,7 @@ ijf.admin = {
 //debugger;
 		var initResp = "";
 
-		var sStat = ijfUtils.saveJiraFormSync(jdata);
+		var sStat = ijfUtils.saveJiraFormSync(jdata,"saveFormConfig");
 		if(sStat="OK")
 		{
 			ijfUtils.modalDialogMessage("Information Message","Settings saved. You must refresh other pages to see changes.");

@@ -18,7 +18,7 @@ itemId:0,
 
 filterItemList:function(inId)
 {
-    var filterColumn = 4;
+    var filterColumn = 1;
     var tval="";
     try{
         tval= Ext.get(inId).component.getValue().toLowerCase();
@@ -41,13 +41,13 @@ filterItemList:function(inId)
         {
             if(!ijf.lists.checkedNodes.hasOwnProperty(j)) continue
             var checkedNode = ijf.lists.checkedNodes[j];
-            var thisNode = ijf.main.gNodes[checkedNode.id];
+            //var thisNode = ijf.main.gNodes[checkedNode.id];
             for(var i in itemList)
 			{
 				if(itemList.hasOwnProperty(i))
 				{
   				    if(!itemList.hasOwnProperty(i)) continue;
-					if(thisNode.name==itemList[i][0]) this.checkedList.push([itemList[i][0],itemList[i][1],itemList[i][2],itemList[i][3],itemList[i][4]]);
+					if(checkedNode.data.text==itemList[i][4]) this.checkedList.push([itemList[i][0],itemList[i][1],itemList[i][2],itemList[i][3],itemList[i][4]]);
 				}
 			}
         }
@@ -135,7 +135,6 @@ renderItemList_Borderlayout:function(inContainerId)
 {
     //state is no item, so display selected or default item selector....
     //var itmRoot="mwfContent";
-//debugger;
 
     if(ijf.fw.tabTitle)
     {
@@ -151,7 +150,23 @@ renderItemList_Borderlayout:function(inContainerId)
     ijfUtils.setContent(inContainerId,1,1,colSpans);
 
     var Tree = Ext.tree;
-    var treeStruct = ijf.exercise.getTreeStructure(true);
+    //var treeStruct = ijf.exercise.getTreeStructure(true);
+
+    //switching to tree of formsets...
+    var retJson = []
+
+    ijf.fw.formSets.forEach(function(fs){
+		if(!fs.name) return;
+		retJson.push({
+			text:fs.name,
+			id:fs.id,
+			leaf:false,
+			cls:"folder",
+			checked:false,
+			children: new Array()
+		});
+	});
+
     var tree = new Ext.tree.Panel({
         xtype: 'check-tree',
         height: 100,
@@ -170,7 +185,7 @@ renderItemList_Borderlayout:function(inContainerId)
             description: 'root',
             expanded: true,
             id:'0',
-            children: [treeStruct]
+            children: retJson
         },
         listeners: {
             checkchange: function(){
@@ -191,18 +206,19 @@ renderItemList_Borderlayout:function(inContainerId)
         frame:false,
         border: false,
         height:30,
-        buttonAlign: 'left',
-        buttons:[{
+        bodyStyle: 'background:transparent',
+        items:[{
+			fieldLabel: 'Filter by Name',
+			labelStyle: 'width:150;text-align:right',
             xtype: 'textfield',
-            width: 600,
+            style: 'margin:0px 0px 0px 200px;background:transparent;width:600px',
             value: '',
             allowBlank:true,
             enableKeyEvents: true,
-            hideLabel:false,
-            id: "cwfItemSearchFilterId",
+            id: "cwfItemSearchFilterId2",
             listeners: {
                 keyup: function(){
-                    ijf.lists.filterItemList("cwfItemSearchFilterId");
+                    ijf.lists.filterItemList("cwfItemSearchFilterId2");
                 }
             }
         }]
@@ -217,30 +233,6 @@ renderItemList_Borderlayout:function(inContainerId)
         handler: function(){
             ijf.lists.openForm();
         }});
-
-	cButtons.push({
-		text:'Delete Form',
-		xtype: 'button',
-		margin: '0 3 0 3',
-		handler: function(){
-			mwf_addItem(inContainerId);
-            }});
-
-	cButtons.push({
-		text:'Edit Form',
-		xtype: 'button',
-		margin: '0 3 0 3',
-		handler: function(){
-			ijf.lists.addEditForm(ijf.lists.itemId);
-            }});
-
-	cButtons.push({
-		text:'Add Form',
-		xtype: 'button',
-		margin: '0 3 0 3',
-		handler: function(){
-			ijf.lists.addEditForm(null);
-            }});
 
 	cButtons.push({
 		text:'Design Form',
@@ -265,11 +257,28 @@ renderItemList_Borderlayout:function(inContainerId)
             }});
 
 	cButtons.push({
-		text:'Refresh Settings',
+		text:'Form Settings',
 		xtype: 'button',
 		margin: '0 3 0 3',
 		handler: function(){
-			mwf_addItem(inContainerId);
+			ijf.lists.addEditForm(ijf.lists.itemId);
+            }});
+
+	cButtons.push({
+		text:'Add Form',
+		xtype: 'button',
+		margin: '0 3 0 3',
+		handler: function(){
+			ijf.lists.addEditForm(null);
+            }});
+
+
+	cButtons.push({
+		text:'Delete Form',
+		xtype: 'button',
+		margin: '0 3 0 3',
+		handler: function(){
+			ijf.lists.deleteForm(ijf.lists.itemId);
             }});
 
     var selectItem = new Ext.FormPanel({
@@ -396,17 +405,14 @@ renderItemList_Borderlayout:function(inContainerId)
     else
         ijfUtils.setHead(ijf.fw.listTitle);
 
-
     var bArray = [selectItem];
-    var pSouthHeight=50;
 
     var tCollapsed = false;
-    if(ijf.fw.treeCollapsed=="true") tCollapsed=true;
 
      var pnl = new Ext.Panel({
 
-         width: ijf.fw.listWidth,
-         height: ijf.fw.listHeight,
+         width: 1000,
+         height: 500,
         //title: 'Search Form',
         id: 'cwfListPanelId',
         //frame: true,
@@ -417,7 +423,7 @@ renderItemList_Borderlayout:function(inContainerId)
             xtype: 'container',
             region: 'south',     // position for region
             frame: false,
-            height: pSouthHeight,
+            height: 50,
             //layout: 'vbox',
             //split: true,         // enable resizing
             //minSize: 90,         // defaults to 50
@@ -426,31 +432,89 @@ renderItemList_Borderlayout:function(inContainerId)
             items: bArray
 
         },{
-            title: 'Search by Form Name',
+            title: 'Idealfed JIRA Forms Administration',
             region: 'north',     // position for region
-            frame: true,
-            height:80,
+            frame: false,
+            bodyStyle: 'background-color:#3892d4',
             split: false,         // enable resizing
-            minSize: 60,         // defaults to 50
-            maxSize: 60,
+
             margins: '0 5 5 5',
            // id: 'itemsNorth',
-            items: [filterField]
-
+           header: {
+			   titlePosition: 0,
+			   items: [
+				{fieldLabel: 'Filter by Name',
+				labelStyle: 'background:transparent;width:200;text-align:right;color:white;font-weight:bold',
+				xtype: 'textfield',
+				style: 'background:transparent;width:500px',
+				value: '',
+				allowBlank:true,
+				enableKeyEvents: true,
+				id: "cwfItemSearchFilterId",
+				listeners: {
+					keyup: function(){
+						ijf.lists.filterItemList("cwfItemSearchFilterId");
+					}
+				}
+			}]}
         },{
             // xtype: 'panel' implied by default
-            title: 'Filter Forms',
+            title: 'Form Groups:',
+            style: 'color:white;font-weight:bold',
             region:'west',
             frame: true,
             margins: '5 0 0 5',
-            width: ijf.fw.listTreeWidth,
+            width: 250,
             collapsible: true,   // make collapsible
-            collapsed:  tCollapsed,
+            collapsed:  false,
             cmargins: '5 5 0 5', // adjust top margin when collapsed
            // id: 'itemsWest',
             split: true,
             layout: 'fit',
             unstyled: true,
+			header:{
+				                titlePosition: 0,
+				                items:[{
+									xtype:'button',
+									text:"Edit",
+									handler: function(){
+									   //need the formset ID...
+										if(Object.size(ijf.lists.checkedNodes) == 1)
+										{
+											var tId = ijf.lists.checkedNodes[0].id;
+										}
+										else
+										{
+												ijfUtils.modalDialogMessage("Information","Sorry but to edit a form group, please check one and only one from the list");
+												return;
+										}
+									   ijf.lists.addEditFormSet(tId);
+									}
+								},{
+									xtype:'button',
+									text:"Add",
+									handler: function(){
+									   ijf.lists.addEditFormSet();
+									}
+								},{
+									xtype:'button',
+									text:"Delete",
+									handler: function(){
+										if(Object.size(ijf.lists.checkedNodes) == 1)
+										{
+											var tId = ijf.lists.checkedNodes[0].id;
+										}
+										else
+										{
+												ijfUtils.modalDialogMessage("Information","Sorry but to edit a form group, please check one and only one from the list");
+												return;
+										}
+
+
+									    ijf.lists.deleteFormSet(tId);
+									}
+								}]
+		},
             items: [tree]
         },{
             title: 'Center Region',
@@ -704,6 +768,10 @@ addEditForm:function (inFrmId)
                 value: thisF.name,
                 allowBlank:false,
                 listeners: {
+					                afterrender: function(f)
+					                {
+					                    this.validate();
+                },
                     change: function(f,n,o){
                         thisF.name = n;
                     }
@@ -724,6 +792,10 @@ addEditForm:function (inFrmId)
 				width: 200,
 				value: thisF.formType,
 				listeners: {
+					                afterrender: function(f)
+					                {
+					                    this.validate();
+                },
 					change: function(f, n, o){
 						thisF.formType = n;
 									}}
@@ -755,6 +827,10 @@ addEditForm:function (inFrmId)
 				margin: '4 0 0 10',
 				value: thisF.formSet.name,
 				listeners: {
+					                afterrender: function(f)
+					                {
+					                    this.validate();
+                },
 					change: function(f, n, o){
 						thisF.formSet.name = n;
 					}}
@@ -767,7 +843,7 @@ addEditForm:function (inFrmId)
 
 				if(thisForm.name=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the form name cannot be blank."); return;}
 				if(thisForm.id==0) if(ijf.fw.forms.hasOwnProperty(thisForm.name)) {ijfUtils.modalDialogMessage("Form Error","Sorry, the form name is already being used."); return;}
-				if(!thisForm.formSet.name) {ijfUtils.modalDialogMessage("Form Error","Sorry, the gorm group name cannot be blank."); return;}
+				if(!thisForm.formSet.name) {ijfUtils.modalDialogMessage("Form Error","Sorry, the form group name cannot be blank."); return;}
 				//if(thisForm.testIssue=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the test issue must exist and not be empty."); return;}
 
 				//need to have a valid "formSet" ID at this point....
@@ -791,19 +867,263 @@ addEditForm:function (inFrmId)
 							testIssue: thisForm.testIssue,
 							formType: thisForm.formType,
 							formName: thisForm.name,
-							formSetId: formSet.id,
-							fields: JSON.stringify(JSON.stringify(fieldsOut)),
-							formSettings: JSON.stringify(JSON.stringify(settingsOut))
+							formSetId: formSet.id
 				};
 				var jdata = JSON.stringify(jOut);
 
-				var sStat = ijfUtils.saveJiraFormSync(jdata);
+				var sStat = ijfUtils.saveJiraFormSync(jdata,"saveFormBasic");
 
 				if(sStat="OK")
 				{
 	                ijf.lists.dWin.close();
  	                ijfUtils.clearExt();
-	                ijf.main.init();
+	                ijf.main.init(0);
+				}
+				else
+				{
+					ijfUtils.modalDialogMessage("Error","Sorry, something went wrong with the save: " + sStat);
+				}
+
+            }},
+            {
+                text:'Cancel',
+                handler: function(){
+                    ijf.lists.dWin.close();
+                }}
+        ],
+        modal: true
+    });
+    ijf.lists.dWin.show();
+},
+deleteForm: function(inFrmId)
+{
+		if(!inFrmId) return;
+    	var thisF ={};
+	    if(inFrmId)
+	    {
+			for(var tF in ijf.fw.forms){
+				if(!ijf.fw.forms.hasOwnProperty(tF)) return;
+				if(ijf.fw.forms[tF].id==ijf.lists.itemId) thisF=ijf.fw.forms[tF];
+			}
+			if(!thisF.name){ ijfUtils.modalDialogMessage("Error","Sorry, undable to find the requested form: " + inFrmId); return;}
+		}
+
+        var dFunc = function()
+        {
+		        var jOut = {
+							formId: thisF.id
+				};
+				var jdata = JSON.stringify(jOut);
+
+				var sStat = ijfUtils.saveJiraFormSync(jdata,"deleteFormConfig");
+
+				if(sStat=="OK")
+				{
+ 	                ijfUtils.clearExt();
+	                ijf.main.init(0);
+				}
+				else
+				{
+					ijfUtils.modalDialogMessage("Error","Sorry, something went wrong with the delete: " + sStat);
+				}
+	    };
+
+	    ijfUtils.modalDialog("Warning","Are you certain you want to delete this form?",dFunc);
+
+},
+deleteFormSet: function(inFrmId)
+{
+    	var thisFs ={};
+	    if(inFrmId)
+	    {
+			for(var tF in ijf.fw.formSets){
+				if(!ijf.fw.formSets.hasOwnProperty(tF)) return;
+				if(ijf.fw.formSets[tF].id==inFrmId) thisFs=ijf.fw.formSets[tF];
+			}
+			if(!thisFs.name){ ijfUtils.modalDialogMessage("Error","Sorry, undable to find the requested form group for: " + inFrmId); return;}
+        }
+
+		var fcount = thisFs.forms.reduce(function(fcnt,f){if(f.name) fcnt++; return fcnt;},0);
+		//check for children
+		if(fcount){ ijfUtils.modalDialogMessage("Error","Sorry, you must delete or remove all forms from this formset before deleting."); return;}
+
+
+        var dFunc = function()
+        {
+		        var jOut = {
+							formSetId: thisFs.id
+				};
+				var jdata = JSON.stringify(jOut);
+
+				var sStat = ijfUtils.saveJiraFormSync(jdata,"deleteFormSet");
+
+				if(sStat=="OK")
+				{
+					ijf.lists.checkedNodes = [];
+ 	                ijfUtils.clearExt();
+	                ijf.main.init(0);
+				}
+				else
+				{
+					ijfUtils.modalDialogMessage("Error","Sorry, something went wrong with the delete: " + sStat);
+				}
+	    };
+
+	    ijfUtils.modalDialog("Warning","Are you certain you want to delete this form group?",dFunc);
+
+},
+addEditFormSet:function (inFrmId)
+{
+
+	var editForm = false;
+	ijf.lists.thisFs = {};
+	var thisF = ijf.lists.thisFs;
+    if(inFrmId)
+    {
+		editForm = true;
+		for(var tF in ijf.fw.formSets){
+			if(!ijf.fw.formSets.hasOwnProperty(tF)) return;
+			if(ijf.fw.formSets[tF].id==inFrmId) thisF=ijf.fw.formSets[tF];
+		}
+		if(!thisF.name){ ijfUtils.modalDialogMessage("Error","Sorry, undable to find the requested form group for: " + inFrmId); return;}
+		ijf.lists.thisFs=thisF;
+    }
+    else
+    {
+		//construct blank form...
+		thisF.forms = [];
+		thisF.name = "";
+		thisF.projectName = "";
+		thisF.projectId = "";
+		thisF.id = 0;
+		thisF.settings=[];
+		thisF.snippets=[];
+	}
+
+    var dMes = "Adding a new form group creates a container for logically grouped forms.  Once the container is";
+    dMes+=" added you can create forms within the group.  Please note:";
+    dMes+="<ul><li>Form group name should be unique for all form groups.</li>";
+    dMes+="<li>Form project is just a notional linkage to a JIRA prject.</li>";
+    dMes+="<li>Form groups are the containers for Javascript snippets.</li></ul>";
+    var projectLookup = [];
+    ijf.exercise.projects.forEach(function(p){projectLookup.push([p.key,p.name]);});
+
+
+    ijf.lists.dWin = new Ext.Window({
+        layout: 'vbox',
+        title: "IJF Form Group Settings",
+        width: 600,
+        height:370,
+        closable: true,
+        items: [{
+            html: dMes,
+            border: false,
+            width: 580,
+            margin: '4 0 0 10',
+            frame: false,
+            xtype: "panel"},
+            {
+                xtype: 'textfield',
+                labelAlign: 'left',
+                fieldLabel: 'Group Name',
+                labelWidth: 100,
+                labelStyle: "color:darkblue",
+  				margin: '4 0 0 10',
+                width: 400,
+                value: thisF.name,
+                allowBlank:false,
+                listeners: {
+                afterrender: function(f)
+                {
+                    this.validate();
+                },
+                change: function(f,n,o){
+                        thisF.name = n;
+                    }
+                }
+            },
+			{
+				xtype: 'combobox',
+				labelAlign: 'left',
+				forceSelection: true,
+				store: projectLookup,
+				forceSelection: true,
+				labelWidth: 100,
+				margin: '4 0 0 10',
+				fieldLabel: "Project",
+				allowBlank:false,
+				labelStyle: "color:darkblue",
+				triggerAction: 'all',
+				width: 400,
+				value: thisF.projectId,
+				listeners: {
+					afterrender: function(f)
+					                {
+					                    this.validate();
+                    },
+					change: function(f, n, o){
+						thisF.projectId = n;
+						thisF.projectName = f.getDisplayValue();
+									}}
+			},
+            {
+			                xtype: 'textfield',
+			                labelAlign: 'left',
+			                fieldLabel: 'Default Form',
+			                labelWidth: 100,
+			                labelStyle: "color:darkblue",
+			  				margin: '4 0 0 10',
+			                width: 400,
+			                value: thisF.settings["defaultForm"],
+			                allowBlank:false,
+			                listeners: {
+			                afterrender: function(f)
+			                {
+			                    this.validate();
+			                },
+			                change: function(f,n,o){
+			                        thisF.settings["defaultForm"] = n;
+			                    }
+			                }
+            }
+        ],
+        buttons:[{
+            text:'OK',
+            handler: function(f,i,n){
+				var thisFormSet = ijf.lists.thisFs;
+
+				if(thisFormSet.name=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the group name cannot be blank."); return;}
+				if(thisFormSet.projectId=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the project cannot be blank."); return;}
+				if(thisFormSet.projectName=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the project cannot be blank."); return;}
+				if(thisFormSet.id==0) if(ijf.fw.formSetsKeyed.hasOwnProperty(thisFormSet.name)) {ijfUtils.modalDialogMessage("Form Error","Sorry, the group name is already being used."); return;}
+
+				//settings
+				//forms
+				//snippets
+				var settingsOut = new Array();
+				for(var j in thisFormSet.settings)
+				{
+					if(!thisFormSet.settings.hasOwnProperty(j)) continue;
+					settingsOut.push({name:j,value:thisFormSet.settings[j],comment:""});
+				};
+
+		        var jOut = {
+							formSetId: thisFormSet.id,
+							name: thisFormSet.name,
+							projectName: thisFormSet.projectName,
+							projectId: thisFormSet.projectId,
+							settings: JSON.stringify(JSON.stringify(settingsOut))
+				};
+				var jdata = JSON.stringify(jOut);
+
+				var sStat = ijfUtils.saveJiraFormSync(jdata,"saveFormSet");
+
+				if(sStat=="OK")
+				{
+					ijf.lists.checkedNodes = [];
+	                ijf.lists.dWin.close();
+ 	                ijfUtils.clearExt();
+	                ijf.main.init(0);
 				}
 				else
 				{
