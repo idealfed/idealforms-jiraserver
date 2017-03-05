@@ -33,10 +33,21 @@
      <entity>com.idealfed.jiraforms.ao.Form</entity>
      <entity>com.idealfed.jiraforms.ao.FormSet</entity>
      <entity>com.idealfed.jiraforms.ao.Snippet</entity>
+     <entity>com.idealfed.jiraforms.ao.Version</entity>     
    </ao>
   
-
+ <web-section key="ijf_Forms_Section" name="IJF Forms Section" location="system.admin" weight="50">
+    <label>IJF Forms</label>
+    <description>IJF Administration</description>
+    <tooltip>Click to open IJF Section</tooltip>
+</web-section>
   
+  <web-item key="ijf_links_link" name="Link on IJF Links Main Section" section="system.admin/ijf_Forms_Section" weight="10">
+    <label>IJF Forms Admin</label>
+    <link linkId="ijfFormsAdminId">/plugins/servlet/jforms</link>
+  </web-item>
+  
+    
   <!-- import from the product container -->
   <component-import key="ao" name="Active Objects service" interface="com.atlassian.activeobjects.external.ActiveObjects">
           <description>Component to access Active Objects functionality from the plugin</description>
@@ -47,3 +58,8 @@
   <component-import key="loginUriProvider" interface="com.atlassian.sal.api.auth.LoginUriProvider" filter=""/>
   <component-import key="pluginSettingsFactory" interface="com.atlassian.sal.api.pluginsettings.PluginSettingsFactory" filter=""/>
 </atlassian-plugin>
+
+
+
+
+

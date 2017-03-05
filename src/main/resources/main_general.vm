@@ -14,7 +14,7 @@
     <script src="http://localhost:2990/jira/download/resources/com.idealfed.poc.craft:jiraforms-resources/ext-all.js" type="text/javascript"></script>
     
 
-    <metaname="decorator"content="none"/>
+    <metaname="decorator"content="atl.general"/>
 
   <script>
       g_username = "$ijfUsername";
@@ -114,9 +114,13 @@
   <div id='ijfFoot' class='cwf-footer'></div>
 </div>
 <div id='ijfManage'></div>
-<div id='ijfJsonUpload'></div>
+<div align='right' id='ijfJsonUpload'></div>
 <div id='ijfCraft1'></div>
+<div id='ijfCraft2'></div>
 <div id='ijfAdmin1'></div>
+<div id='ijfAdmin2'></div>
+<div id='ijfAdmin3'></div>
+<div id='ijfAdmin4'></div>
 <div id='ijfDebug'></div>
 #disable_html_escaping()
 <script type="text/javascript">
