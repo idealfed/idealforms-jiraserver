@@ -247,15 +247,19 @@ function renderForm(inContainerId, inFormId, isNested, item)
 	{
     	ijfUtils.clearAll();
     	ijfUtils.clearExt();
+    	ijf.main.outerForm = ijf.fw.forms[inFormId];
+    	//if the ijf.admin.dWin exists, destroy it....
+    	if(ijf.lists.dWin) Ext.destroy(ijf.lists.dWin);
 	}
 	else
 	{
 		//if in craft, write something to target container and leave...
-		if(g_craft=='true')
-		{
-			document.getElementById(inContainerId).innerHTML="Sub Form: " + inFormId;
-			return;
-		}
+		//if(g_craft=='true')
+		//{
+		//	document.getElementById(inContainerId).innerHTML="Sub Form: " + inFormId;
+		//	return;
+		//}
+	debugger;
 	}
 
     var thisForm;
@@ -270,7 +274,6 @@ function renderForm(inContainerId, inFormId, isNested, item)
     else
     {
         thisForm = ijf.fw.forms[inFormId];
-        ijf.main.outerForm = thisForm;
     }
     if(!thisForm)
     {
@@ -310,11 +313,14 @@ function renderForm(inContainerId, inFormId, isNested, item)
 	}
 
     //test if craft and redirect if so
-    if(g_craft=="true")
-    {
-        ijf.admin.renderFormAdmin(ijf.fw.forms[g_formId]);
-        return;
-    }
+   	if(!isNested)
+	{
+		if(g_craft=="true")
+		{
+			ijf.admin.renderFormAdmin(ijf.fw.forms[g_formId]);
+			return;
+		}
+	}
 
 
     //For main for only

@@ -272,6 +272,13 @@ renderItemList_Borderlayout:function(inContainerId)
 			ijf.lists.addEditForm(null);
             }});
 
+	cButtons.push({
+		text:'Duplicate Form',
+		xtype: 'button',
+		margin: '0 3 0 3',
+		handler: function(){
+			ijf.lists.copyForm(ijf.lists.itemId);
+            }});
 
 	cButtons.push({
 		text:'Delete Form',
@@ -849,19 +856,6 @@ addEditForm:function (inFrmId)
 				//need to have a valid "formSet" ID at this point....
 				var formSet = ijf.fw.formSetsKeyed[thisF.formSet.name];
 
-				var settingsOut = new Array();
-				var fieldsOut = new Array();
-				for(var j in thisForm.settings)
-				{
-					if(!thisForm.settings.hasOwnProperty(j)) continue;
-					settingsOut.push({name:j,value:thisForm.settings[j],comment:""});
-				};
-				for(var j in thisForm.fields)
-				{
-					if(!thisForm.fields.hasOwnProperty(j)) continue;
-					fieldsOut.push(thisForm.fields[j]);
-				};
-
 		        var jOut = {
 							formId: thisForm.id,
 							testIssue: thisForm.testIssue,
@@ -894,6 +888,86 @@ addEditForm:function (inFrmId)
         modal: true
     });
     ijf.lists.dWin.show();
+},
+copyForm: function(inFrmId)
+{
+		if(!inFrmId) return;
+    	var thisForm ={};
+	    if(inFrmId)
+	    {
+			for(var tF in ijf.fw.forms){
+				if(!ijf.fw.forms.hasOwnProperty(tF)) return;
+				if(ijf.fw.forms[tF].id==ijf.lists.itemId) thisForm=ijf.fw.forms[tF];
+			}
+			if(!thisForm.name){ ijfUtils.modalDialogMessage("Error","Sorry, undable to find the requested form: " + inFrmId); return;}
+		}
+
+		//establish new name...
+		var newFormName = thisForm.name + " copy";
+		var nameIsNotUnique=true;
+		var formNameCounter=1;
+		do{
+
+			if(ijf.fw.forms.hasOwnProperty(newFormName))
+			{
+				newFormName = newFormName + " " + formNameCounter++;
+			}
+			else
+			{
+				nameIsNotUnique=false;
+			}
+
+		}while(nameIsNotUnique);
+
+
+
+
+        var dFunc = function()
+        {
+
+
+				var formSet = ijf.fw.formSetsKeyed[thisForm.formSet.name];
+
+				var settingsOut = new Array();
+				var fieldsOut = new Array();
+				for(var j in thisForm.settings)
+				{
+					if(!thisForm.settings.hasOwnProperty(j)) continue;
+					settingsOut.push({name:j,value:thisForm.settings[j],comment:""});
+				};
+				for(var j in thisForm.fields)
+				{
+					if(!thisForm.fields.hasOwnProperty(j)) continue;
+					fieldsOut.push(thisForm.fields[j]);
+				};
+
+		        var jOut = {
+							formId: 0,
+							testIssue: thisForm.testIssue,
+							formType: thisForm.formType,
+							formName: newFormName,
+							formSetId: formSet.id,
+							fields: JSON.stringify(JSON.stringify(fieldsOut)),
+							formSettings: JSON.stringify(JSON.stringify(settingsOut))
+				};
+				var jdata = JSON.stringify(jOut);
+
+				var sStat = ijfUtils.saveJiraFormSync(jdata,"saveFormConfig");
+
+
+				if(sStat=="OK")
+				{
+ 	                ijfUtils.clearExt();
+	                ijf.main.init(0);
+				}
+				else
+				{
+					ijfUtils.modalDialogMessage("Error","Sorry, something went wrong with the delete: " + sStat);
+				}
+	    };
+
+	    ijfUtils.modalDialog("Information","Are you certain you want to duplicate this form?",dFunc);
+
 },
 deleteForm: function(inFrmId)
 {
@@ -945,7 +1019,7 @@ deleteFormSet: function(inFrmId)
 
 		var fcount = thisFs.forms.reduce(function(fcnt,f){if(f.name) fcnt++; return fcnt;},0);
 		//check for children
-		if(fcount){ ijfUtils.modalDialogMessage("Error","Sorry, you must delete or remove all forms from this formset before deleting."); return;}
+		if(fcount){ ijfUtils.modalDialogMessage("Error","Sorry, you must delete or remove all forms from this group before deleting."); return;}
 
 
         var dFunc = function()

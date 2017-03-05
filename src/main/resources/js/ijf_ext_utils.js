@@ -519,10 +519,17 @@ renderAttchmentList:function(inFormKey,item, inField, inContainer)
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
 
+	//sort desc
+	var sortedAttachments = ijf.currentItem.fields.attachment.sort(function(a, b)
+	{
+		a = new Date(a.created);
+		b = new Date(b.created);
+		return a>b ? -1 : a<b ? 1 : 0;
+	});
 
     var outHtml = "<div class=ijfAttachList>";
 		outHtml += "<div  class=ijfAttachListHead><div class=ijfAttachListHeadName>Name</div><div class=ijfAttachListHeadAuthor>Author</div><div class=ijfAttachListHeadDate>Date</div></div>";
-    outHtml = ijf.currentItem.fields.attachment.reduce(function(outHtml,a){
+    outHtml = sortedAttachments.reduce(function(outHtml,a){
 		outHtml += "<div class=ijfAttachListRow><div  class=ijfAttachListName><a href='"+a.content+"' target='_blank'>" + a.filename + "</a></div><div class=ijfAttachListAuthor>" + a.author.displayName + "</div><div class=ijfAttachListDate>" + moment(a.created).format('lll') + "</div></div>";
 		return outHtml;
 	},outHtml);
@@ -723,17 +730,32 @@ renderHtml:function(inFormKey,item, inField, inContainer)
             text:l_done,
             xtype:'button',
              handler: function(){
+
+				//target form is dataSource if it exists or default form if it exists...
+				var tForm="";
+				if(ijf.fw.forms.hasOwnProperty(inField.dataSource))
+				{
+                     tForm=inField.dataSource;
+				}
+				else if(ijf.fw.forms.hasOwnProperty(inField.form.formSet.settings.defaultForm))
+				{
+					 tForm=inField.form.formSet.settings.defaultForm;
+				}
+				else
+				{
+					ijfUtils.modalDialogMessage("Information","Sorry but the done action needs a form or the form group needs a default form.");
+					return;
+				}
+
                 if(window.onbeforeunload==null)
                 {
-                    g_formId=inField.dataSource;
-                    //navigate to this form...
-                    ijf.main.closeForm();
+                    ijf.main.renderForm("ijfContent", tForm, false, item);
                 }
                 else
                 {
                     var dFunc = function(){
                         window.onbeforeunload= null;
-                        ijf.main.closeForm();
+	                    ijf.main.renderForm("ijfContent", tForm, false, item);
                     };
                     ijfUtils.modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
                 }
@@ -1061,29 +1083,34 @@ renderNavigateToForm:function(inFormKey,item, inField, inContainer)
         {
             if(window.onbeforeunload==null)
             {
-                g_formId=targetForm;
                 if((inField.referenceFilter=="save first") && (!ijf.main.allControlsClean()))
                 {
                     ijf.main.saveForm();
+                    ijf.main.renderForm("ijfContent", targetForm, false, item);
                 }
                 else
                 {
-                    ijf.main.renderForm("ijfContent", g_formId, false, item);
+                    ijf.main.renderForm("ijfContent", targetForm, false, item);
                 }
             }
             else
             {
                 if((inField.referenceFilter=="save first") && (!ijf.main.allControlsClean()))
                 {
-                    g_formId=targetForm;
                     ijf.main.saveForm();
+                    var dFunc = function(){
+                        window.onbeforeunload= null;
+                        g_formId=targetForm;
+                        ijf.main.renderForm("ijfContent", targetForm, false, item);
+                    };
+                    ijfUtils.modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
                 }
                 else
                 {
                     var dFunc = function(){
                         window.onbeforeunload= null;
                         g_formId=targetForm;
-                        ijf.main.renderForm("ijfContent", g_formId, false, item);
+                        ijf.main.renderForm("ijfContent", targetForm, false, item);
                     };
                     ijfUtils.modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
                 }
@@ -1675,6 +1702,7 @@ renderTabmenu:function(inFormKey,item, inField, inContainer)
 
     var tbs = [];
     var lactiveTab = null;
+
     for(var t in tabs)
     {
         if(!tabs.hasOwnProperty(t)) continue;
@@ -1682,7 +1710,7 @@ renderTabmenu:function(inFormKey,item, inField, inContainer)
                   title: tabs[t][0],
                   style: l_fieldStyle,
                   targetFormName: tabs[t][1]});
-        if(tabs[t][1]==g_formId)
+        if(tabs[t][1]==ijf.main.outerForm.name)
         {
             lactiveTab =t;
         }
@@ -1699,7 +1727,8 @@ renderTabmenu:function(inFormKey,item, inField, inContainer)
             tabchange: function(tg,t){
                 //navigate to target...
                 //alert(t.targetFormName);
-                if(t.targetFormName!=g_formId)
+
+                if(t.targetFormName!=ijf.main.outerForm.name)
                 {
 					if(t.targetFormName.indexOf("snippet:")>-1)
 					{
@@ -1727,17 +1756,15 @@ renderTabmenu:function(inFormKey,item, inField, inContainer)
 						{
 							if(window.onbeforeunload==null)
 							{
-								g_formId=t.targetFormName;
 								ijfUtils.clearExt();
-								ijf.main.renderForm("ijfContent", g_formId, false, item);
+								ijf.main.renderForm("ijfContent", t.targetFormName, false, item);
 							}
 							else
 							{
 								var dFunc = function(){
 									window.onbeforeunload= null;
-									g_formId=t.targetFormName;
 									ijfUtils.clearExt();
-									ijf.main.renderForm("ijfContent", g_formId, false, item);
+									ijf.main.renderForm("ijfContent", t.targetFormName, false, item);
 								};
 								ijfUtils.modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
 							}

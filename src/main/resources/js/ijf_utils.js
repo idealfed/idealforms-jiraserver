@@ -169,7 +169,14 @@ var ijfUtils = {
 					}
 					if(jRet.status=="OK")
 					{
-						retVal = "OK";
+						if(jRet.result)
+						{
+							retVal=jRet.result;
+						}
+						else
+						{
+							retVal = "OK";
+						}
 					}
 					else
 					{
@@ -322,9 +329,8 @@ renderAdminButtons:function(inContainerId)
     jQuery('#ijfManage').html('');
     jQuery('#ijfJsonUpload').html('');
 
-    if(ijf.main.debug=='true')
+    if((ijf.main.debug=='true') && (!ijf.main.outerForm))
     {
-
         //Craft section, if debug or if in craft mode...
 		var fileLoad = "View Save History(last 20): <input type='button' value='Save History' onclick='ijfUtils.showSaveHistory()'><br>";
 		fileLoad += "Upload Entire Config File: <input type='file' accept='text/plain' onchange='ijfUtils.readConfigFile(event)'><br>";
@@ -342,8 +348,6 @@ renderAdminButtons:function(inContainerId)
 					xtype: "panel"},
                 ],
         });
-
-
       // ijf.main.controlSet['jsonUploadForm'] =   new itemControl('jsonUploadForm', null, null, jForm, null);
        ijf.main.controlSet['adminButtons'] =   new itemControl('jsonUploadForm', null, null, pnl, null);
 
@@ -414,7 +418,7 @@ getConfigJson:function()
 		for(var j in fs.settings)
 		{
 			if(!fs.settings.hasOwnProperty(j)) continue;
-			settingsOut.push({name:j,value:thisForm.settings[j],comment:""});
+			settingsOut.push({name:j,value:fs.settings[j],comment:""});
 		};
 
 		var outForms = [];
@@ -576,67 +580,14 @@ modalDialog:function(inTitle,inMessage,inFunction)
 			}
 	    }
     });
-/*
-    var dMes = "<div id='dialog1inner' style=\"word-wrap: break-word; padding:5px; 5px, 5px, 5px; border:solid lightblue 0px;\">"+inMessage+"</div>";
-    dwinval=false;
-    dWin = new Ext.Window({
-        layout: 'fit',
-        title: inTitle,
-        width: 300,
-        height: 200,
-        closable: false,
-        items: {
-            html: dMes,
-            xtype: "panel"},
-        buttons:[{
-            text:'OK',
-            handler: function(){
-               // alert('ok');
 
-                dWin.close();
-                if(inFunction!=null)
-                        inFunction();
-
-            }},
-            {
-                text:'Cancel',
-                handler: function(){
-                    dWin.close();
-                }}
-        ],
-        modal: true
-    });
-    dWin.show();
-}*/
 },
 
 modalDialogMessage:function(inTitle,inMessage)
 {
 
     Ext.Msg.alert(inTitle,inMessage);
-/*
-var dMes = "<div id='dialog1inner' style=\"word-wrap: break-word; padding:5px; 5px, 5px, 5px; border:solid lightblue 0px;\">"+inMessage+"</div>";
-    dwinval=false;
-    dWin = new Ext.Window({
-        layout: 'fit',
-        title: inTitle,
-        width: 300,
-        height: 200,
-        closable: false,
-        items: {
-            html: dMes,
-            xtype: "panel"},
-        buttons:[{
-            text:'OK',
-            handler: function(){
-                // alert('ok')
-                dWin.close();
-            }}
-        ],
-        modal: true
-    });
-    dWin.show();
-  */
+
 },
 
 
