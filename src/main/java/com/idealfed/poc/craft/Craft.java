@@ -58,8 +58,8 @@ public class Craft extends HttpServlet
     	{
     		redirectToLogin(request, response);
     		return;
-    	}    	
-    	
+    	}
+
     	String iwfAction = request.getParameter("ijfAction");
     	if(iwfAction==null) iwfAction="noAction";
 
@@ -72,25 +72,25 @@ public class Craft extends HttpServlet
     	String debugFlag = request.getParameter("debug");
     	if(debugFlag==null) debugFlag="";
     	String decorator = request.getParameter("decorator");
-    	if(decorator==null) decorator="";    	
+    	if(decorator==null) decorator="";
     	String gVersionNum = request.getParameter("version");
     	if(gVersionNum==null) gVersionNum="0";
 
     	if ((craftFlag.equals("true")) && (!userManager.isSystemAdmin(username)))
-    	{    		
+    	{
     		templateRenderer.render("nopermission.vm", null, response.getWriter());
     		return;
-    	}    	
+    	}
     	String outTemplate = "main.vm";
     	if (craftFlag.equals("true"))
-    	{    	
+    	{
     		outTemplate="craft.vm";
-    	} 
+    	}
     	if (decorator.equals("true"))
-    	{    	
+    	{
     		outTemplate="main_general.vm";
-    	} 
-    	
+    	}
+
 
     	if(iwfAction.equals("getConfig"))
     	{
@@ -269,6 +269,7 @@ public class Craft extends HttpServlet
 		sb.append("{\"id\":\"" + f.getID() + "\",");
 		sb.append("\"name\":\"" + f.getName() + "\",");
 		sb.append("\"testIssue\":\"" + f.getTestIssue() + "\",");
+		sb.append("\"issueType\":\"" + f.getIssueType() + "\",");
 		sb.append("\"formType\":\"" + f.getFormType() + "\",");
 		sb.append("\"settings\":\"" + f.getSettings() + "\",");
 		sb.append("\"fields\":\"" + f.getFields() + "\"},");
@@ -345,6 +346,7 @@ public class Craft extends HttpServlet
 
 	    		f.setName(inForm.getString("formName"));
         		f.setTestIssue(inForm.getString("testIssue"));
+        		f.setIssueType(inForm.getString("issueType"));
         		f.setFormType(inForm.getString("formType"));
 	    		f.save();
 
@@ -409,6 +411,7 @@ public class Craft extends HttpServlet
 
 	    		f.setName(inForm.getString("formName"));
         		f.setTestIssue(inForm.getString("testIssue"));
+        		f.setIssueType(inForm.getString("issueType"));
         		f.setFormType(inForm.getString("formType"));
 	    		f.setSettings(inForm.getString("formSettings"));
 	    		f.setFields(inForm.getString("fields"));
@@ -668,6 +671,7 @@ public class Craft extends HttpServlet
 		        		frm.setFormSet(fs);
 		        		frm.setName(jsonForm.getString("name"));
 		        		frm.setTestIssue(jsonForm.getString("testIssue"));
+		        		frm.setIssueType(jsonForm.getString("issueType"));
 		        		frm.setFormType(jsonForm.getString("formType"));
 		        		frm.setFields(jsonForm.getString("fields"));
 		        		frm.setSettings(jsonForm.getString("formSettings"));

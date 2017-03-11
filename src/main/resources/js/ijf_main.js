@@ -63,13 +63,16 @@ function init(inConfigVersion)
 
     jQuery.ajax(g_root + '/plugins/servlet/jforms?ijfAction=getConfig&version='+inConfigVersion, {
         success: function(data) {
-            //jQuery('#main').html($(data).find('#main *'));
+            //jQuery('#main').html(jQuery(data).find('#main *'));
             ijfUtils.footLog("Successful load");
             ijf.userPool = new IjfUserPool();
             ijf.main.currentUser = ijf.userPool.getUser(g_username);
 
 			ijf.jiraEditMeta = [];
 			ijf.jiraEditMetaKeyed = [];
+			ijf.jiraAddMeta = [];
+			ijf.jiraAddMetaKeyed = [];
+
             ijf.main.controlSet = new Array();
 //          dataServices = new DataServices();
             ijf.main.items = new Array();
@@ -197,6 +200,7 @@ function loadItem(inContainerId)
         ijfUtils.footLog('Sorry you must select an item before loading...');
         return;
     }
+
     var tItem = ijfUtils.getJiraIssueSync(ijf.main.itemId);
     if(tItem.key)
     {
@@ -259,7 +263,7 @@ function renderForm(inContainerId, inFormId, isNested, item)
 		//	document.getElementById(inContainerId).innerHTML="Sub Form: " + inFormId;
 		//	return;
 		//}
-	debugger;
+
 	}
 
     var thisForm;
@@ -284,31 +288,37 @@ function renderForm(inContainerId, inFormId, isNested, item)
 	//based on the form, it should get edit or add meta...
 
 	//look to see if form is add or edit? based on form type, load meta if necessary
+
+	ijf.jiraMeta={};
+	ijf.jiraMetaKeyed=[];
+
 	if(item)
 	{
-		if(thisForm.formType=="Edit")
+		//item exists, pull the edit meta
+		if(!ijf.jiraEditMeta.hasOwnProperty(item.key))
 		{
-			if(!ijf.jiraEditMeta.hasOwnProperty(item.key))
+			ijf.jiraEditMeta[item.key] = ijfUtils.getJiraIssueMetaSync(item.key);
+			ijf.jiraEditMetaKeyed[item.key] = [];
+			Object.keys(ijf.jiraEditMeta[item.key].fields).forEach(function(f)
 			{
-				ijf.jiraEditMeta[item.key] = ijfUtils.getJiraIssueMetaSync(item.key);
-				ijf.jiraEditMetaKeyed[item.key] = [];
-				Object.keys(ijf.jiraEditMeta[item.key].fields).forEach(function(f)
-				{
-					ijf.jiraEditMetaKeyed[item.key][ijf.jiraEditMeta[item.key].fields[f].name]=ijf.jiraEditMeta[item.key].fields[f];
-				});
-			}
+				ijf.jiraEditMetaKeyed[item.key][ijf.jiraEditMeta[item.key].fields[f].name]=ijf.jiraEditMeta[item.key].fields[f];
+			});
 		}
+		ijf.jiraMeta=ijf.jiraEditMeta[item.key];
+		ijf.jiraMetaKeyed=ijf.jiraEditMetaKeyed[item.key];
+	}
+	else
+	{
+		//no item, look for Add form
 		if(thisForm.formType=="Add")
 		{
-			if(!ijf.jiraAddMeta.hasOwnProperty(item.key))
-			{
-				ijf.jiraAddMeta[item.key] = ijfUtils.getJiraIssueMetaSync(item.key);
-				ijf.jiraAddMetaKeyed[item.key] = [];
-				Object.keys(ijf.jiraAddMeta[item.key].fields).forEach(function(f)
-				{
-					ijf.jiraAddMetaKeyed[item.key][ijf.jiraAddMeta[item.key].fields[f].name]=ijf.jiraAddMeta[item.key].fields[f];
-				});
-			}
+			ijfUtils.loadIssueTypeDetails(thisForm.formSet.projectId);
+
+			//meta is keyed by issue type for add
+			ijf.jiraMeta.fields=ijf.jiraAddMeta[thisForm.formSet.projectId][thisForm.issueType]
+			ijf.jiraMetaKeyed=ijf.jiraAddMetaKeyed[thisForm.formSet.projectId][thisForm.issueType]
+			//for add items
+            if(!item)  item={"fields":{}};
 		}
 	}
 
@@ -412,21 +422,7 @@ function renderForm(inContainerId, inFormId, isNested, item)
         }
         catch(e)
         {
-            if(container==null)
-            {
-                try
-                {
-                    ijfUtils.modalDialogMessage("Error", "Failed to create container for :" + thisField.dataSource + " (the target cell is row "+frmCell[0]+", col "+frmCell[1]+"...does it actually exist? Check your colspans for row "+frmCell[0]+")");
-                }
-                catch(e)
-                {
-                    ijfUtils.modalDialogMessage("Error", "Failed to create container for div with id of "+targetCell+" check your colspans?");
-                }
-            }
-            else
-            {
-                ijfUtils.container.innerHTML="Error: " + e;
-            }
+            ijfUtils.footLog(thisField.formCell + " " + thisField.controlType + " failed to render: " + e.message);
         }
 
     }
@@ -452,8 +448,16 @@ function controlChanged(controlKey)
 
     window.onbeforeunload= function() {return 'You have unsaved changes on this page...'};
 
-    var tjqid = "#" + cnt.container.id;
-    jQuery(tjqid).css(ijf.fw.onChangeStyle);
+
+    if(ijf.main.outerForm.formSet.settings["changeStyle"])
+    {
+		ijfUtils.setElementWithStyleString(cnt.container.id,ijf.main.outerForm.formSet.settings["changeStyle"]);
+	}
+	else
+	{
+		 var tjqid = "#" + cnt.container.id;
+	    jQuery(tjqid).css(ijf.fw.onChangeStyle);
+	}
 
 }
 
@@ -482,10 +486,8 @@ function saveFormWithCallback(inCallback)
     saveForm();
 }
 
-function saveForm()
+function saveForm(onSuccess, inFields, inForm, item)
 {
-
-
 
     //before the save, verify if any fields is required AND is null...
     if(!ijf.main.isFormValid())
@@ -519,17 +521,16 @@ function saveForm()
     }
 
     //process batch save
-    ijf.main.saveBatch();
+    ijf.main.saveBatch(onSuccess,inFields,inForm, item);
 
-    ijf.main.checkSaveEnd();
 }
 
-
-function saveBatch()
+function saveBatch(onSuccess,inFields,inForm, item)
 {
     //batch queue has the sections to save and the new values.
     //prep it, then have new method for single async call
     var fields = {};
+    if(inFields) fields=inFields;
     var attachment = null;
     for (var i in ijf.main.saveQueueBatch)
     {
@@ -545,7 +546,6 @@ function saveBatch()
 			fields[thisSect.jiraField.id]=thisCnt.newVal;
         }
     }
-
     //send the update batchRaw
     var fieldsOk=true;
     var saveRes = "OK";
@@ -568,14 +568,49 @@ function saveBatch()
 
     if(Object.keys(putObj).length > 0)
     {
-		fieldsOk=false;
-		//if only transition, add blank update..
-		var jData = JSON.stringify(putObj);
-		var tApi = "/rest/api/2/issue/"+ijf.currentItem.key;
-		saveRes = ijfUtils.jiraApiSync("PUT",tApi,jData);
-		if(saveRes=="OK")
+		//this can be an ADD or an UPDATE.  If the current item exists it's an update, if not it's an Add
+		if(item.key)
 		{
-			fieldsOk=true;
+			fieldsOk=false;
+			//if only transition, add blank update..
+			var jData = JSON.stringify(putObj);
+			var tApi = "/rest/api/2/issue/"+item.key;
+			saveRes = ijfUtils.jiraApiSync("PUT",tApi,jData);
+			if(saveRes=="OK")
+			{
+				fieldsOk=true;
+			}
+		}
+		else
+		{
+			//this is an add, JSON is a little different and it's a POST
+        	putObj.fields.project = {"key":inForm.formSet.projectId};
+        	putObj.fields.issuetype = {"name":inForm.issueType};
+        	var jData = JSON.stringify(putObj);
+			var tApi = "/rest/api/2/issue";
+			saveRes = ijfUtils.jiraApiSync("POST",tApi,jData);
+			//saveRes is the Key of the new issue if successfull,
+			//set the item to the new Key and reload, will shift form to an Edit context
+			try
+			{
+				if(saveRes.key)
+				{
+					ijf.main.itemId=saveRes.key;
+					//g_itemId=saveRes.key;
+					onSuccess();
+					//ijf.main.resetForm();
+				}
+				else
+				{
+					throw saveRes;
+				}
+			}
+			catch(e)
+			{
+				ijfUtils.hideProgress();
+				ijfUtils.modalDialogMessage("Error","Sorry, there was an error with the add: " + saveRes);
+				return;
+			}
 		}
      }
 
@@ -586,9 +621,10 @@ function saveBatch()
 		transOk = false;
 		putObj = {"transition":transition};
 		jData = JSON.stringify(putObj);
-		tApi = "/rest/api/2/issue/"+ijf.currentItem.key + "/transitions";
+		tApi = "/rest/api/2/issue/"+item.key + "/transitions";
+
 		saveRes = ijfUtils.jiraApiSync("POST",tApi,jData);
-		if(saveRes=="OK")
+		if((!saveRes) || (saveRes=="OK"))
 		{
 			transOk=true;
 		}
@@ -604,13 +640,9 @@ function saveBatch()
 	//if comment or transition AND not attachment, refresh
 	if(((comment)||(transition)) &&(!attachment))
 	{
-		ijfUtils.hideProgress();
-		ijf.main.setAllClean();
-		ijf.currentItem=ijfUtils.getJiraIssueSync(ijf.currentItem.key);
-		ijf.main.resetForm();
+		onSuccess();
 		return;
 	}
-
 
 	//fields done.  look for attachment
 	var uploadResult = "OK";
@@ -622,19 +654,16 @@ function saveBatch()
 
 		if(uForm.isValid())
 		{
-			var fd = new FormData($("#attachmentUploadFormId")[0]);
+			var fd = new FormData(jQuery("#attachmentUploadFormId")[0]);
 			//fd.append("CustomField", "This is some extra data");
 			jQuery.ajax({
-				url: g_root + "/rest/api/2/issue/"+ijf.currentItem.key+"/attachments",
+				url: g_root + "/rest/api/2/issue/"+item.key+"/attachments",
 				type: 'POST',
 				headers: {"X-Atlassian-Token": "no-check"},
 				//'Content-Type':'multipart/form-data; charset=UTF-8'},
 				data: fd,
 					success: function(fp, o) {
-						ijfUtils.hideProgress();
-						ijf.main.setAllClean();
-						ijf.currentItem=ijfUtils.getJiraIssueSync(ijf.currentItem.key);
-						ijf.main.resetForm();
+						onSuccess();
 					},
 					failure: function(e, r) {
 						ijfUtils.hideProgress();
@@ -654,9 +683,8 @@ function saveBatch()
 	}
 	else
 	{
-		ijfUtils.hideProgress();
-		ijf.main.setAllClean();
-		ijf.currentItem=ijfUtils.getJiraIssueSync(ijf.currentItem.key);
+		//ijf.currentItem=ijfUtils.getJiraIssueSync(item.key);
+		onSuccess();
 	}
 
 }
@@ -705,35 +733,7 @@ function allControlsClean()
     return ret;
 }
 
-function checkSaveEnd()
-{
-    if(Object.keys(ijf.main.saveQueue).length==0)
-    {
-        ijfUtils.hideProgress();
-        //check for save attributes
 
-        if(ijf.main.allControlsClean())
-        {
-            window.onbeforeunload= null;
-
-
-                if(ijf.main.gSaveFormCallback) ijf.main.gSaveFormCallback();
-                ijf.main.gSaveFormCallback=null;
-                if(ijf.main.saveResultMessage)
-                     ijfUtils.modalDialogMessage("Save Message",ijf.main.saveResultMessage);
-
-        }
-        else
-        {
-            var outMessage = "<br>";
-            for(var ec in ijf.main.saveQueueFailures)
-            {
-                if(ijf.main.saveQueueFailures.hasOwnProperty(ec)) outMessage+="<br>"+ijf.main.saveQueueFailures[ec].message;
-            }
-            ijfUtils.modalDialogMessage("Warning Message","Sorry but the save process didn't complete successfully."+outMessage);
-        }
-    }
-}
 function resetForm()
 {
     ijf.currentItem=null;
@@ -770,7 +770,6 @@ return {
 	currentUser:currentUser,
 	setAllClean:setAllClean,
 	allControlsClean:allControlsClean,
-	checkSaveEnd:checkSaveEnd,
 	saveBatch: saveBatch,
     saveQueue: saveQueue,
     isFormValid:isFormValid,

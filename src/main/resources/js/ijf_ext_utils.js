@@ -2,6 +2,18 @@ var ijf = ijf || {};
 ijf.extUtils ={
 renderField:function(inFormKey, item, inField, inContainer)
 {
+	//ensure  fleshed inField for key fields
+	(inField.style) ? null: inField.style="";
+	(inField.fieldStyle) ? null: inField.fieldStyle="";
+	(inField.labelStyle) ? null: inField.labelStyle="";
+	(inField.panelStyle) ? null: inField.panelStyle="";
+	(inField.event) ? null: inField.event="";
+	(inField.renderif) ? null: inField.renderif="";
+	(inField.caption) ? null: inField.caption="";
+	(inField.dataSource) ? null: inField.dataSource="";
+	(inField.tooltip) ? null: inField.toolTip="";
+
+
     //attempt to pull data....
     try
     {
@@ -60,75 +72,14 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'itemlist':
                 ijf.extUtils.renderItemList (inFormKey,item,inField,inContainer);
                 break;
+            case 'openpopform':
+                ijf.extUtils.renderPopFormButton(inFormKey,item,inField,inContainer);
+                break;
+            case 'formbuttonsforpopup':
+                ijf.extUtils.renderPopupFormButtons(inFormKey,item,inField,inContainer);
+                break;
 
 
-
-            case 'iframe':
-                renderIframe(inFormKey,item,inField,inContainer);
-                break;
-            case 'popform':
-                renderPopFormButton(inFormKey,item,inField,inContainer);
-                break;
-            case 'additem':
-                renderAddItem(inFormKey,item,inField,inContainer);
-                break;
-            case 'htmldata':
-                renderRawData(inFormKey,item,inField,inContainer);
-                break;
-            case 'htmldatawithcache':
-                renderRawDataCached(inFormKey,item,inField,inContainer);
-                break;
-            case 'htmleditor':
-                renderHtmleditor(inFormKey,item,inField,inContainer);
-                break;
-            case 'popupformbuttons':
-                renderPopupFormButtons(inFormKey,item,inField,inContainer);
-                break;
-            case 'buttonlink':
-                renderButtonLink(inFormKey,item,inField,inContainer);
-                break;
-            case 'table':
-                renderGrid (inFormKey,item,inField,inContainer);
-                break;
-            case 'tableItemList':
-                renderGridItemList (inFormKey,item,inField,inContainer);
-                break;
-            case 'gantt':
-                renderGantt (inFormKey,item,inField,inContainer);
-                break;
-            case 'gantt2':
-                renderGantt2 (inFormKey,item,inField,inContainer);
-                break;
-            case 'workflowStateButtons':
-                renderWorkflowStates (inFormKey,item,inField,inContainer);
-                break;
-            case 'promoteDemote':
-                renderPromoteDemoteButtons (inFormKey,item,inField,inContainer);
-                break;
-            case 'watching':
-                renderWatching (inFormKey,item,inField,inContainer);
-                break;
-            case 'notifywatchers':
-                renderNotifyWatchers (inFormKey,item,inField,inContainer);
-                break;
-            case 'notifylist':
-                renderNotifyList (inFormKey,item,inField,inContainer);
-                break;
-            case 'getwatchers':
-                renderGetWatchers (inFormKey,item,inField,inContainer);
-                break;
-            case 'comments':
-                renderComments (inFormKey,item,inField,inContainer);
-                break;
-            case 'keyValue':
-                renderKeyValue (inFormKey,item,inField,inContainer);
-                break;
-            case 'picklist':
-                renderPicklist(inFormKey,item,inField,inContainer);
-                break;
-            case 'reportrunner':
-                renderReportDropdown (inFormKey,item,inField,inContainer);
-                break;
             default:
                 inContainer.innerHTML="no control for type: " + inField.controlType;
         }
@@ -208,6 +159,9 @@ renderField:function(inFormKey, item, inField, inContainer)
 ,
  renderNestedForm:function(inFormKey,item, inField, inContainer)
 {
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
+
     var nestedFormKey = inField.dataSource;
     //rendeIf logic
     var hideField = ijfUtils.renderIfShowField("",inField);
@@ -278,184 +232,126 @@ renderField:function(inFormKey, item, inField, inContainer)
     ijf.main.gSubformParams=null;
 }
 ,
- renderPopupForm:function(inFormKey,inItem, inAction)
+renderPopupForm:function(inFormKey,inItem, inAction)
 {
-    if(inAction.inField.dataReference)
-    {
-        try
-        {
-            gSubformParams = JSON.parse(inAction.inField.dataReference);
-        }
-        catch(e)
-        {
-            footLog("Error with nested form paramMap");
-            gSubformParams = null;
-        }
-    }
     var nfId = inFormKey+inAction.inField.formCell.replace(",","")+"_pop";
     var nfContainer = "<div id=\"" + nfId + "\">Initial</div>";
+    var rItem = inItem;
+
+    //get form and use to set the dWin params
+    var pForm = ijf.fw.forms[inAction.form];
+
+    (pForm.settings.tabTitle) ? null: pForm.settings.tabTitle="No title set";
+    (pForm.settings.outerContainerStyle) ? null: pForm.settings.outerContainerStyle="";
+    (pForm.settings.innerContainerStyle) ? null: pForm.settings.innerContainerStyle="";
+
+    var wTitle = pForm.settings.tabTitle
+
+    var wWidth = ijfUtils.getNameValueFromStyleString(pForm.settings.outerContainerStyle,'width');
+	(wWidth=="") ? wWidth=300: wWidth=wWidth.replace("px","").replace("%","")/1;
+
+    var wHeight = ijfUtils.getNameValueFromStyleString(pForm.settings.outerContainerStyle,'height');
+	(wHeight=="") ? wHeight=300: wHeight=wHeight.replace("px","").replace("%","")/1;
+
+
     var simple = new Ext.Panel({
-        //labelAlign: 'left',
-        width:inAction.width/1,
-        height: inAction.height/1,
+        //bodyStyle: inAction.fieldStyle,
+        width: wWidth,
+        height: wHeight,
+        style: pForm.innerContainerStyle,
         border:true,
         html: nfContainer
     });
-    itemId = inItem.id;
+
+    var tempItem = ijf.currentItem;
+    var tempItemId = ijf.main.itemId;
+    ijf.main.parentItemId =null;
+    var popType="";
+    if(inAction.type) popType=inAction.type;
+    //some someforms need parents to complete, saved here
+	switch(popType)
+	{
+		case "new related":
+		   	ijf.main.itemId = null;
+		   	ijf.currentItem =  null;
+		   	rItem=null;
+		   	break;
+		case "new subtask":
+			ijf.main.parentItemId = ijf.main.itemId;
+		   	ijf.main.itemId = null;
+		   	ijf.currentItem =  null;
+		   	rItem=null;
+		   	break;
+		case "open item":
+		   	ijf.main.itemId = inAction.itemId;  //the one to pop to...
+		   	rItem= ijfUtils.getJiraIssueSync(ijf.main.itemId);
+		   	//ijf.currentItem =  null;
+		   	break;
+		default:
+			break;
+	}
+
     var dWin = new Ext.Window({
         // layout: 'fit',
-        title:  inAction.title,
-        width:inAction.width/1 + 10,
-        height: inAction.height/1 + 10,
+        title:  wTitle,
+        width: wWidth,
+        height: wHeight,
+        style: pForm.outerContainerStyle,
         closable: true,
         items: [simple],
         modal: true,
         listeners:{
             beforedestroy: function(f)
             {
+				switch(popType)
+				{
+					case "new related":
+					//ijf.main.itemId = the new key, and tempItemId is the OLD key.  set the 'relationship'
+					    //verify both Keys exist and are different...
+					    if((tempItemId) &&(ijf.main.itemId) &&(ijf.main.itemId!=tempItemId))
+					    {
+							var jsonString = {
+											"type": {
+												"name": "Relates"
+											   },
+											"inwardIssue": {
+												"key": tempItemId
+											   },
+											"outwardIssue": {
+												"key": ijf.main.itemId
+											   },
+											"comment":{
+												"body":"Linked related issue"
+											  }
+							};
+							var saveRes = ijfUtils.jiraApiSync("POST","/rest/api/2/issueLink",JSON.stringify(jsonString));
+							if(saveRes!="OK")
+							{
+								ijfUtils.modalDialogMessage("Error","Unable to establish the issue link: " + saveRes);
+							}
+						}
+						break;
+					default:
+						break;
+				}
+
                 //rerender the current form....
-                itemId = item.id;
-                mwfUtils_clearExt();
-                renderForm("mwfContent", g_formId, false, item);
+                ijf.currentItem = null; //tempItem;
+                ijf.main.itemId = tempItemId;
+				ijf.main.processSetup("ijfContent");
+                //ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, tempItem);
             }
         }
     });
     dWin.show();
-    gPopupFormHandle = dWin;
-    //var thisControl = new itemControl(inFormKey+'mwfControl_'+inField.formCell, inField, item, simple, inContainer);
-    //controlSet[thisControl.id]=thisControl;
-    renderForm(nfId, inAction.form, true, inItem);
-    //if(!hideField) renderForm(inContainer.id, inField.dataSource, true);
-    gSubformParams=null;
-}
-,
- renderAddItem:function(inFormKey,item, inField, inContainer)
-{
-    inContainer.title = inField.toolTip;
-    var lWidth = 'auto';
-    var lBwidth = 'auto';
-    if (inField.width!="")
-    {
-        lWidth= inField.width/1;
-        lBwidth = lWidth-10;
-    }
-    var l_labelStyle = mwfUtils_getStyle(inField.labelStyle);
-    var l_panelStyle = mwfUtils_getStyle(inField.panelStyle);
-    var l_Style = mwfUtils_getStyle(inField.style);
-    if(!l_Style) l_Style = l_panelStyle;
-    var hideField = ijfUtils.renderIfShowField("",inField);
-    var hFunction = function(){
-        if(window.onbeforeunload==null)
-        {
-            var tId = fw.getTemplateIdByName(inField.dataSource);
-            if(tId==null)
-            {
-                modalDialogMessage("Error Message", "Unable to find a template id: " + inField.dataSource);
-                return;
-            }
-            var sCatId = items[tId].parent.id;
-            //if successful....rerender the current form....
-            if((tId==null) || (sCatId==null))
-            {
-                modalDialogMessage("Error Message", "Unable to find a key id.");
-                return;
-            }
-            if(inField.dataReference2)
-            {
-                //switch variables before you parse....
-                try
-                {
-                    var pCopyString = ijfUtils.replaceKeyValues(inField.dataReference2);
-                    postCopyActions = JSON.parse(pCopyString)
-                }
-                catch(e)
-                {
-                    postCopyActions = null;
-                }
-            }
-            var newName = ijfUtils.replaceKeyValues(inField.dataReference);
-            mwfUtils_copyItemToCategory(items[itemId].parent.id, sCatId, tId, newName, null);
-            mwfUtils_clearExt();
-            renderForm("mwfContent", g_formId, false, item);
-            //if(!hideField) renderForm(inContainer.id, inField.dataSource, true);
-        }
-        else
-        {
-            var dFunc = function(){
-                window.onbeforeunload= null;
-                var tId = fw.getTemplateIdByName(inField.dataSource);
-                var sCatId = items[tId].parent.id;
-                //if successful....rerender the current form....
-                if((tId==null) || (sCatId==null))
-                {
-                    modalDialogMessage("Error Message", "Unable to find a key id.");
-                    return;
-                }
-                if(inField.dataReference2)
-                {
-                    //switch variables before you parse....
-                    try
-                    {
-                        var pCopyString = ijfUtils.replaceKeyValues(inField.dataReference2);
-                        postCopyActions = JSON.parse(pCopyString)
-                    }
-                    catch(e)
-                    {
-                        postCopyActions = null;
-                    }
-                }
-                var newName = ijfUtils.replaceKeyValues(inField.dataReference);
-                mwfUtils_copyItemToCategory(items[itemId].parent.id, sCatId, tId, newName, null);
-                mwfUtils_clearExt();
-                renderForm("mwfContent", g_formId, false, item);
-            };
-            modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
-        }
-    };
-    if(l_labelStyle=="link")
-    {
-        var pnl = new Ext.FormPanel({
-            labelAlign: 'left',
-            border:false,
-            width: lWidth,
-            hidden:hideField,
-            bodyStyle: l_Style,
-            items: {
-                xtype: 'simplelink',
-                text: inField.caption,
-                handler: hFunction
-            }
-        });
-    }
-    else
-    {
-        var bPressed = false;
-        var pnl = new Ext.FormPanel({
-            buttonAlign: 'center',
-            layout:'hbox',
-            labelAlign: 'left',
-            border:false,
-            hidden: hideField,
-            height: 36,
-            bodyStyle: l_Style,
-            width: lWidth,
-            buttons:[{
-                text:inField.caption,
-                //enableToggle: true,
-                pressed: bPressed,
-                width: lBwidth,
-                handler: hFunction
-            }
-            ]
-        });
-    }
-    pnl.render(inContainer);
-    var thisControl = new itemControl(inFormKey+'mwfControl_'+inField.formCell, inField, item, pnl, inContainer);
-    controlSet[thisControl.id]=thisControl;
-}
-,
+    ijf.main.gPopupFormHandle = dWin;
+    ijf.main.renderForm(nfId, inAction.form, true, rItem);
+},
 renderCommentList:function(inFormKey,item, inField, inContainer)
 {
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
+
     inContainer.title = inField.toolTip;
 
     var l_labelStyle = inField.labelStyle;
@@ -468,17 +364,17 @@ renderCommentList:function(inFormKey,item, inField, inContainer)
 
 
     var outHtml = "";
-    if(ijf.currentItem.fields.comment.comments)
+    if(item.fields.comment.comments)
     {
 		//sort desc
-		var sortedCmnts = ijf.currentItem.fields.comment.comments.sort(function(a, b)
+		var sortedCmnts = item.fields.comment.comments.sort(function(a, b)
 		{
 			a = new Date(a.created);
 		    b = new Date(b.created);
 		    return a>b ? -1 : a<b ? 1 : 0;
 		});
 		outHtml="<div class=ijfCommentList>";
-			outHtml += "<div  class=ijfCommentListHead><div class=ijfCommentListHeadName>Name</div><div class=ijfCommentListHeadAuthor>Author</div><div class=ijfCommentListHeadDate>Date</div></div>";
+			outHtml += "<div  class=ijfCommentListHead><div class=ijfCommentListHeadName>Comment</div><div class=ijfCommentListHeadAuthor>Author</div><div class=ijfCommentListHeadDate>Date</div></div>";
 		outHtml = sortedCmnts.reduce(function(outHtml,a){
 			outHtml += "<div class=ijfCommentListRow><div  class=ijfCommentListName>" + a.body.replace("\n","<br>") + "</div><div class=ijfCommentListAuthor>" + a.author.displayName + "</div><div class=ijfCommentListDate>" + moment(a.created).format('lll') + "</div></div>";
 			return outHtml;
@@ -505,10 +401,15 @@ renderCommentList:function(inFormKey,item, inField, inContainer)
     pnl.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
 }
 ,
 renderAttchmentList:function(inFormKey,item, inField, inContainer)
 {
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
+
     inContainer.title = inField.toolTip;
 
     var l_labelStyle = inField.labelStyle;
@@ -520,7 +421,7 @@ renderAttchmentList:function(inFormKey,item, inField, inContainer)
     if(!l_Style) l_Style="background:transparent";
 
 	//sort desc
-	var sortedAttachments = ijf.currentItem.fields.attachment.sort(function(a, b)
+	var sortedAttachments = item.fields.attachment.sort(function(a, b)
 	{
 		a = new Date(a.created);
 		b = new Date(b.created);
@@ -555,10 +456,16 @@ renderAttchmentList:function(inFormKey,item, inField, inContainer)
     pnl.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
+
 }
 ,
 renderHtml:function(inFormKey,item, inField, inContainer)
 {
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
+
     inContainer.title = inField.toolTip;
     var l_labelStyle = inField.labelStyle;
     var l_panelStyle = inField.panelStyle;
@@ -590,6 +497,9 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     pnl.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
+
 }
 ,
  renderKeyValue:function(inFormKey,item, inField, inContainer)
@@ -663,6 +573,8 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 ,
  renderFormButtons:function(inFormKey,item, inField, inContainer)
 {
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
 
     inContainer.title = inField.toolTip;
     var lWidth = 'auto';
@@ -693,13 +605,21 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 			handler: function(){
 				if(inField.dataReference)
 				{
-					saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference);
+					ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference);
 				}
 				else
 				{
-					saveResultMessage = null;
+					ijf.main.saveResultMessage = null;
 				}
-				ijf.main.saveForm();
+				var onSuccessSave = function()
+				{
+					ijfUtils.hideProgress();
+					if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
+					ijf.main.setAllClean();
+					ijf.currentItem=ijfUtils.getJiraIssueSync(item.key);
+					ijf.main.resetForm();
+				};
+				ijf.main.saveForm(onSuccessSave,null,inField.form,item);
 			}});
 
     }
@@ -730,7 +650,6 @@ renderHtml:function(inFormKey,item, inField, inContainer)
             text:l_done,
             xtype:'button',
              handler: function(){
-
 				//target form is dataSource if it exists or default form if it exists...
 				var tForm="";
 				if(ijf.fw.forms.hasOwnProperty(inField.dataSource))
@@ -786,10 +705,16 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     pnl.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
+
 }
 ,
- renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
+renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 {
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
+
     inContainer.title = inField.toolTip;
     var lWidth = 'auto';
     if (inField.width!="")
@@ -799,263 +724,146 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     //rendeIf logic
     var hideField = ijfUtils.renderIfShowField("",inField);
     var l_save="Save";
-    var l_savedone = "Save/Done"
+    var l_reload="Save/Done";
     var l_done ="Done";
     var l_style = inField.style.split(",");
-    if(l_style.length==2)
+    if(l_style.length==3)
     {
         l_save=l_style[0];
-        l_savedone =l_style[1];
+        l_reload=l_style[1];
         l_done =l_style[2];
     }
     var lButtons = [];
     if(l_save)
     {
-        if(item.rawObj.readOnly!=true)
-        {
-            lButtons.push({
-                text:l_save,
-                handler: function(){
-                    if(inField.dataReference)
-                    {
-                        saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference);
-                    }
-                    else
-                    {
-                        saveResultMessage = null;
-                    }
-                    var lobj = this;
-                    mwf_saveForm();
-                }});
-        }
+		lButtons.push({
+			text:l_save,
+			margin: '0 4 0 0',
+			xtype:'button',
+			inField: inField,
+			handler: function(){
+
+				//if you are saving and ADD form it can only save ONE time
+				//then it has to shift to an edit mode....
+
+				if(inField.dataReference)
+				{
+					ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference);
+				}
+				else
+				{
+					ijf.main.saveResultMessage = null;
+				}
+				var onSuccessSave = function()
+				{
+					ijfUtils.hideProgress();
+					ijf.main.setAllClean();
+					//now change item to be the new loaded item....
+					item = ijfUtils.getJiraIssueSync(ijf.main.itemId);
+					if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
+				};
+				//IF ijf.main.parentItemId is not null and we are adding
+				//a subtask...then we need to set the parent ID in the fields prior to save.  initialize here...
+				var fields = null;
+				if(ijf.main.parentItemId)
+				{
+					fields = {};
+					fields.parent={"key":ijf.main.parentItemId};
+				}
+
+				ijf.main.saveForm(onSuccessSave,fields, this.inField.form, item);
+			}});
     }
-    if(l_savedone)
+    if(l_reload)
     {
-        if(item.rawObj.readOnly!=true)
-        {
-            lButtons.push({
-                text:l_savedone,
-                handler: function(){
-                    if(inField.dataReference)
-                    {
-                        saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference);
-                    }
-                    else
-                    {
-                        saveResultMessage = null;
-                    }
-                    var cfunction = function()
-                    {
-                        if(gPopupFormHandle)
-                        {
-                            gPopupFormHandle.close();
-                            gPopupFormHandle=null;
-                        }
-                    };
-                    mwf_saveFormWithCallback(cfunction);
-                }});
-        }
+        lButtons.push( {
+            text:l_reload,
+            xtype:'button',
+			margin: '0 4 0 0',
+			inField: inField,
+            handler: function(){
+				if(ijf.main.allControlsClean())
+				{
+					ijf.main.gPopupFormHandle.close();
+                    ijf.main.gPopupFormHandle=null;
+                    return;
+				}
+				if(inField.dataReference)
+				{
+					ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference);
+				}
+				else
+				{
+					ijf.main.saveResultMessage = null;
+				}
+				var onSuccessSave = function()
+				{
+					ijfUtils.hideProgress();
+					ijf.main.setAllClean();
+					if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
+                    ijf.main.gPopupFormHandle.close();
+                    ijf.main.gPopupFormHandle=null;
+				};
+				//IF ijf.main.parentItemId is not null and we are adding
+				//a subtask...then we need to set the parent ID in the fields prior to save.  initialize here...
+				var fields = null;
+				if(ijf.main.parentItemId)
+				{
+					fields = {};
+					fields.parent={"key":ijf.main.parentItemId};
+				}
+			    ijf.main.saveForm(onSuccessSave,fields, this.inField.form, item);
+			}});
     }
     if(l_done)
     {
         lButtons.push( {
             text:l_done,
+            xtype:'button',
+			margin: '0 4 0 0',
             handler: function(){
-                //dwin close
-                if(gPopupFormHandle)
+                if(ijf.main.gPopupFormHandle)
                 {
-                    gPopupFormHandle.close();
-                    gPopupFormHandle=null;
+                    ijf.main.gPopupFormHandle.close();
+                    ijf.main.gPopupFormHandle=null;
                 }
             }});
     }
-    var l_labelStyle = mwfUtils_getStyle(inField.labelStyle);
-    var l_panelStyle = mwfUtils_getStyle(inField.panelStyle);
-    var l_Style = mwfUtils_getStyle(inField.style);
-    if(!l_Style) l_Style = l_panelStyle;
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
+
     var pnl = new Ext.FormPanel({
         labelAlign: 'left',
-        buttonAlign: 'center',
+        buttonAlign: 'left',
+        layout: 'hbox',
         border:false,
         hidden: hideField,
-        height: '36px',
-        width: lWidth,
-        bodyStyle: l_Style,
-        buttons: lButtons
+        style: l_Style,
+        bodyStyle: l_panelStyle,
+        items: lButtons
     });
     pnl.render(inContainer);
-    var thisControl = new itemControl(inFormKey+'mwfControl_'+inField.formCell, inField, item, pnl, inContainer);
-    controlSet[thisControl.id]=thisControl;
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
+
 }
-,
- renderFormButtonsNoSave:function(inFormKey,item, inField, inContainer)
-{
-    inContainer.title = inField.toolTip;
-    var lWidth = 'auto';
-    if (inField.width!="")
-    {
-        lWidth= inField.width/1;
-    }
-    var lButtons = [];
-    var l_reload="Reload";
-    var l_done ="Done";
-    var l_style = inField.style.split(",");
-    if(l_style.length==2)
-    {
-        l_reload=l_style[0];
-        l_done =l_style[1];
-    }
-    var hideField = ijfUtils.renderIfShowField("",inField);
-    lButtons.push( {
-        text:l_reload,
-        handler: function(){
-            if(window.onbeforeunload==null)
-            {
-                g_formId=inField.dataSource;
-                mwf_resetForm();
-            }
-            else
-            {
-                var dFunc = function(){
-                    window.onbeforeunload= null;
-                    mwf_resetForm();
-                };
-                modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
-            }
-        }});
-    lButtons.push( {
-        text:l_done,
-        handler: function(){
-            if(window.onbeforeunload==null)
-            {
-                g_formId=inField.dataSource;
-                mwf_closeForm();
-            }
-            else
-            {
-                var dFunc = function(){
-                    window.onbeforeunload= null;
-                    mwf_closeForm();
-                };
-                modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
-            }
-        }});
-    var l_labelStyle = mwfUtils_getStyle(inField.labelStyle);
-    var l_panelStyle = mwfUtils_getStyle(inField.panelStyle);
-    var l_Style = mwfUtils_getStyle(inField.style);
-    if(!l_Style) l_Style = l_panelStyle;
-    var pnl = new Ext.FormPanel({
-        labelAlign: 'left',
-        buttonAlign: 'center',
-        border:false,
-        hidden: hideField,
-        height: '36px',
-        width: lWidth,
-        bodyStyle: l_Style,
-        buttons: lButtons
-    });
-    pnl.render(inContainer);
-    var thisControl = new itemControl(inFormKey+'mwfControl_'+inField.formCell, inField, item, pnl, inContainer);
-    controlSet[thisControl.id]=thisControl;
-}
-,
- renderCopyItem:function(inFormKey,item, inField, inContainer)
-{
-    inContainer.title = inField.toolTip;
-    var lWidth = 'auto';
-    var lBwidth = 'auto';
-    if (inField.width!="")
-    {
-        lWidth= inField.width/1;
-        lBwidth = lWidth-10;
-    }
-    var l_labelStyle = mwfUtils_getStyle(inField.labelStyle);
-    var l_panelStyle = mwfUtils_getStyle(inField.panelStyle);
-    var l_Style = mwfUtils_getStyle(inField.style);
-    if(!l_Style) l_Style = l_panelStyle;
-    var hideField = ijfUtils.renderIfShowField("",inField);
-    //commented out because it's flawed.  approach needs to just set the style of the button to a linkish thing.
-    var hFunction = function(){
-        //need to get the id of the form...iterate from fw.
-        footLog("messageHandler: attempting to copy this item");
-        if(window.onbeforeunload!=null)
-        {
-            modalDialogMessage("Error Message","Sorry but your form has unsaved data, please save or reload before this action.");
-            return;
-        }
-        var copyItemFun = function(){
-            lastItem = item;
-            try
-            {
-                if(inField.dataReference2)
-                {
-                    postCopyActions = JSON.parse(inField.dataReference2)
-                }
-                var workingItem = items[item.id];
-                var suffix = inField.dataReference;
-                var newItemName = workingItem.name;
-                if(suffix)
-                {
-                    if(newItemName.indexOf(suffix)>-1)
-                    {
-                        var nameParts = newItemName.split(suffix);
-                        newItemName = nameParts[0].trim();
-                    }
-                }
-                newItemName += workingItem.parent.getNextVersion(newItemName,suffix);
-                mwfUtils_copyItemToCategory(workingItem.parent.id,workingItem.parent.id,workingItem.id,newItemName,g_formId);
-            }
-            catch(e)
-            {
-                modalDialogMessage("Error Message","Sorry, the copy settings are invalid and this action cannot be completed.");
-                return;
-            }
-        };
-        modalDialog("Information","This action will create a copy of this item into the same category it is in.<br><br>Please hit OK to continue or cancel to stop.",copyItemFun);
-    };
-    if(l_labelStyle=="link")
-    {
-        var pnl = new Ext.FormPanel({
-            labelAlign: 'left',
-            border:false,
-            width: lWidth,
-            hidden:hideField,
-            bodyStyle: l_Style,
-            items: {
-                xtype: 'simplelink',
-                text: inField.caption,
-                handler: hFunction
-            }
-        });
-    }
-    else
-    {
-        var pnl = new Ext.FormPanel({
-            buttonAlign: 'center',
-            layout:'hbox',
-            labelAlign: 'left',
-            border:false,
-            hidden: hideField,
-            height: 36,
-            bodyStyle: l_Style,
-            width: lWidth,
-            buttons:[{
-                text:inField.caption,
-                //enableToggle: true,
-                pressed: false,
-                width: lBwidth,
-                handler: hFunction
-            }
-            ]
-        });
-    }
-    pnl.render(inContainer);
-    var thisControl = new itemControl(inFormKey+'mwfControl_'+inField.formCell, inField, item, pnl, inContainer);
-    controlSet[thisControl.id]=thisControl;
-}
+
 ,
 renderNavigateToForm:function(inFormKey,item, inField, inContainer)
 {
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
+
+
     inContainer.title = inField.toolTip;
     var l_labelStyle = inField.labelStyle;
     var l_panelStyle = inField.panelStyle;
@@ -1083,37 +891,16 @@ renderNavigateToForm:function(inFormKey,item, inField, inContainer)
         {
             if(window.onbeforeunload==null)
             {
-                if((inField.referenceFilter=="save first") && (!ijf.main.allControlsClean()))
-                {
-                    ijf.main.saveForm();
-                    ijf.main.renderForm("ijfContent", targetForm, false, item);
-                }
-                else
-                {
-                    ijf.main.renderForm("ijfContent", targetForm, false, item);
-                }
+                ijf.main.renderForm("ijfContent", targetForm, false, item);
             }
             else
             {
-                if((inField.referenceFilter=="save first") && (!ijf.main.allControlsClean()))
-                {
-                    ijf.main.saveForm();
-                    var dFunc = function(){
-                        window.onbeforeunload= null;
-                        g_formId=targetForm;
-                        ijf.main.renderForm("ijfContent", targetForm, false, item);
-                    };
-                    ijfUtils.modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
-                }
-                else
-                {
-                    var dFunc = function(){
-                        window.onbeforeunload= null;
-                        g_formId=targetForm;
-                        ijf.main.renderForm("ijfContent", targetForm, false, item);
-                    };
-                    ijfUtils.modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
-                }
+				var dFunc = function(){
+					window.onbeforeunload= null;
+					g_formId=targetForm;
+					ijf.main.renderForm("ijfContent", targetForm, false, item);
+				};
+				ijfUtils.modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
             }
         }
     };
@@ -1157,7 +944,10 @@ renderNavigateToForm:function(inFormKey,item, inField, inContainer)
     }
     pnl.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
-    ijf.main.controlSet[thisControl.id]=thisControl;
+    ijf.main.controlSet[thisControl.id]=thisControl
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
+
 },
  renderNavigateToFormItem:function(inFormKey,item, inField, inContainer)
 {
@@ -1293,6 +1083,8 @@ renderNavigateToForm:function(inFormKey,item, inField, inContainer)
 },
 renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
 {
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
 
     inContainer.title = inField.toolTip;
 
@@ -1366,7 +1158,7 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
             id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
             listeners: {
                 click: function(f,n,o){
-					$('#attachmentUploadFileId').trigger('click');
+					jQuery('#attachmentUploadFileId').trigger('click');
                 }
             }
         },{
@@ -1404,21 +1196,26 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
     simple.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
+
 }
 ,
 renderTextbox:function(inFormKey,item, inField, inContainer)
 {
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
 
     inContainer.title = inField.toolTip;
 
-	var jfFieldMeta = ijf.jiraEditMetaKeyed[ijf.currentItem.key][inField.dataSource];
+	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
     var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=ijf.currentItem.fields[jfFieldDef.id];
+	var jf=item.fields[jfFieldDef.id];
     var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 
 	    var lAllowBlank = true;
 	    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
-
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
     var lMaxsize =  Number.MAX_VALUE;
 
@@ -1521,6 +1318,8 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
     simple.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
  renderItemName:function(inFormKey,item, inField, inContainer)
@@ -1693,6 +1492,10 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
 ,
 renderTabmenu:function(inFormKey,item, inField, inContainer)
 {
+	 //before render....
+	 if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
+
+
     var tabs = JSON.parse(inField.dataSource);
 
 	    var l_labelStyle = inField.labelStyle;
@@ -1777,20 +1580,25 @@ renderTabmenu:function(inFormKey,item, inField, inContainer)
     simple.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+        //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
- renderDatebox:function(inFormKey,item, inField, inContainer)
+renderDatebox:function(inFormKey,item, inField, inContainer)
 {
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
+
     inContainer.title = inField.toolTip;
 
-	var jfFieldMeta = ijf.jiraEditMetaKeyed[ijf.currentItem.key][inField.dataSource];
+	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
     var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=ijf.currentItem.fields[jfFieldDef.id];
+	var jf=item.fields[jfFieldDef.id];
     var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 
 	    var lAllowBlank = true;
 	    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
-
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
 	    var lValidator = function(v){return true};
 	    var lRegex =  inField.regEx;
@@ -1921,36 +1729,39 @@ renderTabmenu:function(inFormKey,item, inField, inContainer)
     simple.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
-
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
  renderDropdown:function(inFormKey,item, inField, inContainer)
 {
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
 
     inContainer.title = inField.toolTip;
 
     var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=ijf.currentItem.fields[jfFieldDef.id];
+	var jf=item.fields[jfFieldDef.id];
     var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 
 	//if status, the transitions are the field meta...
 	if(jfFieldDef.schema.type=='status')
 	{
 		//cache this?
-		if(!ijf.currentItem.transitions)
+		if(!item.transitions)
 		{
-			ijf.currentItem.transitions= ijfUtils.jiraApiSync('GET','/rest/api/2/issue/'+ijf.currentItem.key+'/transitions', null);
+			item.transitions= ijfUtils.jiraApiSync('GET','/rest/api/2/issue/'+item.key+'/transitions', null);
 		}
-		var jfFieldMeta = ijf.currentItem.transitions;
+		var jfFieldMeta = item.transitions;
 	}
 	else
 	{
-		var jfFieldMeta = ijf.jiraEditMetaKeyed[ijf.currentItem.key][inField.dataSource];
+		var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
 	}
 
     var lAllowBlank = true;
     if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
-
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
 
     //manage cases for the lookups
@@ -1979,7 +1790,7 @@ renderTabmenu:function(inFormKey,item, inField, inContainer)
 					{
 							return [e.id,e.name];
 					});
-					lookup.push([data,ijf.currentItem.fields.status.name]);
+					lookup.push([data,item.fields.status.name]);
 					break;
 				case "option":
 					var lookup = jfFieldMeta.allowedValues.map(function(e)
@@ -2075,22 +1886,27 @@ renderTabmenu:function(inFormKey,item, inField, inContainer)
     simple.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 },
 
 
 renderUserPicker:function(inFormKey,item, inField, inContainer)
 {
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
+
     inContainer.title = inField.toolTip;
 
-	var jfFieldMeta = ijf.jiraEditMetaKeyed[ijf.currentItem.key][inField.dataSource];
+	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
     var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=ijf.currentItem.fields[jfFieldDef.id];
+	var jf=item.fields[jfFieldDef.id];
 
     var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 
     var lAllowBlank = true;
     if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
-
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
 
     //manage cases for the lookups
@@ -2228,21 +2044,25 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
     simple.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+        //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
- renderMultiselect:function(inFormKey,item, inField, inContainer)
+renderMultiselect:function(inFormKey,item, inField, inContainer)
 {
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
 
     inContainer.title = inField.toolTip;
 
-	var jfFieldMeta = ijf.jiraEditMetaKeyed[ijf.currentItem.key][inField.dataSource];
+	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
     var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=ijf.currentItem.fields[jfFieldDef.id];
+	var jf=item.fields[jfFieldDef.id];
     var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 
     var lAllowBlank = true;
     if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
-
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
 
     //manage cases for the lookups
@@ -2373,6 +2193,8 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
     simple.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
  renderGroupDropdown:function(inFormKey,item, inField, inContainer)
@@ -2391,6 +2213,7 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
     var data = item.getSectionTextData(inField.dataSource);
     var lAllowBlank = true
     if(item.getSectionRequired(inField.dataSource)) lAllowBlank=false;
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
     //manage cases for the lookups
     //case one, simple collect constraint
     //case two reference lookup
@@ -2661,32 +2484,35 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
     controlSet[thisControl.id]=thisControl;
 }
 ,
- renderRadiogroup:function(inFormKey,item, inField, inContainer)
+renderRadiogroup:function(inFormKey,item, inField, inContainer)
 {
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
+
     inContainer.title = inField.toolTip;
 
     var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=ijf.currentItem.fields[jfFieldDef.id];
+	var jf=item.fields[jfFieldDef.id];
     var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 
 	//if status, the transitions are the field meta...
 	if(jfFieldDef.schema.type=='status')
 	{
 		//cache this?
-		if(!ijf.currentItem.transitions)
+		if(!item.transitions)
 		{
-			ijf.currentItem.transitions= ijfUtils.jiraApiSync('GET','/rest/api/2/issue/'+ijf.currentItem.key+'/transitions', null);
+			item.transitions= ijfUtils.jiraApiSync('GET','/rest/api/2/issue/'+item.key+'/transitions', null);
 		}
-		var jfFieldMeta = ijf.currentItem.transitions;
+		var jfFieldMeta = item.transitions;
 	}
 	else
 	{
-		var jfFieldMeta = ijf.jiraEditMetaKeyed[ijf.currentItem.key][inField.dataSource];
+		var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
 	}
 
     var lAllowBlank = true;
     if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
-
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
     var hideLabel = false;
     if (inField.caption=="")
         var lCaption = inField.dataSource;
@@ -2755,7 +2581,7 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 										inputValue: e.id};
 				});
 				rOptions.push({id: "radio_" + jfFieldDef.id + "_" + data,
-										boxLabel: ijf.currentItem.fields.status.name,
+										boxLabel: item.fields.status.name,
 										value : true,
 										style: l_fieldStyle,
 										name: jfFieldDef.id,
@@ -2812,21 +2638,26 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
     simple.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
- renderCheckbox:function(inFormKey,item, inField, inContainer)
+renderCheckbox:function(inFormKey,item, inField, inContainer)
 {
-      inContainer.title = inField.toolTip;
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
 
-  	var jfFieldMeta = ijf.jiraEditMetaKeyed[ijf.currentItem.key][inField.dataSource];
+    inContainer.title = inField.toolTip;
+
+  	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
       var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-  	var jf=ijf.currentItem.fields[jfFieldDef.id];
+  	var jf=item.fields[jfFieldDef.id];
 
       var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 
       var lAllowBlank = true;
       if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
-
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
       var hideLabel = false;
       if (inField.caption=="")
@@ -2922,6 +2753,8 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
       simple.render(inContainer);
       var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
  renderGetWatchers:function(inFormKey,item, inField, inContainer)
@@ -3381,6 +3214,8 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 ,
  renderBlankbutton:function(inFormKey,item, inField, inContainer)
 {
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
 
     inContainer.title = inField.toolTip;
 
@@ -3406,16 +3241,16 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 
     var ocf =  ijfUtils.getEvent(inField);
 
+    var xType = "button";
+    if(l_labelStyle=="link") xType="simplelink";
 
-    if(l_labelStyle=="link")
-    {
         var simple = new Ext.FormPanel({
             border:false,
             hidden:hideField,
             bodyStyle: l_Style,
             jField: inField,
             items: {
-                xtype: 'simplelink',
+                xtype: xType,
                 text: lCaption,
                 style: l_panelStyle,
                 handler: function(){
@@ -3424,103 +3259,85 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
                 }
             }
         });
-    }
-    else
-    {
-        var simple = new Ext.FormPanel({
-            border:false,
-            hidden: hideField,
-            bodyStyle: l_Style,
-            jField: inField,
-            items:[{
-				xtype: 'button',
-                text:lCaption,
-				style: l_panelStyle,
-                handler: function(){
-					ijf.main.gEventControl=this.up().jField;
-                    ocf();
-                }}
-            ]
-        });
-    }
 
 	simple.render(inContainer);
 	var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
  renderPopFormButton:function(inFormKey,item, inField, inContainer)
 {
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
+
     inContainer.title = inField.toolTip;
     if (inField.caption=="")
         var lCaption = inField.controlType;
     else
         var lCaption = inField.caption;
-    var lWidth = 'auto';
-    var lBwidth = 'auto';
-    if (inField.width!="")
-    {
-        lWidth= inField.width/1;
-        lBwidth = lWidth-10;
-    }
-    var l_labelStyle = mwfUtils_getStyle(inField.labelStyle);
-    var l_panelStyle = mwfUtils_getStyle(inField.panelStyle);
-    var l_Style = mwfUtils_getStyle(inField.style);
-    if(!l_Style) l_Style = l_panelStyle;
+
+	var l_labelStyle = inField.labelStyle;
+	var l_panelStyle = inField.panelStyle;
+	var l_Style = inField.style;
+	var l_fieldStyle = inField.fieldStyle;
+
+	if(!l_Style) l_Style="background:transparent";
+
     var hideField = ijfUtils.renderIfShowField("",inField);
+
     var ocf =  ijfUtils.getEvent(inField);
-    if(l_labelStyle=="link")
-    {
-        var simple = new Ext.FormPanel({
-            labelAlign: 'left',
+
+	var aWidth = ijfUtils.getNameValueFromStyleString(inField.panelStyle,"width");
+	var aHeight = ijfUtils.getNameValueFromStyleString(inField.panelStyle,"height");
+	var aTitle = ijfUtils.getNameValueFromStyleString(inField.panelStyle,"title");
+
+	if(aWidth)
+	{
+		aWidth = aWidth.replace("px","").replace("%","")/1;
+	}
+	else
+	{
+		aWidth=300;
+	}
+	if(aHeight)
+	{
+		aHeight = aHeight.replace("px","").replace("%","")/1;
+	}
+	else
+	{
+		aHeight=300;
+	}
+    var xType = "button";
+    if(l_labelStyle=="link") xType="simplelink";
+    var simple = new Ext.FormPanel({
             border:false,
-            width: lWidth,
             hidden:hideField,
             bodyStyle: l_Style,
+            jField: inField,
             items: {
-                xtype: 'simplelink',
+                xtype: xType,
                 text: lCaption,
                 handler: function(){
                     var action = {};
                     action.form = inField.dataSource;
-                    action.title = inField.caption;
-                    action.width = inField.width;
-                    action.height = mwfUtils_getNameValueFromStyleString(inField.style,'height');
+                    //action.title = aTitle;
+                    //action.width = aWidth;
+                    //action.height = aHeight;
+                    action.type = inField.dataReference;
+                    //action.fieldStyle = inField.fieldStyle;
                     action.inField = inField;
-                    renderPopupForm(inFormKey,item,action)
+                    ijf.extUtils.renderPopupForm(inFormKey,item,action)
                 }
             }
         });
-    }
-    else
-    {
-        var simple = new Ext.FormPanel({
-            buttonAlign: 'center',
-            layout:'hbox',
-            labelAlign: 'left',
-            border:false,
-            hidden: hideField,
-            height: 36,
-            bodyStyle: l_Style,
-            width: lWidth,
-            buttons:[{
-                text:lCaption,
-                width: lBwidth,
-                handler: function(){
-                    var action = {};
-                    action.form = inField.dataSource;
-                    action.title = inField.caption;
-                    action.width = inField.width;
-                    action.height = mwfUtils_getNameValueFromStyleString(inField.style,'height');
-                    action.inField = inField;
-                    renderPopupForm(inFormKey,item,action)
-                }}
-            ]
-        });
-    }
-    simple.render(inContainer);
-    var thisControl = new itemControl(inFormKey+'mwfControl_'+inField.formCell, inField, item, simple, inContainer);
-    controlSet[thisControl.id]=thisControl;
+
+	simple.render(inContainer);
+	var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
  renderNavigateToParent:function(inFormKey,item, inField, inContainer)
@@ -4253,6 +4070,8 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 ,
  renderTextarea:function(inFormKey,item, inField, inContainer)
 {
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
 
     var collapsible = false;
     if (inField.style.indexOf('collapsible:true')>-1)
@@ -4275,14 +4094,14 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 
     inContainer.title = inField.toolTip;
 
-	var jfFieldMeta = ijf.jiraEditMetaKeyed[ijf.currentItem.key][inField.dataSource];
+	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
     var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=ijf.currentItem.fields[jfFieldDef.id];
+	var jf=item.fields[jfFieldDef.id];
     var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 
 	    var lAllowBlank = true;
 	    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
-
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
 	    var lMaxsize =  Number.MAX_VALUE;
 
@@ -4409,9 +4228,8 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 	    simple.render(inContainer);
 	    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
-
-
-
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
  renderComments:function(inFormKey,item, inField, inContainer)
@@ -5003,6 +4821,9 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 ,
 renderItemList:function(inFormKey,item, inField, inContainer)
 {
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](inFormKey,item, inField, inContainer);
+
     inContainer.title = inField.toolTip;
 
     var curIndex = 0;
@@ -5040,32 +4861,105 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 	    if(!l_Style) l_Style="background:transparent";
 	    if(!l_fieldStyle) l_fieldStyle="background:white";
 
+	var l_Height = 'auto';
+    var l_Height=ijfUtils.getNameValueFromStyleString(l_panelStyle,"height");
+    if(l_Height=="")
+    {
+		l_Height='auto';
+	}
+	else
+	{
+    	l_Height = l_Height.replace("px","")/1;
+	}
 
-	var tSearch = "jql="+inField.dataSource+"&fields="+inField.dataReference;
-    var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
-	//bail if dataItems not
-    var colMeta = [];
-
-	var dataItems = rawList.issues.map(function(i){
-		var retObj ={};
-		inField.dataReference.split(",").forEach(function(f){
-			var thisField = f.trim();
-			var dVal = "unknown";
-			var jField = ijfUtils.getJiraFieldById(thisField);
-			if(i.fields.hasOwnProperty(jField.id))
-		    {
-				dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
-				//perhaps build the types here...
-				colMeta[jField.id]=jField;
-			}
-			retObj[thisField]= dVal;
+   //item list may be query, related or child
+   	   var colMeta = [];
+   	   colMeta["key"]={"id":"key","name":"key","schema":{}};
+   	   var dataItems =[];
+   if(inField.dataSource=="related")
+   {
+   		 dataItems = item.fields.issuelinks.map(function(ri){
+				var i = {};
+				if(ri.outwardIssue) i = ri.outwardIssue;
+				if(ri.inwardIssue) i = ri.inwardIssue;
+	   			var retObj ={};
+	   			inField.dataReference.split(",").forEach(function(f){
+	   				var thisField = f.trim();
+	   				var dVal = "unknown";
+	   				var jField = ijfUtils.getJiraFieldById(thisField);
+	   				if(i.fields.hasOwnProperty(jField.id))
+	   				{
+	   					dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
+	   					//perhaps build the types here...
+	   					colMeta[jField.id]=jField;
+	   				}
+	   				retObj[thisField]= dVal;
+	   			});
+	   			//retObj.iid=i.id;
+	   			retObj.iid=i.key;
+	   			return retObj;
 		});
-		//retObj.iid=i.id;
-		retObj.iid=i.key;
-		colMeta["key"]={"id":"key","name":"key","schema":{}};
-		return retObj;
-	});
+		dataItems = dataItems.sort(function(a, b)
+		{
+			var tv1 = a.iid.split("-")[1]/1;
+		    var tv2  = b.iid.split("-")[1]/1;
+		    return tv1>tv2 ? -1 : tv1<tv2 ? 1 : 0;
+		});
+   }
+   else if(inField.dataSource=="children")
+   {
 
+
+	   	   		 dataItems = item.fields.subtasks.map(function(i){
+	   	   			var retObj ={};
+	   	   			inField.dataReference.split(",").forEach(function(f){
+	   	   				var thisField = f.trim();
+	   	   				var dVal = "unknown";
+	   	   				var jField = ijfUtils.getJiraFieldById(thisField);
+	   	   				if(i.fields.hasOwnProperty(jField.id))
+	   	   				{
+	   	   					dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
+	   	   					//perhaps build the types here...
+	   	   					colMeta[jField.id]=jField;
+	   	   				}
+	   	   				retObj[thisField]= dVal;
+	   	   			});
+	   	   			//retObj.iid=i.id;
+	   	   			retObj.iid=i.key;
+	   	   			return retObj;
+		});
+		dataItems = dataItems.sort(function(a, b)
+		{
+			var tv1 = a.iid.split("-")[1]/1;
+		    var tv2  = b.iid.split("-")[1]/1;
+		    return tv1>tv2 ? -1 : tv1<tv2 ? 1 : 0;
+		});
+   }
+   else
+   {
+		var tSearch = "jql="+inField.dataSource+"&fields="+inField.dataReference;
+		var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
+		//bail if dataItems not
+
+		var dataItems = rawList.issues.map(function(i){
+			var retObj ={};
+			inField.dataReference.split(",").forEach(function(f){
+				var thisField = f.trim();
+				var dVal = "unknown";
+				var jField = ijfUtils.getJiraFieldById(thisField);
+				if(i.fields.hasOwnProperty(jField.id))
+				{
+					dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
+					//perhaps build the types here...
+					colMeta[jField.id]=jField;
+				}
+				retObj[thisField]= dVal;
+			});
+			//retObj.iid=i.id;
+			retObj.iid=i.key;
+			return retObj;
+		});
+    }
     if(inField.referenceFilter)
     {
         //filter the peerItems...
@@ -5272,7 +5166,8 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     var grid= new Ext.grid.GridPanel({
         store: store,
         plugins: 'gridfilters',
-        bodyStyle: l_panelStyle,
+        style: l_panelStyle,
+        height: l_Height,
         width: "100%",
         ijfForm: inField,
         columns: colSettingsArray,
@@ -5318,6 +5213,18 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 					ijf.snippets[tEvent](record.data.iid,this);
 					return;
 				}
+				//look for popform: xxx and pop the form
+				tEvent=tEvent.replace("popform:","");
+				if(ijf.fw.forms.hasOwnProperty(tEvent))
+				{
+ 				    var action = {};
+					action.form = tEvent;
+					action.type = "open item";
+					action.itemId = record.data.iid;
+					action.inField = inField;
+                    ijf.extUtils.renderPopupForm(inFormKey, item, action)
+					return;
+				}
 			}
 		}
     });
@@ -5336,1431 +5243,8 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     layout.render(inContainer);
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, layout, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
-}
-,
- renderGrid:function(inFormKey,item, inField, inContainer)
-{
-    inContainer.title = inField.toolTip;
-    var origDatasource = inField.dataSource;
-    var ocf =  ijfUtils.getEvent(inField);
-    var mappedField=null;
-    if(gSubformParams)
-    {
-        if(gSubformParams.hasOwnProperty(inField.dataSource))
-        {
-            inField.dataSource=gSubformParams[inField.dataSource];
-            mappedField = inField.dataSource;
-        }
-    }
-    var curIndex = 0;
-    if(gItemSectionGridIndex.hasOwnProperty(inField.dataSource))
-    {
-        curIndex = gItemSectionGridIndex[inField.dataSource][0];
-    }
-    if (inField.caption=="")
-        var lCaption = inField.dataSource;
-    else
-        var lCaption = inField.caption;
-    var lWidth = 'auto';
-    if (inField.width!="")
-    {
-        lWidth= inField.width/1;
-    }
-    var rOnly = false;
-    if (inField.style.indexOf('readonly:true')>-1)
-    {
-        rOnly=true;
-    }
-    var hideField = ijfUtils.renderIfShowField("",inField);
-    var collapsible = true;
-    if (inField.style.indexOf('collapsible:false')>-1)
-    {
-        collapsible=false;
-    }
-    var collapsed = false;
-    if (inField.style.indexOf('collapsed:true')>-1)
-    {
-        collapsed=true;
-    }
-    //var l_Style = mwfUtils_getStyle(inField.style);
-    var l_Height=mwfUtils_getNameValueFromStyleString(inField.style,"height");
-    if(l_Height=="") l_Height=300;
-    else l_Height = l_Height/1;
-    var l_includeSums = false;
-    if(mwfUtils_getNameValueFromStyleString(inField.style,"includeSums")=="true") l_includeSums=true;
-    var gridFieldArray = new Array();
-    var fList = item.getSectionColDefs(inField.dataSource);
-    var colSettingsArray = new Array();
-    colSettingsArray.push(new Ext.grid.RowNumberer());
-    var tWidth=0;
-    var cEvents = new Array();
-    fList.sort(function(a, b) {
-        return parseFloat(a.column) - parseFloat(b.column);
-    });
-    var lastColumn = fList.length-1; // For CWF-238 - used to set flex on last column
-    var colWidthIndex = -1;          // For CWF-238 - used to "skip" hidden columns when setting custom column widths
-    for(var i in fList)
-    {
-        if(!fList.hasOwnProperty(i)) continue;
-        var tConst = inField.getConstraint(i);
-        var cStyle = inField.getColumnStyle(i);
-        //read only
-        var disabled = false;
-        if(cStyle!=null)
-        {
-            if (cStyle.indexOf('readonly:true')>-1)
-            {
-                disabled = true;
-            }
-        }
-        var hideColumn = inField.isHidden(fList[i].name);
-        var cwidth=0;
-        // CWF-238
-        // Columns are hidden by entering the column headers for the columns that should be displayed
-        // for example if an enhanced grid in collect has columns A, B, C, D and E, then entering
-        // "A,C,E" in the controls' "Table Columns" config, would hide columns B and D
-        // Now, to specify the widths of the visible columns, the user should only have to enter, say,
-        // "100,200,300" and those values should get applied only to the visible columns - A, C, and E
-        // in this example.
-        // The following "if(!hideColumn)..." logic was added to support this requirement "skipping" widths on hidden columns
-        // so we only apply them to visible columns
-        if(!hideColumn){
-          colWidthIndex += 1;
-          cwidth = inField.getWidth(colWidthIndex);
-        }
-        tWidth = tWidth/1+cwidth;
-        //If table has Forms constraints, then they override Collect constraints
-        if((tConst=="") || (tConst==null))
-        {
-            //case where we use Collect constraints and types
-            //need to look for regex constraint here...
-            var regX = false;
-            var valFunction = function(v){};
-            if (fList[i].constraints.hasOwnProperty("regularExpression"))
-            {
-                if (fList[i].constraints.regularExpression!="")
-                {
-                    regX=true;
-                }
-            }
-            valFunction=function(v){
-                //fList is still in scope...so, find i
-                try
-                {
-                    var cId = (this.column.fullColumnIndex-1);
-                    if (fList[cId].constraints.regularExpression!="")
-                    {
-                        var rgx = new RegExp(fList[cId].constraints.regularExpression);
-                        if (!rgx.exec(v)) {
-                            return("Column: " + (cId+1) + " " + fList[cId].constraints.invalidRegExMessage);
-                        }
-                    }
-                    //check for numeric...
-                    if((fList[cId].type=="DEC") || (fList[cId].type=="INT"))
-                    {
-                        if(isNaN(v)==true)
-                        {
-                            return("Column: " + (cId+1) + " must be a number");
-                        }
-                    }
-                    return true;
-                }
-                catch(e)
-                {
-                    return("Generic validation error: " + e.message);
-                }
-            };
-            var aBlank = true;
-            if(fList[i].required) aBlank=false;
-            if(fList[i].locked==true)
-            {
-                disabled = true;
-            }
-            var flexAmount = i==lastColumn ? 1 : 0; // CWF-238 - apply flex:1 only to last column
-            if(fList[i].type=="DATE")
-            {
-                gridFieldArray.push({name: fList[i].name, type: 'date'});
-                var headerName = (fList[i].name + "").replace("{itemname}", item.name);
-                colSettingsArray.push({
-                    header: headerName,
-                    dataIndex: fList[i].name,
-                    xtype: 'datecolumn',
-                    hidden: hideColumn,
-                    css: cStyle,
-                    width: cwidth,
-                    flex:flexAmount,
-                    sortable: true,
-                    format: 'm/d/y',
-                    editor: {
-                        xtype: 'datefield',
-                        allowBlank: aBlank,
-                        readOnly: disabled,
-                        invalidText: "API Date must be in format mm/dd/yyyy",
-                        format: 'm/d/y',
-                        width: 'auto',
-                        validator: valFunction,
-                        listeners: {
-                            afterrender: function(f)
-                            {
-                                this.validate();
-                            },
-                            'change': function() {
-                                controlChanged(inFormKey+'mwfControl_'+inField.formCell);    }
-                        }
-                    }
-                });
-            }
-            else if((fList[i].type=="DEC") || (fList[i].type=="INT"))
-            {
-                var nFormat = '0,000.00';
-                if (fList[i].type=="INT") nFormat = '0,000';
-                var headerName = (fList[i].name + "").replace("{itemname}", item.name);
-                gridFieldArray.push({name: fList[i].name, type: "number"});
-                colSettingsArray.push({
-                    header: headerName,//fList[i].name,
-                    dataIndex: fList[i].name,
-                    align: 'right',
-                    renderer:  Ext.util.Format.numberRenderer(nFormat),
-                    hidden: hideColumn,
-                    css: cStyle,
-                    width: cwidth,
-                    flex:flexAmount,
-                    summaryType: 'sum',
-                    summaryRenderer: function (value, summaryData, dataIndex, rowIndex, colIndex, store, view) {
-                        return Ext.String.format('Total: {0}', value);
-                    },
-                    sortable: true,
-                    editor: {
-                        xtype: 'textfield',
-                        allowBlank: aBlank,
-                        readOnly: disabled,
-                        msgTarget : 'qtip',
-                        width: 'auto',
-                        validator: valFunction,
-                        listeners: {
-                            afterrender: function(f)
-                            {
-                                this.validate();
-                            },
-                            'change': function() {
-                                controlChanged(inFormKey+'mwfControl_'+inField.formCell);   }
-                        }
-                    }
-                });
-            }
-            else if((!rOnly) && (fList[i].type=="string") && (regX==false) && (fList[i].constraints.hasOwnProperty('optionsAsJson')) && (fList[i].constraints.optionsAsJson!=""))
-            {
-                var combVals = [];
-                try
-                {
-                    if(fList[i].constraints.optionsAsJson=="cascade")
-                    {
-                        combVals = fList[i].constraints["comboStore"];
-                    }
-                    else
-                    {
-                        combVals = JSON.parse(fList[i].constraints.optionsAsJson);
-                        //IF comboVals is a deep object then this is a cascading constraint
-                        //that impacts the next n columns..
-                        //first, break the list...
-                        if(!Array.isArray(combVals))
-                        {
-                            fList[i].constraints["comboRef"] = combVals;
-                            fList[i].constraints["cLevel"]=1;
-                            var cLevels = fList[i].constraints.cascadeLevels/1;
-                            fList[i].constraints["cLevels"]=cLevels;
-                            fList[i].constraints["controlId"]=inFormKey+'mwfControl_'+inField.formCell.replace(",","")+'_'+mwfUtils_cleanId(fList[i].name) + '_id';
-                            fList[i].constraints["dependentCols"]=new Array();
-                            fList[i].constraints["addDependents"] = function(inId, inConst)
-                            {
-                                inConst.dependentCols.push(inId);
-                                if(inConst.hasOwnProperty("parentCol")) {
-                                    var pConst =inConst["parentCol"];
-                                    pConst.addDependents(inId,pConst);
-                                }
-                            };
-                            for(var li = 1;li<cLevels;li++)
-                            {
-                                var fIndex=i/1+li/1;
-                                fList[fIndex].constraints["optionsAsJson"] = "cascade";
-                                fList[fIndex].constraints["comboStore"]= Ext.create('Ext.data.Store', {
-                                                                            fields: ['item','value'],
-                                                                            proxy: {
-                                                                                type: 'memory',
-                                                                                reader: {
-                                                                                    type: 'json'
-                                                                                }},
-                                                                            autoLoad: false});
-                                fList[fIndex].constraints["comboRef"] = combVals;
-                                fList[fIndex].constraints["cLevel"]=li+1;
-                                fList[fIndex].constraints["cLevels"]=cLevels;
-                                fList[fIndex].constraints["controlId"]=inFormKey+'mwfControl_'+inField.formCell.replace(",","")+'_'+mwfUtils_cleanId(fList[fIndex].name) + '_id';
-                                fList[fIndex].constraints["dependentCols"]=new Array();
-                                fList[fIndex].constraints["colName"]=fList[fIndex].name;
-                                fList[fIndex].constraints["parentCol"]=fList[fIndex-1].constraints;
-                                fList[fIndex].constraints["addDependents"] = function(inId, inConst)
-                                {
-                                    inConst.dependentCols.push(inId);
-                                    if(inConst.hasOwnProperty("parentCol")) {
-                                        var pConst =inConst["parentCol"];
-                                        pConst.addDependents(inId,pConst);
-                                    }
-                                };
-                                fList[fIndex].constraints["setValues"] = function(inRow)
-                                {
-                                    this["cValue"] = inRow.data[this.colName];
-                                    if(this.hasOwnProperty("parentCol")) {
-                                        this["parentCol"].setValues(inRow);
-                                    }
-                                };
-                                fList[fIndex].constraints["setKeys"] = function(inKeys, inConst)
-                                {
-                                    inKeys.push(inConst["cValue"]);
-                                    if(inConst.hasOwnProperty("parentCol")) {
-                                        var pConst =inConst["parentCol"];
-                                        pConst.setKeys(inKeys,pConst);
-                                    }
-                                };
-                                fList[fIndex-1].constraints["colName"]=fList[fIndex-1].name;
-                                fList[fIndex-1].constraints.addDependents(fList[fIndex].constraints["controlId"],fList[fIndex-1].constraints);
-                                fList[fIndex-1].constraints["boundStore"]=fList[fIndex].constraints["comboStore"];
-                                fList[fIndex-1].constraints["setKeys"] = function(inKeys, inConst)
-                                {
-                                    inKeys.push(inConst["cValue"]);
-                                    if(inConst.hasOwnProperty("parentCol")) {
-                                        var pConst =inConst["parentCol"];
-                                        pConst.setKeys(inKeys,pConst);
-                                    }
-                                };
-                                fList[fIndex-1].constraints["setValues"] = function(inRow)
-                                {
-                                    this["cValue"] = inRow.data[this.colName];
-                                    if(this.hasOwnProperty("parentCol")) {
-                                        this["parentCol"].setValues(inRow);
-                                    }
-                                };
-                            }
-                            //set combVals to the root level of combVals
-                            var cArray = [];
-                            for(var sVal in combVals)
-                            {
-                                if(combVals.hasOwnProperty(sVal)) cArray.push({'item':sVal,'value':sVal});
-                            }
-                            combVals = Ext.create('Ext.data.Store', {
-                                fields: ['item','value'],
-                                proxy: {
-                                    type: 'memory',
-                                    reader: {
-                                        type: 'json'
-                                    }},
-                                autoLoad: false});
-                            combVals.proxy.data = cArray;
-                            combVals.load();
-                        }
-                    }
-                }
-                catch(e)
-                {
-                    combVals = [];
-                }
-                gridFieldArray.push({name: fList[i].name, type: "string"});
-                var headerName = (fList[i].name + "").replace("{itemname}", item.name);
-                colSettingsArray.push({
-                    header: headerName,//fList[i].name,
-                    dataIndex: fList[i].name,
-                    hidden: hideColumn,
-                    css: cStyle,
-                    width: cwidth,
-                    flex:flexAmount,
-                    sortable: true,
-                    editor: new Ext.form.ComboBox({
-                        store: combVals,
-                        allowBlank: aBlank,
-                        sourceColumn: fList[i],
-                        displayField: 'item',
-                        readOnly: disabled,
-                        valueField: 'value',
-                        mode: 'local',
-                        width: 'auto',
-                        emptyText:'Please select...',
-                        forceSelection: true,
-                        typeAhead: true,
-                        triggerAction: 'all',
-                        id: inFormKey+'mwfControl_'+inField.formCell.replace(",","")+'_'+mwfUtils_cleanId(fList[i].name) + '_id',
-                        listeners: {
-                            afterrender: function(f)
-                            {
-                                this.validate();
-                            },
-                            'beforequery': function(qp, eopts)
-                            {
-                              //requery the current cell
-                              //set it's combo list to the children of the selected parent...
-                                //requery the current cell
-                                var sCol = this.sourceColumn;
-                                if(sCol.constraints["cLevel"]==1) return;
-                                if(!sCol.constraints.setValues) return;
-                                //must set the cValues for this row...
-                                var thisGridRow = qp.combo.ownerCt.grid.getSelection()[0];
-                                sCol.constraints.setValues(thisGridRow);
-                                var tArray = new Array();
-                                var cKeys = new Array();
-                                if(sCol.constraints.setKeys)
-                                {
-                                    sCol.constraints.setKeys(cKeys,sCol.constraints);
-                                }
-                                var cVal = "";
-                                if(cKeys.length>1)
-                                {
-                                    //pop the last value
-                                    cVal = cKeys[0];
-                                    cKeys = cKeys.slice(1);
-                                    mwfUtils_getComboList(tArray, sCol.constraints["comboRef"],cKeys);
-                                    var tStore = sCol.constraints["comboStore"];
-                                    tStore.proxy.data=tArray;
-                                    tStore.load();
-                                }
-                                if(cVal) qp.combo.setValue(cVal);
-                            },
-                            'select':  function(field,nval,oval){
-                                controlChanged(inFormKey+'mwfControl_'+inField.formCell);
-                                var sCol = this.sourceColumn;
-                                if(sCol.constraints["cLevels"]==sCol.constraints["cLevel"]) return;
-                                sCol.constraints["cValue"]=nval.data.value;
-                                var tArray = new Array();
-                                var cKeys = new Array();
-                                if(sCol.constraints.setKeys)
-                                {
-                                    sCol.constraints.setKeys(cKeys,sCol.constraints);
-                                    //cKeys.push(nval.data.value);
-                                    mwfUtils_getComboList(tArray, sCol.constraints["comboRef"],cKeys);
-                                    var tStore = sCol.constraints["boundStore"];
-                                    tStore.proxy.data=tArray;
-                                    tStore.load();
-                                    //tStore.loadData(tArray);
-                                    for(var depIds in sCol.constraints["dependentCols"])
-                                    {
-                                        if(sCol.constraints["dependentCols"].hasOwnProperty(depIds))
-                                        {
-                                            //clear the value
-                                            var rw = grid.selModel.getSelection();
-                                            var tcmp = Ext.getCmp(sCol.constraints["dependentCols"][depIds]);
-                                            rw[0].set(tcmp.sourceColumn.name,"");
-                                        }
-                                    }
-                                }
-                            }}
-                    })
-                });
-            }
-            else if(fList[i].type=="TEXTAREA")
-            {
-                gridFieldArray.push({name: fList[i].name, type: "string"});
-                var headerName = (fList[i].name + "").replace("{itemname}", item.name);
-                colSettingsArray.push({
-                    header: headerName,//fList[i].name,
-                    dataIndex: fList[i].name,
-                    hidden: hideColumn,
-                    css: cStyle,
-                    width: cwidth,
-                    flex:flexAmount,
-                    sortable: true,
-                    allowBlank: false,
-                    editor: {
-                        xtype: 'textarea',
-                        width: 'auto',
-                        readOnly: disabled,
-                        allowBlank: aBlank,
-                        listeners: {
-                            afterrender: function(f)
-                            {
-                                this.validate();
-                            },
-                            'change': function() {
-                                controlChanged(inFormKey+'mwfControl_'+inField.formCell);  }
-                        },
-                        validator: valFunction
-                    }
-                });
-            }
-            else
-            {
-                gridFieldArray.push({name: fList[i].name, type: "string"});
-                var headerName = (fList[i].name + "").replace("{itemname}", item.name);
-                colSettingsArray.push({
-                    header: headerName, //fList[i].name,
-                    dataIndex: fList[i].name,
-                    hidden: hideColumn,
-                    css: cStyle,
-                    width: cwidth,
-                    flex:flexAmount,
-                    sortable: true,
-                    editor: {
-                        xtype: 'textfield',
-                        width: 'auto',
-                        readOnly: disabled,
-                        allowBlank: aBlank,
-                        listeners: {
-                            afterrender: function(f)
-                            {
-                                this.validate();
-                            },
-                            'change': function() {
-                                controlChanged(inFormKey+'mwfControl_'+inField.formCell);  }
-                        },
-                        validator: valFunction
-                    }
-                });
-            }
-        }
-        else
-        {
-            //this section is the Forms constraints
-            if(tConst=="date")
-            {
-                gridFieldArray.push({name: fList[i].name, type: tConst});
-                var headerName = (fList[i].name + "").replace("{itemname}", item.name);
-                colSettingsArray.push({
-                    header: headerName,//fList[i].name,
-                    dataIndex: fList[i].name,
-                    xtype: 'datecolumn',
-                    hidden: hideColumn,
-                    css: cStyle,
-                    width: cwidth,
-                    flex:flexAmount,
-                    sortable: true,
-                    format: 'm/d/y',
-                    //renderer: mwfUtils_formatDateMDY,
-                    editor: {
-                        xtype: 'datefield',
-                        invalidText: "Date must be in format mm/dd/yyyy",
-                        allowBlank: true,
-                        readOnly: disabled,
-                        format: 'm/d/y',
-                        listeners: {
-                            afterrender: function(f)
-                            {
-                                this.validate();
-                            },
-                            'change': function() {
-                                controlChanged(inFormKey+'mwfControl_'+inField.formCell);  }
-                        }
-                    }
-                });
-            }
-            else if(tConst.indexOf("combo:")>-1)
-            {
-                gridFieldArray.push({name: fList[i].name, type: "string"});
-                var tComb = tConst.replace("combo:","");
-                 var ref = JSON.parse(tComb);
-                ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value);
-                //special for versioned item numbers
-                if(fw.includeAddByStructure.versioning)
-                {
-                    ref.filter.value=ref.filter.value.replace(new RegExp(" " +fw.includeAddByStructure.versioning + " .*","g"),"");
-                }
-                combVals = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
-                var headerName = (fList[i].name + "").replace("{itemname}", item.name);
-                colSettingsArray.push({
-                    header: headerName,//fList[i].name,
-                    dataIndex: fList[i].name,
-                    hidden: hideColumn,
-                    css: cStyle,
-                    width: cwidth,
-                    flex:flexAmount,
-                    sortable: true,
-                    editor: new Ext.form.ComboBox({
-                        store: combVals,
-                        allowBlank: true,
-                        readOnly: disabled,
-                        forceSelection: true,
-                        listeners: {
-                            afterrender: function(f)
-                            {
-                                this.validate();
-                            },
-                            'change': function() {
-                                controlChanged(inFormKey+'mwfControl_'+inField.formCell);   }
-                        }
-                    })
-                });
-            }
-            else
-            {
-                gridFieldArray.push({name: fList[i].name, type: tConst});
-                var headerName = (fList[i].name + "").replace("{itemname}", item.name);
-                colSettingsArray.push({
-                    header: headerName,//fList[i].name,
-                    dataIndex: fList[i].name,
-                    hidden: hideColumn,
-                    css: cStyle,
-                    width: cwidth,
-                    flex:flexAmount,
-                    sortable: true,
-                    editor: {
-                        xtype: 'textfield',
-                        allowBlank: true,
-                        readOnly: disabled,
-                        listeners: {
-                            afterrender: function(f)
-                            {
-                                this.validate();
-                            },
-                            'change': function() {
-                                controlChanged(inFormKey+'mwfControl_'+inField.formCell);   }
-                        }
-                    }
-                });
-            }
-        }
-    } // end for var i in fList
-    //need a generic row object..
-    //var gridRecord = Ext.data.Record.create(gridFieldArray);
-    if(!Ext.ClassManager.isCreated(inField.dataSource + inField.formCell.replace(",","")))
-    {
-        Ext.define(inField.dataSource + inField.formCell.replace(",",""), {
-            extend: 'Ext.data.Model',
-            fields: gridFieldArray
-        });
-    }
-    var store = Ext.create('Ext.data.Store', {
-        model: inField.dataSource + inField.formCell.replace(",",""),
-        proxy: {
-            type: 'memory',
-            reader: {
-                type: 'json'
-            }},
-        autoLoad: false});
-    var lTempTableData = item.getSectionTableObjData(inField.dataSource);
-    //format data for store...
-    var tPack = new Array();
-    for(var aRow in lTempTableData)
-    {
-        if(lTempTableData.hasOwnProperty(aRow))
-        {
-            var tObj = {};
-            for(var aProp in lTempTableData[aRow])
-            {
-                if(lTempTableData[aRow].hasOwnProperty(aProp)) tObj[aProp]=lTempTableData[aRow][aProp];
-            }
-            tPack.push(tObj);
-        }
-    }
-    store.proxy.data=tPack;
-    //store.loadRawData(lTempTableData);
-    store.load();
-    var l_tbar=[];
-    var lXtype="";
-    if(!rOnly)
-    {
-        lXtype = "cell-editing"
-        var showToolbar = inField.style.indexOf('toolbar_visible:false')==-1;
-        if(showToolbar) {
-          l_tbar.push({
-            iconCls: 'icon-user-add',
-            text: 'Add',
-            align: 'center',
-            handler: function () {
-              var rec = Ext.create(inField.dataSource + inField.formCell.replace(",", ""));
-              grid.getStore().insert(0, rec);
-              grid.cellEditing.startEditByPosition({
-                row: 0,
-                column: 0
-              });
-              grid.getView().refresh();
-              controlChanged(inFormKey + 'mwfControl_' + inField.formCell);
-            }
-          });
-          l_tbar.push({
-            ref: '../removeBtn',
-            iconCls: 'icon-user-delete',
-            text: 'Remove',
-            handler: function () {
-              //editor.stopEditing();
-              var s = grid.getSelectionModel().getSelection();
-              for (var i = 0, r; r = s[i]; i++) {
-                grid.getStore().remove(r);
-              }
-              grid.getView().refresh();
-              controlChanged(inFormKey + 'mwfControl_' + inField.formCell);
-            }
-          });
-        }
-    }
-    var grid;
-    var lFeatures = [];
-    if(l_includeSums) lFeatures = [{ftype: 'summary'}];
-    if(rOnly)
-    {
-        grid= new Ext.grid.GridPanel({
-            store: store,
-            width: tWidth,
-            region:'center',
-            margins: '0 5 5 5',
-            features: lFeatures,
-            columns: colSettingsArray,
-            selModel: {selType: 'rowmodel', mode: 'SINGLE'},
-            listeners: {
-                'rowdblclick': function(grid,rowIndex,e) {
-                    ocf(grid,rowIndex,e);
-                }
-            }
-        });
-    }
-    else
-    {
-        var ce  = new Ext.grid.plugin.CellEditing({
-            clicksToEdit: 1
-        });
-        grid= new Ext.grid.Panel({
-            xtype: lXtype,
-            features: lFeatures,
-            store: store,
-            width: tWidth,
-            region:'center',
-            margins: '0 5 5 5',
-            plugins: [ce],
-            tbar: l_tbar,
-            columns: colSettingsArray,
-            selModel: {selType: 'rowmodel', mode: 'MULTI'},
-            listeners: {
-                'rowdblclick': function(grid,rowIndex,e) {
-                    ocf(grid,rowIndex,e);
-                }
-            }
-    });
-        grid.cellEditing = ce;
-    }
-    var layout = new Ext.Panel({
-        title: lCaption,
-        layout: 'border',
-        collapsible: collapsible,
-        collapsed: collapsed,
-        hidden: hideField,
-        layoutConfig: {
-            columns: 1
-        },
-        width:tWidth + 45,
-        height: l_Height,
-        items: [grid]
-    });
-    inField.dataSource = origDatasource;
-    layout.render(inContainer);
-    var thisControl = new itemControl(inFormKey+'mwfControl_'+inField.formCell, inField, item, layout, inContainer);
-    thisControl.mappedSectionName =  mappedField;
-    controlSet[thisControl.id]=thisControl;
-}
-,
- renderGantt:function(inFormKey,item, inField, inContainer)
-{
-    inContainer.title = inField.toolTip;
-    var origDatasource = inField.dataSource;
-    var mappedField=null;
-    if(gSubformParams)
-    {
-        if(gSubformParams.hasOwnProperty(inField.dataSource))
-        {
-            inField.dataSource=gSubformParams[inField.dataSource];
-            mappedField = inField.dataSource;
-        }
-    }
-    if (inField.caption=="")
-        var lCaption = inField.dataSource;
-    else if(inField.caption=="none")
-    {
-        var lCaption = "";
-    }
-    else
-        var lCaption = inField.caption;
-    var hideField = ijfUtils.renderIfShowField("",inField);
-    var lWidth = 'auto';
-    if (inField.width!="")
-    {
-        lWidth= inField.width/1;
-    }
-    var l_labelStyle = mwfUtils_getStyle(inField.labelStyle);
-    var l_panelStyle = mwfUtils_getStyle(inField.panelStyle);
-    var l_Style = mwfUtils_getStyle(inField.style);
-    var l_Height=mwfUtils_getNameValueFromStyleString(inField.style,"height");
-    if(l_Height=="") l_Height=300;
-    else l_Height = l_Height/1;
-    var data = [];
-    //need a generic row object..
-//    var gridRecord = Ext.data.Record.create([{name:'Id'},
-//        {name:'Name', type:'string'},
-//        {name:'StartDate', type : 'date', dateFormat:'c'},
-//        {name:'EndDate', type : 'date', dateFormat:'c'},
-//        {name:'PercentDone'},
-//        {name:'ParentId', type: 'auto'},
-//        {name:'IsLeaf', type: 'bool'}]);
-    var gMap = JSON.parse(inField.dataReference);
-    var sDate = new Date();
-    var eDate = new Date();
-    var oLabel = "";
-    var tDate = null;
-    var i = 1;
-    if(inField.dataSource=="explicit")
-    {
-        //this is explicit task naming with dates....
-        //look for additional tasks in datareference 2....
-        try
-        {
-            var gMap2 = JSON.parse(inField.dataReference2);
-            for(var t2 in gMap2.tasks)
-            {
-                if(!gMap2.tasks.hasOwnProperty(t2)) continue;
-                gMap.tasks.push(gMap2.tasks[t2]);
-            }
-        }
-        catch(e)
-        {}
-        for(var t in gMap.tasks)
-        {
-            if(!gMap.tasks.hasOwnProperty(t)) continue;
-            if(gMap.tasks[t].label===Object(gMap.tasks[t].label))
-            {
-                //get value from datasource
-                oLabel = item.getSectionTextData(gMap.tasks[t].label.dataSource);
-            }
-            else
-            {
-                //it's a string, just set th evalue to it.
-                oLabel =gMap.tasks[t].label;
-            }
-            var sDate2 = "";
-            var eDate2 = "";
-            if(gMap.tasks[t].start===Object(gMap.tasks[t].start))
-            {
-                //get value from datasource
-                sDate2 = item.getSectionTextData(gMap.tasks[t].start.dataSource);
-            }
-            else
-            {
-                //it's a string, just set th evalue to it.
-                sDate2 =gMap.tasks[t].start;
-            }
-            if(gMap.tasks[t].finish===Object(gMap.tasks[t].finish))
-            {
-                //get value from datasource
-                eDate2 = item.getSectionTextData(gMap.tasks[t].finish.dataSource);
-            }
-            else
-            {
-                //it's a string, just set th evalue to it.
-                eDate2 =gMap.tasks[t].finish;
-            }
-            if((sDate2==null) || (sDate2=="")) continue;
-            try
-            {
-                sDate2 = new Date(sDate2);
-            }
-            catch(e)
-            {
-                sDate2 = null;
-            }
-            try
-            {
-                eDate2 = new Date(eDate2);
-            }
-            catch(e)
-            {
-                eDate2 = null;
-            }
-            if(sDate2==null) eDate2=null;
-            else
-            {
-                //if end date isNaN, then set end date to start date.
-                if(isNaN(eDate2.getTime())) eDate2=new Date(sDate2);
-                if(eDate2 < sDate2)
-                {
-                    eDate2 = new Date(sDate2);
-                }
-            }
-            if((isNaN(sDate2.getTime())==false) && (isNaN(eDate2.getTime())==false))
-            {
-                tDate = new Date(sDate2);
-                if (tDate < sDate) sDate = new Date(tDate);
-                tDate = new Date(eDate2);
-                if(tDate > eDate) eDate = new Date(tDate);
-                data.push({ParentId:"", Id:i,PercentDone:0,IsLeaf:true,Name:oLabel,StartDate:sDate2,EndDate:eDate2});
-                i++;
-            }
-        }
-    }
-    else
-    {
-        //get the data from a table with field mappings
-        //var fList = item.getSectionColDefs(inField.dataSource);
-        var tData = item.getSectionTableObjData(inField.dataSource);
-        var pArray = new Array();
-        for(var dRow in tData)
-        {
-            if(!tData.hasOwnProperty(dRow)) continue;
-            if((tData[dRow][gMap["Name"]]==null) || (tData[dRow][gMap["Name"]]=="")) continue;
-            if(pArray.hasOwnProperty(tData[dRow][gMap["ParentName"]]))
-            {
-                pId = pArray[tData[dRow][gMap["ParentName"]]];
-            }
-            else
-            {
-                //add a row as a parent, and use it's parent ID.
-                pId = i;
-                i++;
-                data.push({Id:pId,IsLeaf:false,Name:tData[dRow][gMap["ParentName"]]});
-                pArray[tData[dRow][gMap["ParentName"]]]=pId;
-            }
-            //verify the start date is not null and not "" before setting sDate2
-            if((tData[dRow][gMap["StartDate"]]==null) || (tData[dRow][gMap["StartDate"]]==""))
-            {
-                continue;
-            }
-            else
-            {
-                var sDate2 = new Date(tData[dRow][gMap["StartDate"]]);
-                var eDate2 = new Date(tData[dRow][gMap["EndDate"]]);
-                if(isNaN(eDate2.getTime())) eDate2 = new Date(sDate2);
-                if((isNaN(sDate2.getTime())==false) && (isNaN(eDate2.getTime())==false))
-                {
-                    if(eDate2<sDate2) eDate2 = new Date(sDate2);
-                    tDate = new Date(sDate2);
-                    if (tDate < sDate) sDate = (tDate);
-                    tDate = new Date(eDate2);
-                    if(tDate > eDate) eDate = new Date(tDate);
-                    data.push({ParentId:pId, Id:i,PercentDone:0,IsLeaf:true,Name:tData[dRow][gMap["Name"]],StartDate:sDate2,EndDate:eDate2});
-                    i++;
-                }
-            }
-        }
-    }
-    if(!Ext.ClassManager.isCreated('GanttTaskModel1'))
-    {
-        var tModel = Ext.define('GanttTaskModel1', {
-            extend   : 'Gnt.model.Task',
-            clsField : 'TaskType'
-        });
-    }
-    var taskStore       = Ext.create("Gnt.data.TaskStore", {
-        model       : 'GanttTaskModel1',
-        dependencyStore : null,
-        resourceStore: null,
-        assignmentStore: null,
-        autoSync : false,
-        calendar    : new Gnt.data.Calendar({
-            name        : 'General',
-            calendarId  : 'General'
-        }),
-        proxy           : {
-            type    : 'memory',
-            data    : data
-        }
-    });
-    taskStore.load();
-    //hack the gantt does not like a single row in the grid
-    if(data.length ==0)
-    {
-        var pnl = new Ext.FormPanel({
-            labelAlign: 'left',
-            border:false,
-            width: lWidth,
-            bodyStyle: l_Style,
-            items: {
-                html: "No tasks to display in Gantt.",
-                frame: false,
-                border: false,
-                bodyStyle:  l_panelStyle,
-                xtype: "panel"}
-        });
-        inField.dataSource = origDatasource;
-        pnl.render(inContainer);
-        var thisControl = new itemControl(inFormKey+'mwfControl_'+inField.formCell, inField, item, g, inContainer);
-        thisControl.mappedSectionName =  mappedField;
-    }
-    else
-    {
-        //always move start date back one month incase first day of start date is milestone...
-        sDate.setDate(sDate.getDate()-28);
-        eDate.setDate(eDate.getDate()+28);
-        var localeId    = 'en';
-        var localeClass = 'En';
-        var supportedLocales    = {
-            en      : ['En', 'English']
-        };
-        var g  = Ext.create("Gnt.panel.Gantt", {
-            alias                   : 'widget.gantt1',
-            highlightWeekends       : true,
-            showTodayLine           : true,
-            //loadMask                : true,
-            //enableProgressBarResize : true,
-            //showRollupTasks         : true,
-            eventBorderWidth        : 0,
-            rowHeight               : 28,
-            height                  : 400,
-//            normalViewConfig : {
-//                stripeRows              : true,
-//                // Adds a CSS class to each row element
-//                getRowClass : function (rec) {
-//                    return rec === this.store.getRootNode().firstChild ? 'first-row' : '';
-//                }
-//            },
-//            lockedGridConfig : {
-//                width       : 950
-//            },
-            // Define the static columns
-            columns       : [
-                // Any regular Ext JS columns are ok
-                {
-                    xtype     : 'sequencecolumn',
-                    width     : 40,
-                    // This CSS class is added to each cell of this column
-                    tdCls     : 'id'
-                },
-                {
-                    xtype     : 'namecolumn',
-                    width     : 250
-                },
-                {
-                    xtype : 'startdatecolumn',
-                    width : 80
-                },
-                {
-                    //hidden : true,
-                    xtype : 'enddatecolumn',
-                    width : 80
-                },
-                {
-                    xtype : 'durationcolumn',
-                    width : 80
-                }
-            ],
-            region              : 'center',
-            taskStore           : taskStore,
-            bufferedRenderer    : true,
-            columnLines         : true,
-            startDate           : sDate,
-            endDate             : eDate,
-            localeId            : localeId,
-            supportedLocales    : supportedLocales,
-            viewPreset          : 'monthAndYear'
-        });
-        var simple = new Ext.Panel({
-            title: lCaption,
-            layout: 'fit',
-            collapsible: true,
-            hidden: hideField,
-            layoutConfig: {
-                columns: 1
-            },
-            width:lWidth,
-            height: l_Height,
-            items: [g]
-        });
-        inField.dataSource = origDatasource;
-        simple.render(inContainer);
-        var thisControl = new itemControl(inFormKey+'mwfControl_'+inField.formCell, inField, item, g, inContainer);
-        thisControl.mappedSectionName =  mappedField;
-    }
-    controlSet[thisControl.id]=thisControl;
-}
-,
- renderAttachments:function(inFormKey,item, inField, inContainer)
-{
-    inContainer.title = inField.toolTip;
-    var origDatasource = inField.dataSource;
-    var mappedField=null;
-    if(gSubformParams)
-    {
-        if(gSubformParams.hasOwnProperty(inField.dataSource))
-        {
-            inField.dataSource=gSubformParams[inField.dataSource];
-            mappedField = inField.dataSource;
-        }
-    }
-    if (inField.caption=="")
-        var lCaption = inField.dataSource;
-    else
-        var lCaption = inField.caption;
-    var lWidth =650;
-    if (inField.width!="")
-    {
-        lWidth= inField.width/1;
-    }
-    var hasCopyAction = false;
-    var copyTarget="";
-    var copyTargetSectionId="";
-    if(inField.dataReference.indexOf("copy")>-1)
-    {
-        try
-        {
-            copyTarget = inField.dataReference.split(":")[1];
-            copyTarget = copyTarget.trim();
-            hasCopyAction = true;
-            copyTargetSectionId =item.getSectionIdByName(copyTarget);
-            if(isNaN(copyTargetSectionId))
-            {
-                copyTarget="";
-                copyTargetSectionId="";
-                hasCopyAction = false;
-                footLog("Failed to get copy target section id");
-            }
-        }
-        catch(e){}
-    }
-    var hideField = ijfUtils.renderIfShowField("",inField);
-    var gridFieldArray = Ext.data.Record.create([{
-        name: 'id',
-        type: 'string'
-    }, {
-        name: 'name',
-        type: 'string'
-    }, {
-        name: 'description',
-        type: 'string'
-    }, {
-        name: 'stimestamp',
-        type: 'date'
-    }, {
-        name: 'suser',
-        type: 'string'
-    }, {
-        name: 'mimetype',
-        type: 'string'
-    }]);
-    if(!Ext.ClassManager.isCreated(inField.dataSource + inField.formCell.replace(",","")))
-    {
-        Ext.define(inField.dataSource + inField.formCell.replace(",",""), {
-            extend: 'Ext.data.Model',
-            fields: gridFieldArray
-        });
-    }
-    var store = new Ext.data.Store({
-        model: inField.dataSource + inField.formCell.replace(",",""),
-        sortOnLoad: true,
-        sorters: { property: 'stimestamp', direction : 'DESC' }
-    });
-    var attData =item.getSectionAttachmentArray(inField.dataSource);
-    var attObjData = [];
-    for(var a in attData)
-    {
-        if(attData.hasOwnProperty(a))
-        {
-            attObjData.push({'id':attData[a][0],'name':attData[a][1],'description':attData[a][2],'stimestamp':attData[a][3],'suser':attData[a][4],'mimetype':attData[a][5]})
-        }
-    }
-    store.loadData(attObjData);
-    var copyAction = {};
-    if(hasCopyAction)
-        copyAction = {icon   : 'javascripts/cwf/images/arrow_right.png',
-            tooltip: 'Copy this file to ' + copyTarget,
-            handler: function(grid, rowIndex, colIndex) {
-                var rec = store.getAt(rowIndex);
-                //alert("Delete " + rec.get('id'));
-                var lAtt = allFormAttachments[rec.get('id')];
-                if (lAtt==null)
-                {
-                    footLog("Failed to find the local attachment settings");
-                }
-                else
-                {
-                    var fun = function(){
-                        window.onbeforeunload==null;
-                        showProgress();
-                        $.ajax(g_root + '/copyAttachment?fileDescription=' + rec.get('description') +  '&itemId=' + item.id + '&fileType=' + lAtt.mimetype + '&sectionId=' + copyTargetSectionId + '&attachmentId='+lAtt.id, {
-                            success: function(data) {
-                                footLog("Copy response, checking...");
-                                if(data.results.status==0)
-                                {
-                                    //reload the item.....
-                                    footLog("File Copied, reloading item");
-                                    hideProgress();
-                                    mwf_resetForm();
-                                }
-                                else
-                                {
-                                    footLog("Failed to copy file  ");
-                                    hideProgress();
-                                    modalDialogMessage("Error","Failed to copy file.  Please reload to ensure it did not complete before trying again.");
-                                }
-                            },
-                            error: function() {
-                                footLog("Failed to copy file  ");
-                                hideProgress();
-                                modalDialogMessage("Error","Failed to copy file.  Please reload to ensure it did not complete before trying again.");
-                            }
-                        });
-                    };
-                    if(window.onbeforeunload==null)
-                    {
-                        modalDialog("File Copy","Are you sure you want to copy this file to " + copyTarget + "?",fun);
-                    }
-                    else
-                    {
-                        modalDialog("Warning","You have unsaved changes on this page, copying the file will refresh the page and lose these files.<br><br>  Hit Cancel to stop, OK to continue.",fun);
-                    }
-                }
-            }
-        };
-    var attGridHeight = 150;
-    if((inField.controlType == 'attachmentsOneRow') || (inField.controlType == 'attachmentsOneRowNoUpload'))   attGridHeight=62;
-    var delOption = {
-        icon   : 'javascripts/cwf/images/delete.gif',  // Use a URL in the icon config
-        tooltip: 'Delete File',
-        handler: function(grid, rowIndex, colIndex) {
-            var rec = store.getAt(rowIndex);
-            //alert("Delete " + rec.get('id'));
-            var lAtt = allFormAttachments[rec.get('id')];
-            if (lAtt==null)
-            {
-                //no att found in current set
-                footLog("Failed to find the local attachment settings");
-                //hideProgress();
-            }
-            else
-            {
-                var fun = function(){
-                    showProgress();
-                    $.ajax(g_root + '/deleteAttachment?gridId=' + inFormKey+'mwfControl_'+inField.formCell + '&attachmentId='+lAtt.id, {
-                        success: function(data) {
-                            //$('#main').html($(data).find('#main *'));
-                            footLog("Delete response, checking...");
-                            //var res = JSON.parse(data.results.data);
-                            if(data.results.status==0)
-                            {
-                                //I need the section and control...I need the itemDetail.....
-                                //controlSet...what is it keyed by....
-                                var c = controlSet[data.results.gridId];
-                                //verify result, and remove the file from the grid....
-                                var s = c.item.getSectionByName(c.field.dataSource);
-                                s.deleteAttachment(data.results.attachmentId);
-                                c.control.items.items[0].getStore().removeAt(rowIndex);
-                                c.control.items.items[0].getView().refresh();
-                                hideProgress();
-                            }
-                            else
-                            {
-                                footLog("Failed to delete file  ");
-                                hideProgress();
-                            }
-                        },
-                        error: function() {
-                            footLog("Failed to delete file  ");
-                            hideProgress();
-                        }
-                    });
-                };
-                modalDialog("File Deletion","Are you sure you want to delete this file?<br>  This action is permanent and immediate.",fun);
-            }
-        }
-    };
-    if((inField.controlType=="attachmentsNoUpload") || (inField.controlType=="attachmentsOneRowNoUpload")) delOption = {'text':""};
-    var nameWidth = inField.getWidth(0, 200);
-    var descriptionWidth = inField.getWidth(1, 200);
-    var savedWidth = inField.getWidth(2, 100);
-    var userWidth = inField.getWidth(3, 100);
-    var actionsWidth = inField.getWidth(4, 65);
-    var scrollbarWidth = 18;
-    var gridWidth = nameWidth + descriptionWidth + savedWidth + userWidth + actionsWidth + scrollbarWidth;
-    var layoutPanelWidth = gridWidth + 12;
-    var grid = new Ext.grid.GridPanel({
-        store: store,
-        width: gridWidth,
-        id: inFormKey+'mwfControl_'+inField.formCell.replace(",","_"),
-        layout: 'fit',
-        anchor: 'form',
-        region:'center',
-        margins: '0 5 5 5',
-        markDirty: false,
-        height: attGridHeight,
-        cls:'attachmentsGrid',
-        columns: [
-            {
-                header   : 'ID',
-                hidden: true,
-                width    : 60,
-                sortable : true,
-                dataIndex: "id"
-            },
-            {
-                header   : 'Name',
-                width    : nameWidth,
-                sortable : true,
-                dataIndex: "name"
-            },
-            {
-                header   : 'Description',
-                width    : descriptionWidth,
-                sortable : true,
-                dataIndex: "description",
-                cls:'attachmentsGridDescriptionColumn'
-            },
-            {
-                header   : 'Saved',
-                width    : savedWidth,
-                sortable : true,
-                dataIndex: "stimestamp",
-                xtype: 'datecolumn',
-                format: 'm/d/y h:i:s'
-            },
-            {
-                header   : 'User',
-                width    : userWidth,
-                sortable : true,
-                dataIndex: "suser"
-            },
-            {
-                header   : 'Type',
-                width    : 100,
-                sortable : true,
-                hidden: true,
-                dataIndex: "mimetype"
-            },
-            {
-                header: 'Actions',
-                xtype: 'actioncolumn',
-                width: actionsWidth,
-                items: [delOption,
-                    {icon   : 'javascripts/cwf/images/arrow_down.png',  // Use a URL in the icon config
-                        tooltip: 'Download File',
-                        handler: function(grid, rowIndex, colIndex) {
-                            var rec = store.getAt(rowIndex);
-                            //showProgress();
-                            //download the file.....
-                            //need the local attachment object to get the keys...
-                            var lAtt = allFormAttachments[rec.get('id')];
-                            if (lAtt==null)
-                            {
-                                //no att found in current set
-                                footLog("Failed to find the local attachment settings");
-                                //hideProgress();
-                            }
-                            else
-                            {
-                                var url =g_root + '/getAttachment?itemId='+lAtt.itemId+'&sectionName='+lAtt.sectionName+'&attachmentId='+lAtt.id;
-                                window.open(url);
-                            }
-                        }
-                    },copyAction]
-            }
-        ]
-    });
-    if(!Ext.ClassManager.isCreated('multifilefield'))
-    {
-        Ext.define('Ext.ux.form.MultiFile', {
-            extend: 'Ext.form.field.File',
-            alias: 'widget.multifilefield',
-            initComponent: function () {
-                var me = this;
-                me.on('render', function () {
-                    me.fileInputEl.set({ multiple: true });
-                });
-                me.callParent(arguments);
-            },
-            onFileChange: function (button, e, value) {
-                this.duringFileSelect = true;
-                var me = this,
-                    upload = me.fileInputEl.dom,
-                    files = upload.files,
-                    names = [];
-                if (files) {
-                    for (var i = 0; i < files.length; i++)
-                        names.push(files[i].name);
-                    value = names.join(', ');
-                }
-                Ext.form.field.File.superclass.setValue.call(this, value);
-                //CWF-278 Bulk uploads requires automatic save when upload files
-                mwf_saveForm();
-                delete this.duringFileSelect;
-            }
-        });
-    }
-    var lAttItems =[
-            grid,
-            {
-                xtype       : 'multifilefield',
-                multiple    : true,
-                acceptSize  : 2048,
-                //id          : 'file_' + inFormKey+'mwfControl_'+inField.formCell.replace(",","_"), //commented out this line for cwf278, it conflicted with multifile uploads but seemed to work well without this line
-                name        : 'file[]',
-                //layout      : 'fit',
-                listeners: {
-                    change: function(){
-                        controlChanged(inFormKey+'mwfControl_'+inField.formCell);
-                    }
-                },
-                width:  500
-            },
-            {
-                html: "Please provide an upload comment:",
-                frame: false,
-                border: false,
-                xtype: "panel",
-                cls:'uploadCommentInstructions',
-                width:500},
-            {
-                xtype: 'textfield',
-                //layout: 'fit',
-                labelAlign: 'left',
-                emptyText: 'Optional file description',
-                id: 'filedesc_' + inFormKey+'mwfControl_'+inField.formCell.replace(",","_"),
-                width: 400,
-                name: 'descriptionField',
-                value: ''
-            }, {
-            xtype: 'textfield',
-            name: 'controlId',
-            hidden: true,
-            value: inFormKey+'mwfControl_'+inField.formCell
-        },{
-            xtype: 'textfield',
-            name: 'sectionId',
-            hidden: true,
-            value: item.getSectionIdByName(inField.dataSource)
-        },{
-            xtype: 'textfield',
-            name: 'sectionName',
-            hidden: true,
-            value: inField.dataSource
-        }, {
-            xtype: 'textfield',
-            name: 'itemId',
-            hidden: true,
-            value: item.id
-        }];
-    var aPheight = 130 + attGridHeight;
-    if ((inField.controlType=="attachmentsNoUpload") || (inField.controlType=="attachmentsOneRowNoUpload"))
-    {
-        lAttItems = [grid];
-        aPheight = 50 + attGridHeight;
-    }
-    var collapsible = false;
-    if (inField.style.indexOf('collapsible:true')>-1)
-    {
-        collapsible=true;
-    }
-    var collapsed = false;
-    if (inField.style.indexOf('collapsed:true')>-1)
-    {
-        collapsed=true;
-    }
-    var layout = new Ext.FormPanel({
-        title: lCaption,
-        layout: 'vbox',
-        fileUpload: true,
-        isUpload: true,
-        collapsible: collapsible,
-        collapsed: collapsed,
-        width:layoutPanelWidth,
-        hidden: hideField,
-        bodyStyle:'padding:5px 5px 0',
-        labelAlign: 'right',
-        url: g_root + '/fileUpload',
-        height: aPheight,
-        items:lAttItems
-    });
-    inField.dataSource = origDatasource;
-    layout.render(inContainer);
-    var thisControl = new itemControl(inFormKey+'mwfControl_'+inField.formCell, inField, item, layout, inContainer);
-    thisControl.mappedSectionName =  mappedField;
-    controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
  renderHtmleditor:function(inFormKey,item, inField, inContainer)

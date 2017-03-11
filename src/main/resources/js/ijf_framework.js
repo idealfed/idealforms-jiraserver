@@ -20,7 +20,7 @@ setup:function (setup)
 	this.formSetsKeyed = new Array();
 
     //this.templates = new Array();
-
+/*
     this.defaultFormId='';
     this.workflowForms = new Array();
     this.listButtons = new Array();
@@ -53,6 +53,7 @@ setup:function (setup)
     this.listTitle = "";
     this.messagingSource = "";
     this.parentWindowName="";
+ */
     this.treeCollapsed = 'false';
     this.listWidth = 900;
     this.listNameWidth = 150;
@@ -65,8 +66,6 @@ setup:function (setup)
     this.listTreeWidth = 150;
     this.listTreeCollapsed = false;
     this.listFilter = "";
-    this.rootMaxPageId = "";
-    this.maxPageTemplateId = "";
 
     this.onChangeStyle = {"border-right":"solid blue 4px"};
     this.saveErrorStyle = {"border-right":"solid red 4px"};
@@ -103,7 +102,8 @@ setup:function (setup)
 				thisF.formSet = thisfs;
 				thisF.name = f.name;
 				thisF.formType = f.formType;
-				thisF.testIssue = f.testIssue;
+				(f.testIssue=="~") ? thisF.testIssue="": thisF.testIssue = f.testIssue;
+				thisF.issueType = f.issueType;
 				thisF.id = f.id;
 				if(f.hasOwnProperty("settings")) thisF.rawSettings = JSON.parse(f.settings);
 				if(f.hasOwnProperty("fields")) thisF.rawFields = JSON.parse(f.fields);
@@ -182,7 +182,7 @@ saveReferenceData:function ()
                 },
                 timeout: 60000,
                 success: function(data) {
-                    //$('#main').html($(data).find('#main *'));
+                    //jQuery('#main').html(jQuery(data).find('#main *'));
                     hideProgress();
                     return true;
 

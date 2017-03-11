@@ -125,6 +125,7 @@ addEditForm:function (sRow)
 			  thisF.formType = ijf.admin.cwfAdmin_form.formType;
 			  thisF.formSet = ijf.admin.cwfAdmin_form.formSet;
 			  thisF.testIssue = ijf.admin.cwfAdmin_form.testIssue;
+			  thisF.issueType = ijf.admin.cwfAdmin_form.issueType;
 			  thisF.id = ijf.admin.cwfAdmin_form.id;
 
 				if(tForm.hasOwnProperty("formSettings")) thisF.rawSettings = JSON.parse(JSON.parse(tForm.formSettings));
@@ -170,14 +171,14 @@ addEditForm:function (sRow)
 	},
 	renderFormAdmin:function(inForm)
 	{
-		var outStr = "Editing form: " + g_formId + "<br>";
-		outStr = outStr + "Item for data binding: " + ijf.currentItem.key + "<br>";
 
-		if((g_formId=="") || (!ijf.currentItem))
+		var outStr = "Editing form: " + g_formId + "<br>";
+
+		if(!ijf.main.outerForm)
 		{
 			//look for defaultForm in settings
 			ijfUtils.footLog("No form");
-			$('#ijfContent').html("<div style='text-align: center; color: royalblue'>" +
+			jQuery('#ijfContent').html("<div style='text-align: center; color: royalblue'>" +
 				"Sorry but no form or no issue is constructed.<br>" +
 				"Please make sure to include these in your URL</div>");
 			return;
@@ -199,20 +200,18 @@ addEditForm:function (sRow)
 			ijf.admin.cwfAdmin_form = thisForm;
 			//based on the form, it should get edit or add meta...
 
-			//create a keyed version of form fields....
-
-
-
-
-		    if(!ijf.jiraEditMeta.hasOwnProperty(ijf.main.itemId))
+			//create a keyed version of form fields....already created
+			/*
+		    if(!ijf.jiraMeta.hasOwnProperty(ijf.main.itemId))
 		    {
-				ijf.jiraEditMeta[ijf.currentItem.key] = ijfUtils.getJiraIssueMetaSync(ijf.currentItem.key);
-				ijf.jiraEditMetaKeyed[ijf.currentItem.key] = [];
-				Object.keys(ijf.jiraEditMeta[ijf.currentItem.key].fields).forEach(function(f)
+				ijf.jiraMeta[ijf.currentItem.key] = ijfUtils.getJiraIssueMetaSync(ijf.currentItem.key);
+				ijf.jiraMetaKeyed[ijf.currentItem.key] = [];
+				Object.keys(ijf.jiraMeta[ijf.currentItem.key].fields).forEach(function(f)
 				{
-					ijf.jiraEditMetaKeyed[ijf.currentItem.key][ijf.jiraEditMeta[ijf.currentItem.key].fields[f].name]=ijf.jiraEditMeta[ijf.currentItem.key].fields[f];
+					ijf.jiraMetaKeyed[ijf.currentItem.key][ijf.jiraMeta[ijf.currentItem.key].fields[f].name]=ijf.jiraMeta[ijf.currentItem.key].fields[f];
 				});
 		    }
+		    */
 
 		}
 
@@ -249,13 +248,22 @@ addEditForm:function (sRow)
 				labelStyle: "color:darkblue",
 				width: 400,
 				value: thisForm.name,
-				id: "adminFormSettings_formNameId",
-				listeners: {
-					change: function(f, n, o){
-						ijf.admin.cwfAdmin_form.name = n;
-						f.addCls("cwf-dirty");
-					}
-				}},
+				id: "adminFormSettings_formNameId"
+				},
+				{
+					xtype: 'textfield',
+					labelAlign: 'left',
+					labelWidth: 100,
+					margin: '4 0 0 10',
+					readOnly: true,
+					fieldLabel: "Issue Type",
+					fieldStyle: "background:lightgray",
+					labelSeparator: ijfUtils.helpLink("issueType"),
+					labelStyle: "color:darkblue",
+					width: 200,
+					value: thisForm.issueType,
+					id: "adminFormSettings_issueTypeId"
+				},
 				{
 					xtype: 'textfield',
 					labelAlign: 'left',
@@ -267,13 +275,8 @@ addEditForm:function (sRow)
 					labelSeparator: ijfUtils.helpLink("testIssue"),
   				    labelStyle: "color:darkblue",
 					width: 200,
-					value: ijf.main.itemId,
-					id: "adminFormSettings_testIssueId",
-					listeners: {
-						change: function(f, n, o){
-							ijf.admin.cwfAdmin_form.testIssue = n;
-							f.addCls("cwf-dirty");
-						}}
+					value: thisForm.testIssue,
+					id: "adminFormSettings_testIssueId"
 				},
 				{
 					xtype: 'combobox',
@@ -329,7 +332,7 @@ addEditForm:function (sRow)
 				            id: 'ijfAdminUploadButtonId',
 				            listeners: {
 				                click: function(f,n,o){
-									$('#adminattachmentUploadFileId').trigger('click');
+									jQuery('#adminattachmentUploadFileId').trigger('click');
 				                }
 				            }
         			},
@@ -357,6 +360,7 @@ addEditForm:function (sRow)
 										id: ijf.admin.cwfAdmin_form.id,
 										testIssue: ijf.admin.cwfAdmin_form.testIssue,
 										formType: ijf.admin.cwfAdmin_form.formType,
+										issueType: ijf.admin.cwfAdmin_form.issueType,
 										name: ijf.admin.cwfAdmin_form.name,
 										fields: JSON.stringify(JSON.stringify(fieldsOut)),
 										formSettings: JSON.stringify(JSON.stringify(settingsOut))
@@ -737,7 +741,8 @@ addEditForm:function (sRow)
 								sorterFn: function(v1, v2){
 									var tv1 = v1.get('cell').replace(",","")/1;
 									var tv2 = v2.get('cell').replace(",","")/1;
-									return (tv1 > tv2) ? true: false;
+									//return (tv1 > tv2) ? true: false;
+									return tv2>tv1 ? -1 : tv2<tv1 ? 1 : 0;
 								}
 							});
         		}
@@ -793,7 +798,8 @@ addEditForm:function (sRow)
 						//get existing field by ID
 						ijf.admin.cwfAdmin_thisField = ijf.admin.cwfAdmin_form.fields[record[0].data.iid];
 					}
-
+					Ext.getCmp("adminFormFields_beforeRenderId").setValue(ijf.admin.cwfAdmin_thisField["beforeRender"]);
+					Ext.getCmp("adminFormFields_afterRenderId").setValue(ijf.admin.cwfAdmin_thisField["afterRender"]);
 					Ext.getCmp("adminFormFields_captionId").setValue(ijf.admin.cwfAdmin_thisField["caption"]);
 					Ext.getCmp("adminFormFields_controlTypeId").setValue(ijf.admin.cwfAdmin_thisField["controlType"]);
 					Ext.getCmp("adminFormFields_formCellId").setValue(ijf.admin.cwfAdmin_thisField["formCell"]);
@@ -819,13 +825,11 @@ addEditForm:function (sRow)
 		});
 
 
-		var lookup = ["attachmentlist","attachmentupload","button","checkbox","commentlist","datebox","dropdown","html","itemlist","formbuttons","multiselect","navigatetoform","subform","popform","radio","tabmenu","textarea","textbox","userpicker"];
+		var lookup = ["attachmentlist","attachmentupload","button","checkbox","commentlist","datebox","dropdown","html","itemlist","formbuttons","formbuttonsforpopup","multiselect","navigatetoform","subform","openpopform","radio","tabmenu","textarea","textbox","userpicker"];
 
 	    var  sectionLookup = [];
 
-
-		if(ijf.currentItem)
-			if(ijf.jiraEditMetaKeyed[ijf.currentItem.key]) sectionLookup = Object.keys(ijf.jiraEditMetaKeyed[ijf.currentItem.key]);
+	    sectionLookup = Object.keys(ijf.jiraMetaKeyed);
 
 		sectionLookup.push("Status");
 	 	sectionLookup=sectionLookup.sort();
@@ -1042,7 +1046,7 @@ addEditForm:function (sRow)
 					xtype: 'textfield',
 					labelAlign: 'left',
 					labelWidth: 100,
-					fieldLabel: "Event",
+					fieldLabel: "On Change",
 					width: 500,
 					value: ijf.admin.cwfAdmin_thisField["event"],
 					id: "adminFormFields_eventId",
@@ -1088,6 +1092,32 @@ addEditForm:function (sRow)
 					listeners: {
 						change: function(f, n, o){
 							ijf.admin.cwfAdmin_thisField["renderIf"] = n;
+						}}
+				},
+				{
+					xtype: 'textfield',
+					labelAlign: 'left',
+					labelWidth: 100,
+					fieldLabel: "Before render",
+					width: 500,
+					value: ijf.admin.cwfAdmin_thisField["beforeRender"],
+					id: "adminFormFields_beforeRenderId",
+					listeners: {
+						change: function(f, n, o){
+							ijf.admin.cwfAdmin_thisField["beforeRender"] = n;
+						}}
+				},
+				{
+					xtype: 'textfield',
+					labelAlign: 'left',
+					labelWidth: 100,
+					fieldLabel: "After render",
+					width: 500,
+					value: ijf.admin.cwfAdmin_thisField["afterRender"],
+					id: "adminFormFields_afterRenderId",
+					listeners: {
+						change: function(f, n, o){
+							ijf.admin.cwfAdmin_thisField["afterRender"] = n;
 						}}
 				}
 
@@ -1280,7 +1310,7 @@ addEditForm:function (sRow)
 
     ijf.lists.dWin = new Ext.Window({
         layout: 'vbox',
-        title: "IJF Form Designer:  " + ijf.admin.cwfAdmin_form.name,
+        title: "Ideal Forms for JIRA Designer:  " + ijf.admin.cwfAdmin_form.name,
         width: 950,
         height:600,
         closable: false,
@@ -1971,6 +2001,8 @@ addEditForm:function (sRow)
 
 			var fRow = {};
 
+			fRow["beforeRender"] = ijf.admin.cwfAdmin_form.fields[j]["beforeRender"];
+			fRow["afterRender"] = ijf.admin.cwfAdmin_form.fields[j]["afterRender"];
 			fRow["formCell"] = ijf.admin.cwfAdmin_form.fields[j]["formCell"];
 			fRow["caption"] = ijf.admin.cwfAdmin_form.fields[j]["caption"];
 			fRow["controlType"] = ijf.admin.cwfAdmin_form.fields[j]["controlType"];
@@ -2009,6 +2041,7 @@ addEditForm:function (sRow)
 			formId: thisForm.id,
 			testIssue: thisForm.testIssue,
 			formType: thisForm.formType,
+			issueType: thisForm.issueType,
 			formName: thisForm.name,
 			fields: JSON.stringify(JSON.stringify(fieldsOut)),
 			formSettings: JSON.stringify(JSON.stringify(settingsOut))

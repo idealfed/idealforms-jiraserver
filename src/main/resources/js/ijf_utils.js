@@ -1,3 +1,24 @@
+Ext.define('SimpleLink', {
+    extend: 'Ext.Component',
+    alias: 'widget.simplelink',
+    baseCls: Ext.baseCSSPrefix + 'simplelink',
+    autoEl: {
+        tag: 'a',
+        href: '#'
+    },
+    renderTpl: '{text}',
+    initComponent: function() {
+        this.renderData = {
+            text: this.text
+        };
+        this.callParent(arguments);
+    },
+    afterRender: function() {
+        this.mon(this.getEl(), 'click', this.handler, this);
+    },
+    handler: Ext.emptyFn
+});
+
 Object.size = function(obj) {
     var size = 0, key;
     for (key in obj) {
@@ -202,12 +223,12 @@ var ijfUtils = {
 			else
 			{
 				return {
-					jiraMeta: ijf.jiraEditMetaKeyed[issueKey][inFieldName],
+					jiraMeta: ijf.jiraMetaKeyed[inFieldName],
 					jiraField: ijf.jiraFieldsKeyed[inFieldName]
 				}
 			}
 		},
-   jiraApiSync:function(inMethod,inApi, inData){
+   jiraApiSync:function(inMethod, inApi, inData){
 
      	var retVal="tbd";
      	jQuery.ajax({
@@ -219,9 +240,9 @@ var ijfUtils = {
                  timeout: 60000,
              success: function(data,e,f) {
                  ijfUtils.footLog("Successful data response code: " + f.status);
-                 if((f.status==200) || (f.status==204))
+                 if((f.status==200) || (f.status==201) || (f.status==204))
                  {
-					 if(this.type=="GET") retVal=data;
+					 if((this.type=="GET") || (this.type=="POST")) retVal=data;
 					 else
 						 retVal="OK";
 				 }
@@ -231,7 +252,11 @@ var ijfUtils = {
 				 }
              },
              error: function(e) {
-				if(e.statusText=="OK")
+				 if((e.status==201) && (e.statusText=="Created"))
+                 {
+					 retVal="OK";
+				 }
+				 else if(e.statusText=="OK")
                  {
                      ijfUtils.footLog("Successful data post");
                      retVal=e.responseText;
@@ -259,7 +284,27 @@ var ijfUtils = {
              error: onError
         });
 },
+loadIssueTypeDetails:function(projectKey)
+{
+	if(!ijf.jiraAddMeta.hasOwnProperty(projectKey))
+	{
+		//get the create meta for all issue types of the project.  project key
+		//each will be keyed fields by issue type...
+		ijf.jiraAddMeta[projectKey] = [];
+		ijf.jiraAddMetaKeyed[projectKey] = [];
+		var rawMeta = ijfUtils.jiraApiSync("GET",'/rest/api/2/issue/createmeta',"expand=projects.issuetypes.fields&projectKeys="+projectKey);
+		rawMeta.projects[0].issuetypes.forEach(function(it){
 
+			ijf.jiraAddMeta[projectKey][it.name]=it.fields;
+			var fieldsKeyed = [];
+			Object.keys(it.fields).forEach(function(fk){
+				var f = it.fields[fk];
+				fieldsKeyed[f.name]=f;
+			});
+			ijf.jiraAddMetaKeyed[projectKey][it.name]=fieldsKeyed;
+		});
+	}
+},
 ///////////END JIRA UTILS
 applyStyle:function(element, style){
     Object.keys(style).forEach(function(key){
@@ -391,7 +436,7 @@ writeFullConfig:function(inConfig, doReset)
 				timeout: 60000,
 				success: function(data) {
 
-					//$('#main').html($(data).find('#main *'));
+					//jQuery('#main').html(jQuery(data).find('#main *'));
 					initResp= data;
 					ijfUtils.footLog("Set init data " + data.status);
 					if(doReset)
@@ -453,6 +498,7 @@ getConfigJson:function()
 						id: thisForm.id,
 						testIssue: thisForm.testIssue,
 						formType: thisForm.formType,
+						issueType: thisForm.issueType,
 						name: thisForm.name,
 						fields: JSON.stringify(JSON.stringify(fieldsOut)),
 						formSettings: JSON.stringify(JSON.stringify(settingsOut))
@@ -663,13 +709,13 @@ showProgress:function()
 
 hideProgress:function(focusTop)
 {
-    //$('#progress1').html("");
+    //jQuery('#progress1').html("");
     if(Ext.getCmp('ijfProgresspbar3Id'))
     {
         this.pWin.close();
         //Ext.getCmp('pbar3').destroy();
     }
-    //$('#mwfContent').show();
+    //jQuery('#mwfContent').show();
     //if (focusTop == true) {
     //   new Ext.Window({ header: false, closable: false, frame: false, baseCls: 'x-panel', cls: 'x-window', height: 1, width: 1}).showAt(-48,-48).destroy();
     //}
@@ -751,7 +797,7 @@ loadConfig:function(onSuccess, onError)
 			},
 			timeout: 60000,
 			success: function(data) {
-				//$('#main').html($(data).find('#main *'));
+				//jQuery('#main').html(jQuery(data).find('#main *'));
 				return data;
 			},
 			error: function() {
@@ -790,7 +836,7 @@ loadConfig:function(onSuccess, onError)
 			url: g_root + '/setCacheValue?inKey='+inKey,
 			timeout: 60000,
 			success: function(data) {
-				//$('#main').html($(data).find('#main *'));
+				//jQuery('#main').html(jQuery(data).find('#main *'));
 				return data;
 
 			},
@@ -1141,11 +1187,14 @@ loadConfig:function(onSuccess, onError)
 
 	replaceKeyValues:function(inText)
 	{
-		if(!inText) return "";
 		var retText = inText;
+		if(!inText)  return inText;
 
 		retText=retText.replace("#{user}",ijf.main.currentUser.displayName);
         retText=retText.replace("#{datetime}",moment().format('LL'));
+
+		if(!ijf.currentItem) return retText;
+		if(!ijf.currentItem.key) return retText;
 
 		if((!retText)||(retText=="") || (!ijf.currentItem)) return "";
 
@@ -1204,6 +1253,9 @@ loadConfig:function(onSuccess, onError)
 		{
 			case "string":
 				return inField;
+				break;
+			case "issuetype":
+				return inField.name;
 				break;
 			case "user":
 				if(forDisplay) if(inField) return inField.displayName;

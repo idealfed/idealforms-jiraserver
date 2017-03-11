@@ -120,13 +120,15 @@ openForm:function()
 				if(ijf.fw.forms[tF].id==ijf.lists.itemId) thisF=ijf.fw.forms[tF];
 			}
 			if(!thisF.name){ ijfUtils.modalDialogMessage("Form Error","Sorry, undable to find the requested form: " + ijf.lists.itemId); return;}
+			var decorator = "";
+			if(thisF.formSet.settings["decorator"]=="true") decorator = "&decorator=true";
 			if(thisF.testIssue)
 			{
-				var tUrl = g_root + '/plugins/servlet/jforms?itemId='+thisF.testIssue+'&formId='+thisF.name;
+				var tUrl = g_root + '/plugins/servlet/jforms?itemId='+thisF.testIssue+'&formId='+thisF.name + decorator;
 			}
 			else
 			{
-				var tUrl = g_root + '/plugins/servlet/jforms?formId='+thisF.name;
+				var tUrl = g_root + '/plugins/servlet/jforms?formId='+thisF.name + decorator;
 			}
 			window.open(tUrl);
 },
@@ -738,6 +740,7 @@ addEditForm:function (inFrmId)
 		thisF.name = "";
 		thisF.formType = "Edit";
 		thisF.testIssue = "";
+		thisF.issueType = "";
 		thisF.id = 0;
 		thisF.settings=[];
 	    thisF.fields=[];
@@ -745,17 +748,28 @@ addEditForm:function (inFrmId)
 
     var dMes = "Adding a new form creates the container for your form settings.  Once the container is";
     dMes+=" added you can edit your form.  Please note:";
-    dMes+="<ul><li>Form name should be unique for all forms.</li>";
+    dMes+="<ul><li>Form Group is an grouping of forms, it links to a project and contains common Javascript business rules.</li>";
+    dMes+="<li>Form name should be unique for all forms.</li>";
     dMes+="<li>Form type determines available JIRA fields (based on JIRA Views).</li>";
-    dMes+="<li>Test issue determines the JIRA Project the form will be based upon.<br><i>&nbsp;&nbsp;(and helps form creation by binding to that issue)</i></li>";
-    dMes+="<li>Form Group is an arbitrary group of forms, it's used for common Javascript snippets.</li></ul>";
+    dMes+="<li>Issue type sets the issue type to be edited or added.</li>";
+    dMes+="<li>Test issue provides an issue to open with the designer perspective. For Add type forms, leave blank for design and testing.</li></ul>";
+
     var formTypeLookup = ["Edit","Add","List"];
-    var formGroups =ijf.fw.formSets.map(function(fs){return fs.name});
+    var formGroups = ijf.fw.formSets.map(function(fs){return fs.name});
+
+    var issueTypes = [];
+
+    if(ijf.fw.formSetsKeyed[thisF.formSet.name])
+    {
+		ijfUtils.loadIssueTypeDetails(thisF.formSet.projectId);
+		issueTypes =Object.keys(ijf.jiraAddMeta[thisF.formSet.projectId]);
+	}
+
     ijf.lists.dWin = new Ext.Window({
         layout: 'vbox',
         title: "IJF Form Settings",
         width: 600,
-        height:370,
+        height:470,
         closable: true,
         items: [{
             html: dMes,
@@ -764,6 +778,33 @@ addEditForm:function (inFrmId)
             margin: '4 0 0 10',
             frame: false,
             xtype: "panel"},
+            {
+							xtype: 'combobox',
+							labelAlign: 'left',
+							labelWidth: 100,
+							forceSelection: true,
+							store: formGroups,
+							fieldLabel: "Form Group",
+							labelStyle: "color:darkblue",
+							width: 400,
+							margin: '4 0 0 10',
+							value: thisF.formSet.name,
+							listeners: {
+								                afterrender: function(f)
+								                {
+								                    this.validate();
+			                },
+								change: function(f, n, o){
+									thisF.formSet.name = n;
+									//must reset the issue types
+									    if(ijf.fw.formSetsKeyed[thisF.formSet.name])
+									    {
+											ijfUtils.loadIssueTypeDetails(thisF.formSet.projectId);
+											issueTypes =Object.keys(ijf.jiraAddMeta[thisF.formSet.projectId]);
+											//Ext.getCmp('editFormIssueTypeId').store=issueTypes;
+										}
+								}}
+			},
             {
                 xtype: 'textfield',
                 labelAlign: 'left',
@@ -807,6 +848,28 @@ addEditForm:function (inFrmId)
 						thisF.formType = n;
 									}}
 			},
+			{
+				xtype: 'combobox',
+				labelAlign: 'left',
+				labelWidth: 100,
+				forceSelection: true,
+				store: issueTypes,
+				allowBlank: false,
+				id: 'editFormIssueTypeId',
+				fieldLabel: "Issue Type",
+				labelStyle: "color:darkblue",
+				width: 400,
+				margin: '4 0 0 10',
+				value: thisF.issueType,
+				listeners: {
+									afterrender: function(f)
+									{
+										this.validate();
+				},
+					change: function(f, n, o){
+						thisF.issueType = n;
+					}}
+			},
             {
 				xtype: 'textfield',
 				labelAlign: 'left',
@@ -821,27 +884,8 @@ addEditForm:function (inFrmId)
 					change: function(f, n, o){
 						thisF.testIssue = n;
 					}}
-			},
-			{
-				xtype: 'combobox',
-				labelAlign: 'left',
-				labelWidth: 100,
-				forceSelection: true,
-				store: formGroups,
-				fieldLabel: "Form Group",
-				labelStyle: "color:darkblue",
-				width: 400,
-				margin: '4 0 0 10',
-				value: thisF.formSet.name,
-				listeners: {
-					                afterrender: function(f)
-					                {
-					                    this.validate();
-                },
-					change: function(f, n, o){
-						thisF.formSet.name = n;
-					}}
 			}
+
         ],
         buttons:[{
             text:'OK',
@@ -851,6 +895,7 @@ addEditForm:function (inFrmId)
 				if(thisForm.name=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the form name cannot be blank."); return;}
 				if(thisForm.id==0) if(ijf.fw.forms.hasOwnProperty(thisForm.name)) {ijfUtils.modalDialogMessage("Form Error","Sorry, the form name is already being used."); return;}
 				if(!thisForm.formSet.name) {ijfUtils.modalDialogMessage("Form Error","Sorry, the form group name cannot be blank."); return;}
+				if(thisForm.issueType=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the issue type cannot be blank."); return;}
 				//if(thisForm.testIssue=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the test issue must exist and not be empty."); return;}
 
 				//need to have a valid "formSet" ID at this point....
@@ -861,6 +906,7 @@ addEditForm:function (inFrmId)
 							testIssue: thisForm.testIssue,
 							formType: thisForm.formType,
 							formName: thisForm.name,
+							issueType: thisForm.issueType,
 							formSetId: formSet.id
 				};
 				var jdata = JSON.stringify(jOut);
@@ -944,6 +990,7 @@ copyForm: function(inFrmId)
 		        var jOut = {
 							formId: 0,
 							testIssue: thisForm.testIssue,
+							issueType: thisForm.issueType,
 							formType: thisForm.formType,
 							formName: newFormName,
 							formSetId: formSet.id,
@@ -1081,8 +1128,8 @@ addEditFormSet:function (inFrmId)
     dMes+="<li>Form groups are the containers for Javascript snippets.</li></ul>";
     var projectLookup = [];
     ijf.exercise.projects.forEach(function(p){projectLookup.push([p.key,p.name]);});
-
-
+    var decLookup = ["true","false"];
+	if(!thisF.settings["decorator"]) thisF.settings["decorator"]="false";
     ijf.lists.dWin = new Ext.Window({
         layout: 'vbox',
         title: "IJF Form Group Settings",
@@ -1149,7 +1196,6 @@ addEditFormSet:function (inFrmId)
 			  				margin: '4 0 0 10',
 			                width: 400,
 			                value: thisF.settings["defaultForm"],
-			                allowBlank:false,
 			                listeners: {
 			                afterrender: function(f)
 			                {
@@ -1159,7 +1205,44 @@ addEditFormSet:function (inFrmId)
 			                        thisF.settings["defaultForm"] = n;
 			                    }
 			                }
-            }
+            },
+            {
+			                xtype: 'textfield',
+			                labelAlign: 'left',
+			                fieldLabel: 'Change Style',
+			                labelWidth: 100,
+			                labelStyle: "color:darkblue",
+			  				margin: '4 0 0 10',
+			                width: 400,
+			                value: thisF.settings["changeStyle"],
+			                listeners: {
+			                afterrender: function(f)
+			                {
+			                    this.validate();
+			                },
+			                change: function(f,n,o){
+			                        thisF.settings["changeStyle"] = n;
+			                    }
+			                }
+            },
+			{
+				xtype: 'combobox',
+				labelAlign: 'left',
+				forceSelection: true,
+				store: decLookup,
+				forceSelection: true,
+				labelWidth: 100,
+				margin: '4 0 0 10',
+				fieldLabel: "JIRA Decorated",
+				labelStyle: "color:darkblue",
+				triggerAction: 'all',
+				width: 400,
+				value: thisF.settings["decorator"],
+				listeners: {
+					change: function(f, n, o){
+						thisF.settings["decorator"] = f.getDisplayValue();
+									}}
+			},
         ],
         buttons:[{
             text:'OK',
