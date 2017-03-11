@@ -345,8 +345,8 @@ public class Craft extends HttpServlet
 				}
 
 	    		f.setName(inForm.getString("formName"));
-        		f.setTestIssue(inForm.getString("testIssue"));
         		f.setIssueType(inForm.getString("issueType"));
+        		f.setTestIssue(inForm.getString("testIssue"));
         		f.setFormType(inForm.getString("formType"));
 	    		f.save();
 
