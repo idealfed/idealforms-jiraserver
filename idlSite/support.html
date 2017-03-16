@@ -1,0 +1,259 @@
+<!DOCTYPE HTML>
+<!--
+	Verti by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+	    <link rel="shortcut icon" type="image/x-icon" href="images/favicon.ico"/>
+		<title>Ideal Federal</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!--[if lte IE 8]><script src="assets/js/ie/html5shiv.js"></script><![endif]-->
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<!--[if lte IE 8]><link rel="stylesheet" href="assets/css/ie8.css" /><![endif]-->
+	</head>
+	<body class="left-sidebar">
+		<div id="page-wrapper">
+
+			<!-- Header -->
+				<div id="header-wrapper">
+					<header id="header" class="container">
+
+						<!-- Logo -->
+							<div id="logo">
+								<a href="index.html"><img width=100 height=100 src="/images/idf.png"></a> Home of Ideal Forms for JIRA
+							</div>
+
+						<!-- Nav -->
+							<nav id="nav">
+								<ul>
+									<li><a href="index.html">Welcome</a></li>
+									<li>
+										<a href="#">Dropdown</a>
+										<ul>
+											<li><a href="#">Lorem ipsum dolor</a></li>
+											<li><a href="#">Magna phasellus</a></li>
+											<li>
+												<a href="#">Phasellus consequat</a>
+												<ul>
+													<li><a href="#">Lorem ipsum dolor</a></li>
+													<li><a href="#">Phasellus consequat</a></li>
+													<li><a href="#">Magna phasellus</a></li>
+													<li><a href="#">Etiam dolore nisl</a></li>
+												</ul>
+											</li>
+											<li><a href="#">Veroeros feugiat</a></li>
+										</ul>
+									</li>
+									<li class="current"><a href="support.html">Support</a></li>
+									<li><a href="right-sidebar.html">Right Sidebar</a></li>
+									<li><a href="no-sidebar.html">No Sidebar</a></li>
+								</ul>
+							</nav>
+
+					</header>
+				</div>
+
+			<!-- Main -->
+				<div id="main-wrapper">
+					<div class="container">
+						<div class="row 200%">
+							<div class="4u 12u$(medium)">
+								<div id="sidebar">
+
+									<!-- Sidebar -->
+										<section>
+											<h3>Support</h3>
+											<p>We are working hard to create self help instructions for common challenges.  Please keep visiting this page as you use Ideal Forms.</p>
+											<footer>
+												<a href="#" class="button icon fa-info-circle">Demos</a><br><br>
+												<a href="#" class="button icon fa-info-circle">Help Request</a>
+											</footer>
+										</section>
+
+										<section>
+											<h3 id="topics">Topics</h3>
+											<ul class="style2">
+												<li><a href="#quickStart">Getting Started</a></li>
+												<li><a href="#formGroupSettings">Form Group Settings</a></li>
+												<li><a href="#formSettings">Form Definition</a></li>
+												<li><a href="#">Designing a Form</a></li>
+												<li><a href="#">Form Settings</a></li>
+												<li><a href="#">Form Fields</a></li>
+											</ul>
+										</section>
+
+								</div>
+							</div>
+							<div class="8u 12u$(medium) important(medium)">
+								<div id="content">
+
+									<!-- Content -->
+										<article>
+
+											<h2 id=quickStart>Getting Start</h2> <a href="#topics">back to topics</a>
+											<p>Ideal Forms for JIRA (iForms) are similar to other forms software applications such as MS Access forms.
+											 If you think of JIRA Project as the database then the iForms are just wired up visual representations of the Project data.
+											 To get started:<br>
+											<br>
+											<b>Install Ideal Forms for JIRA:</b> A descriptive name for your form group.<br>
+											<b>Refresh and Run:</b> Select Project from your JIRA instance.  This is required for Add forms to set Issue types.<br>
+											<b>:</b> Select Project from your JIRA instance.  This is required for Add forms to set Issue types.<br>
+
+											<h3>Examples and Samples</h3>
+											<p>We are continually building new examples and samples from which you can draw. Ideal Forms for JIRA includes an ability to upload a form
+											configuration file which can greatly speed your production.</p>
+
+											<p>How to Load an Example</p>
+
+
+
+										</article>
+
+										<article>
+
+											<h2 id=formGroupSettings>Form Group Settings</h2> <a href="#topics">back to topics</a>
+
+											<p>iForms are organized by "Form Groups."  All forms must be in one and only one Form Group.  This concept helps organized forms around particular
+											use cases and it gives us a container to hold Javascript business rules for the Form Group.  It also allows us to set a 'default' form for
+											a form group to allow a 'Done' button a place to navigate.  Settings are:<br>
+											<br>
+											<b>Group Name:</b> A descriptive name for your form group.<br>
+											<b>Project:</b> A selected Project from your JIRA instance.  This is required for Add forms to set Issue types.<br>
+											<b>Default Form:</b> This is the name of a Form to open when a user clicks "Done" in a any form of the group.<br>
+											<b>Change Syle:</b> This overrides the CSS change style for changed fields.  It defaults to a blue bar on the right.
+											An example is:</b>
+											&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{border:solid red 2px}<br>
+											<b>JIRA Decorated:</b> This determines if the form will include a JIRA background when open from the administrator.<br>
+
+											 </p>
+
+											<h3>Adding and Editing a Form Group</h3>
+											<p>From the main Ideal Forms for JIRA Adminstration screen click the "Add" button to Add a Form Group or click the "Edit" button if you wan to edit.
+											<br>
+											<img src=/images/addFormSet.PNG>
+											</p>
+										</article>
+
+										<article>
+
+											<h2 id=formSettings>Form Definitions</h2>
+											<a href="#topics">back to topics</a>
+
+											<p>iForms are defined from the administration menu with a few over arching configurations.<br>Congigurations settings are:
+											<br><br>
+											<b>Form Group:</b> This is the form group the form will be a member of.<br>
+											<b>Form Name:</b> A name for the form.  Forms can have any names but should not have special characters and it is a good practice to name them "Form_[function]" or "SubForm_[function]".<br>
+											<b>Form Type:</b> [Edit, Add, List]. This defines the expected behavior of a form and helps iForms load the correct JIRA meta data when rendering.<br>
+											<b>Issue Type:</b> [Required for Add type forms]. This sets the issue type for Add forms.  The issue types are determined by the Form Group Project.<br>
+											<b>Test Issue:</b> [Required for Edit type forms]. This provides the form designer an Issue to use when designing the form.<br>
+
+											 </p>
+
+											<h3>Adding and Editing a Form</h3>
+											<p>From the main Ideal Forms for JIRA Adminstration screen click the "Add" button to Add a Form or select a form click the "Edit" button if you wan to edit.
+											<br>
+											<img src=/images/addForm.PNG>
+											</p>
+										</article>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+			<!-- Footer -->
+				<div id="footer-wrapper">
+					<footer id="footer" class="container">
+						<div class="row">
+							<div class="3u 6u(medium) 12u$(small)">
+
+								<!-- Links -->
+									<section class="widget links">
+										<h3>Random Stuff</h3>
+										<ul class="style2">
+											<li><a href="#">Etiam feugiat condimentum</a></li>
+											<li><a href="#">Aliquam imperdiet suscipit odio</a></li>
+											<li><a href="#">Sed porttitor cras in erat nec</a></li>
+											<li><a href="#">Felis varius pellentesque potenti</a></li>
+											<li><a href="#">Nullam scelerisque blandit leo</a></li>
+										</ul>
+									</section>
+
+							</div>
+							<div class="3u 6u$(medium) 12u$(small)">
+
+								<!-- Links -->
+									<section class="widget links">
+										<h3>Random Stuff</h3>
+										<ul class="style2">
+											<li><a href="#">Etiam feugiat condimentum</a></li>
+											<li><a href="#">Aliquam imperdiet suscipit odio</a></li>
+											<li><a href="#">Sed porttitor cras in erat nec</a></li>
+											<li><a href="#">Felis varius pellentesque potenti</a></li>
+											<li><a href="#">Nullam scelerisque blandit leo</a></li>
+										</ul>
+									</section>
+
+							</div>
+							<div class="3u 6u(medium) 12u$(small)">
+
+								<!-- Links -->
+									<section class="widget links">
+										<h3>Random Stuff</h3>
+										<ul class="style2">
+											<li><a href="#">Etiam feugiat condimentum</a></li>
+											<li><a href="#">Aliquam imperdiet suscipit odio</a></li>
+											<li><a href="#">Sed porttitor cras in erat nec</a></li>
+											<li><a href="#">Felis varius pellentesque potenti</a></li>
+											<li><a href="#">Nullam scelerisque blandit leo</a></li>
+										</ul>
+									</section>
+
+							</div>
+							<div class="3u 6u$(medium) 12u$(small)">
+
+								<!-- Contact -->
+									<section class="widget contact">
+										<h3>Contact Us</h3>
+										<ul>
+											<li><a href="#" class="icon fa-twitter"><span class="label">Twitter</span></a></li>
+											<li><a href="#" class="icon fa-facebook"><span class="label">Facebook</span></a></li>
+											<li><a href="#" class="icon fa-instagram"><span class="label">Instagram</span></a></li>
+											<li><a href="#" class="icon fa-dribbble"><span class="label">Dribbble</span></a></li>
+											<li><a href="#" class="icon fa-pinterest"><span class="label">Pinterest</span></a></li>
+										</ul>
+										<p>1234 Fictional Road<br />
+										Nashville, TN 00000<br />
+										(800) 555-0000</p>
+									</section>
+
+							</div>
+						</div>
+						<div class="row">
+							<div class="12u">
+								<div id="copyright">
+									<ul class="menu">
+										<li>&copy; Untitled. All rights reserved</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</footer>
+				</div>
+
+			</div>
+
+		<!-- Scripts -->
+
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.dropotron.min.js"></script>
+			<script src="assets/js/skel.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<!--[if lte IE 8]><script src="assets/js/ie/respond.min.js"></script><![endif]-->
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>

@@ -4,13 +4,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.idealfed.poc</groupId>
     <artifactId>craft</artifactId>
-    <version>1.0.0-SNAAPSHOT</version>
+    <version>1.0.9</version>
     <organization>
-        <name>Example Company</name>
-        <url>http://www.example.com/</url>
+        <name>Ideal Federal LLC</name>
+        <url>http://www.idealfed.com</url>
     </organization>
-    <name>craft</name>
-    <description>This is the com.idealfed.poc:craft plugin for Atlassian JIRA.</description>
+    <name>Ideal Forms for JIRA</name>
+    <description>This is the Ideal Forms plugin for Atlassian JIRA.</description>
     <packaging>atlassian-plugin</packaging>
     <dependencies>
         <dependency>

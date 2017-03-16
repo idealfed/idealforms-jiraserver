@@ -19,14 +19,24 @@
     <resource type="download" name="theme-neptune-all_2.css" location="/css/theme-neptune-all_2.css"/>    
     
     <resource type="download" name="jquery-1.11.2.min.js" location="/js/jquery-1.11.2.min.js"/>
-    <resource type="download" name="craft.js" location="/js/craft.js"/>
     <resource type="download" name="ext-all.js" location="/js/ext-all.js"/>
-    
+    <resource type="download" name="FileSaver.js" location="/js/FileSaver.js"/>
+    <resource type="download" name="moment.js" location="/js/moment.js"/>
+ 
+    <resource type="download" name="craft.js" location="/js/craft.js"/>
+    <resource type="download" name="ijf_utils.js" location="/js/ijf_utils.js"/>
+    <resource type="download" name="ijf_model.js" location="/js/ijf_model.js"/>
+    <resource type="download" name="ijf_main.js" location="/js/ijf_main.js"/>
+    <resource type="download" name="ijf_framework.js" location="/js/ijf_framework.js"/>
+    <resource type="download" name="ijf_lists.js" location="/js/ijf_lists.js"/>
+    <resource type="download" name="ijf_admin.js" location="/js/ijf_admin.js"/>
+    <resource type="download" name="ijf_ext_utils.js" location="/js/ijf_ext_utils.js"/>
+
     <context>craft</context>
   </web-resource>
   <!-- publish our component -->
   <servlet name="craft" class="com.idealfed.poc.craft.Craft" key="fCraft">
-    <url-pattern>/jforms</url-pattern>
+    <url-pattern>/iforms</url-pattern>
   </servlet>
   <ao key="ao-module">
      <description>The module configuring the Active Objects service used by this plugin</description>
@@ -37,14 +47,14 @@
    </ao>
   
  <web-section key="ijf_Forms_Section" name="IJF Forms Section" location="system.admin" weight="50">
-    <label>IJF Forms</label>
+    <label>Ideal Forms</label>
     <description>IJF Administration</description>
     <tooltip>Click to open IJF Section</tooltip>
 </web-section>
   
   <web-item key="ijf_links_link" name="Link on IJF Links Main Section" section="system.admin/ijf_Forms_Section" weight="10">
-    <label>IJF Forms Admin</label>
-    <link linkId="ijfFormsAdminId">/plugins/servlet/jforms</link>
+    <label>Ideal Forms Admin</label>
+    <link linkId="ijfFormsAdminId">/plugins/servlet/iforms?decorator=admin</link>
   </web-item>
   
     

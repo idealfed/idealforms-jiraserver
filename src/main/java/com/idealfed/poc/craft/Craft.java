@@ -63,6 +63,8 @@ public class Craft extends HttpServlet
     	String iwfAction = request.getParameter("ijfAction");
     	if(iwfAction==null) iwfAction="noAction";
 
+    	String remote = request.getParameter("remote");
+    	if(remote==null) remote="";
     	String itemId = request.getParameter("itemId");
     	if(itemId==null) itemId="";
     	String formId = request.getParameter("formId");
@@ -81,15 +83,27 @@ public class Craft extends HttpServlet
     		templateRenderer.render("nopermission.vm", null, response.getWriter());
     		return;
     	}
-    	String outTemplate = "main.vm";
+    	String outTemplate = "main";
     	if (craftFlag.equals("true"))
     	{
-    		outTemplate="craft.vm";
+    		outTemplate="craft";
     	}
-    	if (decorator.equals("true"))
+    	else
     	{
-    		outTemplate="main_general.vm";
-    	}
+			if (decorator.equals("general"))
+			{
+				outTemplate="main_general";
+			}
+			if (decorator.equals("admin"))
+			{
+				outTemplate="main_admin";
+			}
+		}
+		if(remote.equals("true"))
+		{
+			outTemplate+="_remote";
+		}
+		outTemplate+=".vm";
 
 
     	if(iwfAction.equals("getConfig"))
@@ -172,7 +186,7 @@ public class Craft extends HttpServlet
         	craft.put("ijfItemId", itemId);
         	craft.put("ijfDebug", debugFlag);
         	craft.put("ijfCraft", craftFlag);
-        	craft.put("ijfRoot", "http://idealfedsurface:2990/jira");
+        	craft.put("ijfRoot", "");
 
         	response.setContentType("text/html;charset=utf-8");
 
