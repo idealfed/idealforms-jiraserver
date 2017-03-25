@@ -480,7 +480,7 @@ renderItemList_Borderlayout:function(inContainerId)
             style: 'color:white;font-weight:bold',
             region:'west',
             frame: true,
-            margins: '5 0 0 5',
+            margins: '5 0 5 5',
             width: 250,
             collapsible: true,   // make collapsible
             collapsed:  false,
@@ -527,10 +527,47 @@ renderItemList_Borderlayout:function(inContainerId)
 												return;
 										}
 
-
 									    ijf.lists.deleteFormSet(tId);
 									}
 								}]
+		},
+			buttons:{
+					items:[{
+						xtype:'button',
+						text:"Download Group",
+						handler: function(){
+						   //need the formset ID...
+
+							if(Object.size(ijf.lists.checkedNodes) == 1)
+							{
+								var tId = ijf.lists.checkedNodes[0].data.text;
+							}
+							else
+							{
+									ijfUtils.modalDialogMessage("Information","Sorry but to download a form group, please check one and only one from the list");
+									return;
+							}
+							ijfUtils.writeConfigFile(tId);
+						}
+					},
+					{
+						xtype:'button',
+						text:"Upload Group",
+						handler: function(){
+						   //need the formset ID...
+						   var uploadGrpFunction = function(){
+							   jQuery('#groupUploadFileId').trigger('click');
+						   };
+						   ijfUtils.modalDialog("Warning","You are about to upload a form group configuration file.  If the same Form Group exists by name, this will overwrite that Form Group, please rename your existing Form Group if you want to preserver it.",uploadGrpFunction);
+						}
+					},
+            		{
+						html:  "<form enctype='multipart/form-data' id='groupUploadFormId'><input id='groupUploadFileId' type='file' name='file' onchange='ijfUtils.readGroupConfigFile(event)'></form>",
+						frame: false,
+						hidden: true,
+						border: false,
+						xtype: "panel"}
+					]
 		},
             items: [tree]
         },{
@@ -749,6 +786,7 @@ addEditForm:function (inFrmId)
 		thisF.formType = "Edit";
 		thisF.testIssue = "";
 		thisF.issueType = "";
+		thisF.formAnon= "false";
 		thisF.id = 0;
 		thisF.settings=[];
 	    thisF.fields=[];
@@ -893,6 +931,24 @@ addEditForm:function (inFrmId)
 					change: function(f, n, o){
 						thisF.testIssue = n;
 					}}
+			},
+			{
+				xtype: 'combobox',
+				labelAlign: 'left',
+				forceSelection: true,
+				store: ["true","false"],
+				forceSelection: true,
+				labelWidth: 100,
+				margin: '4 0 0 10',
+				fieldLabel: "Anonymous",
+				labelStyle: "color:darkblue",
+				triggerAction: 'all',
+				width: 200,
+				value: thisF.formAnon,
+				listeners: {
+						change: function(f, n, o){
+							thisF.formAnon = n;
+				}}
 			}
 
         ],
@@ -916,13 +972,14 @@ addEditForm:function (inFrmId)
 							formType: thisForm.formType,
 							formName: thisForm.name,
 							issueType: thisForm.issueType,
+							formAnon: thisForm.formAnon,
 							formSetId: formSet.id
 				};
 				var jdata = JSON.stringify(jOut);
 
 				var sStat = ijfUtils.saveJiraFormSync(jdata,"saveFormBasic");
 
-				if(sStat="OK")
+				if(sStat=="OK")
 				{
 	                ijf.lists.dWin.close();
  	                ijfUtils.clearExt();
@@ -1002,6 +1059,7 @@ copyForm: function(inFrmId)
 							issueType: thisForm.issueType,
 							formType: thisForm.formType,
 							formName: newFormName,
+							formAnon: thisForm.formAnon,
 							formSetId: formSet.id,
 							fields: JSON.stringify(JSON.stringify(fieldsOut)),
 							formSettings: JSON.stringify(JSON.stringify(settingsOut))
@@ -1143,7 +1201,7 @@ addEditFormSet:function (inFrmId)
         layout: 'vbox',
         title: "IJF Form Group Settings",
         width: 600,
-        height:370,
+        height:420,
         closable: true,
         items: [{
             html: dMes,
@@ -1233,6 +1291,43 @@ addEditFormSet:function (inFrmId)
 				},
 				change: function(f,n,o){
 						thisF.settings["changeStyle"] = n;
+					}
+				}
+            },
+				{
+					xtype: 'textfield',
+					labelAlign: 'left',
+					fieldLabel: 'Anon Username',
+					labelWidth: 100,
+					labelStyle: "color:darkblue",
+					margin: '4 0 0 10',
+					width: 400,
+					value: thisF.settings["anonUsername"],
+					listeners: {
+					afterrender: function(f)
+					{
+						this.validate();
+					},
+					change: function(f,n,o){
+							thisF.settings["anonUsername"] = n;
+						}
+					}
+            },            {
+				xtype: 'textfield',
+				labelAlign: 'left',
+				fieldLabel: 'Anon Password',
+				labelWidth: 100,
+				labelStyle: "color:darkblue",
+				margin: '4 0 0 10',
+				width: 400,
+				value: thisF.settings["anonPassword"],
+				listeners: {
+				afterrender: function(f)
+				{
+					this.validate();
+				},
+				change: function(f,n,o){
+						thisF.settings["anonPassword"] = n;
 					}
 				}
             },

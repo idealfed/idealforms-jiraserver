@@ -56,7 +56,7 @@ addEditForm:function (sRow)
 				allowBlank:true,
 				hideLabel: true,
 				width: '100%',
-				height: '100%',
+				height: 500,
 				value: sRow.data.snippet,
 				listeners: {
 					change: function(f, n, o){
@@ -196,22 +196,7 @@ addEditForm:function (sRow)
 				thisForm.fields[fId].iid=fId++;
 			});
 
-
 			ijf.admin.cwfAdmin_form = thisForm;
-			//based on the form, it should get edit or add meta...
-
-			//create a keyed version of form fields....already created
-			/*
-		    if(!ijf.jiraMeta.hasOwnProperty(ijf.main.itemId))
-		    {
-				ijf.jiraMeta[ijf.currentItem.key] = ijfUtils.getJiraIssueMetaSync(ijf.currentItem.key);
-				ijf.jiraMetaKeyed[ijf.currentItem.key] = [];
-				Object.keys(ijf.jiraMeta[ijf.currentItem.key].fields).forEach(function(f)
-				{
-					ijf.jiraMetaKeyed[ijf.currentItem.key][ijf.jiraMeta[ijf.currentItem.key].fields[f].name]=ijf.jiraMeta[ijf.currentItem.key].fields[f];
-				});
-		    }
-		    */
 
 		}
 
@@ -2077,7 +2062,7 @@ addEditForm:function (sRow)
 
 		ijfUtils.setElementWithStyleString("ijfOuterContainer",ijf.admin.cwfAdmin_form.settings["outerContainerStyle"]);
 
-		ijfUtils.renderHeader(inContainerId,ijf.admin.cwfAdmin_form);
+		ijfUtils.renderHeader(inContainerId,ijf.admin.cwfAdmin_form,ijf.currentItem);
 
         ijfUtils.setElementWithStyleString("ijfHead",ijf.admin.cwfAdmin_form.settings["title_style"]);
 

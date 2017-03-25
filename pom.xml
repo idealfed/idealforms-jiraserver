@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.idealfed.poc</groupId>
     <artifactId>craft</artifactId>
-    <version>1.0.9</version>
+    <version>1.0.13</version>
     <organization>
         <name>Ideal Federal LLC</name>
         <url>http://www.idealfed.com</url>

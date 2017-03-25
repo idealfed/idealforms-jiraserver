@@ -61,9 +61,8 @@ function init(inConfigVersion)
          jdata='[{"id":"40","name":"first form set","projectName":"Test Project One","projectId":"TPO","settings":"[]","snippets":[],"forms":[{"id":"38","testIssue":"TPO-1","formType":"Add","name":"first Form","fields":"[]","formSettings":"[]"}]}]';
     //ijfUtils.writeFullConfig(jdata,false);
 
+
     ijfUtils.footLog("Calling load configuration...");
-
-
     jQuery.ajax(g_root + '/plugins/servlet/iforms?ijfAction=getConfig&version='+inConfigVersion, {
         success: function(data) {
             //jQuery('#main').html(jQuery(data).find('#main *'));
@@ -100,6 +99,24 @@ function init(inConfigVersion)
     	        return;
 			}
 			if(!ijf.fw) return;
+
+			//determine if anonymous....and not craft.....if so establish session
+			if((window.g_formId) && (window.g_craft!="true"))
+			{
+				var tForm = ijf.fw.forms[window.g_formId];
+				if(tForm)
+				{
+					if(tForm.formAnon=="true")
+					{
+						//attempt to login...
+						var	putObj = {"username":tForm.formSet.settings.anonUsername,"password":tForm.formSet.settings.anonPassword};
+						var	jData = JSON.stringify(putObj);
+						var	tApi = "/rest/auth/1/session";
+						var login = ijfUtils.jiraApiSync("POST",tApi,jData);
+					}
+				}
+			}
+
 
 
 	  	    jQuery.ajax(g_root + '/rest/api/2/project', {
@@ -327,7 +344,7 @@ function renderForm(inContainerId, inFormId, isNested, item)
     //test if craft and redirect if so
    	if(!isNested)
 	{
-		if(g_craft=="true")
+		if(window.g_craft=="true")
 		{
 			ijf.admin.renderFormAdmin(ijf.fw.forms[window.g_formId]);
 			return;
@@ -352,7 +369,7 @@ function renderForm(inContainerId, inFormId, isNested, item)
             document.title = thisForm.settings["tabTitle"];
         }
 
-        ijfUtils.renderHeader(inContainerId,thisForm);
+        ijfUtils.renderHeader(inContainerId,thisForm,item);
 
         ijfUtils.setElementWithStyleString("ijfHead",thisForm.settings["title_style"]);
     }

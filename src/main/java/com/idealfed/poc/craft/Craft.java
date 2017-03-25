@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
+import javax.servlet.http.Cookie;
 
 import com.atlassian.activeobjects.external.ActiveObjects;
 import com.atlassian.jira.util.json.JSONArray;
@@ -54,11 +55,8 @@ public class Craft extends HttpServlet
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
     	String username = userManager.getRemoteUsername(request);
-    	if (username == null)
-    	{
-    		redirectToLogin(request, response);
-    		return;
-    	}
+
+
 
     	String iwfAction = request.getParameter("ijfAction");
     	if(iwfAction==null) iwfAction="noAction";
@@ -78,11 +76,7 @@ public class Craft extends HttpServlet
     	String gVersionNum = request.getParameter("version");
     	if(gVersionNum==null) gVersionNum="0";
 
-    	if ((craftFlag.equals("true")) && (!userManager.isSystemAdmin(username)))
-    	{
-    		templateRenderer.render("nopermission.vm", null, response.getWriter());
-    		return;
-    	}
+
     	String outTemplate = "main";
     	if (craftFlag.equals("true"))
     	{
@@ -104,6 +98,43 @@ public class Craft extends HttpServlet
 			outTemplate+="_remote";
 		}
 		outTemplate+=".vm";
+
+
+    	//you need to know if this is an anonymous call, if so, it can run....
+    	//need to get the form....
+    	boolean anon = false;
+    	try
+    	{
+	    	for (Form f : ao.find(Form.class))
+			{
+				if(f.getName().equals(formId))
+				{
+					if(f.getFormAnon().equals("true"))
+					{
+						anon=true;
+					}
+					break;
+				}
+		    }
+    	}
+    	catch(Exception e)
+    	{
+    		anon=false;
+    	}
+    	if ((username == null) && (anon=false))
+    	{
+    		redirectToLogin(request, response);
+    		return;
+    	}
+
+    	if ((craftFlag.equals("true")) && (!userManager.isSystemAdmin(username)))
+    	{
+			if(anon==false)
+			{
+	    		templateRenderer.render("nopermission.vm", null, response.getWriter());
+	    		return;
+			}
+    	}
 
 
     	if(iwfAction.equals("getConfig"))
@@ -283,6 +314,7 @@ public class Craft extends HttpServlet
 		sb.append("{\"id\":\"" + f.getID() + "\",");
 		sb.append("\"name\":\"" + f.getName() + "\",");
 		sb.append("\"testIssue\":\"" + f.getTestIssue() + "\",");
+		sb.append("\"formAnon\":\"" + f.getFormAnon() + "\",");
 		sb.append("\"issueType\":\"" + f.getIssueType() + "\",");
 		sb.append("\"formType\":\"" + f.getFormType() + "\",");
 		sb.append("\"settings\":\"" + f.getSettings() + "\",");
@@ -326,6 +358,25 @@ public class Craft extends HttpServlet
 	@Override
     protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
     {
+
+
+		//only admin can be in here...
+     	String username = userManager.getRemoteUsername(req);
+		if (username == null)
+		{
+	    		final PrintWriter w = res.getWriter();
+	    		w.printf("{\"status\":\"NOSESSION\"}");
+	    		w.close();
+	    		return;
+    	}
+    	if (!userManager.isSystemAdmin(username))
+    	{
+				final PrintWriter w = res.getWriter();
+				w.printf("{\"status\":\"INVALIDSESSION\"}");
+				w.close();
+	    		return;
+		}
+
 		String iwfAction = req.getParameter("action");
 		String inJson = req.getParameter("jsonConfig");
 		if(iwfAction==null) iwfAction="noAction";
@@ -361,6 +412,7 @@ public class Craft extends HttpServlet
 	    		f.setName(inForm.getString("formName"));
         		f.setIssueType(inForm.getString("issueType"));
         		f.setTestIssue(inForm.getString("testIssue"));
+        		if(inForm.has("formAnon")) f.setFormAnon(inForm.getString("formAnon"));
         		f.setFormType(inForm.getString("formType"));
 	    		f.save();
 
@@ -427,6 +479,7 @@ public class Craft extends HttpServlet
         		f.setTestIssue(inForm.getString("testIssue"));
         		f.setIssueType(inForm.getString("issueType"));
         		f.setFormType(inForm.getString("formType"));
+        		if(inForm.has("formAnon")) f.setFormAnon(inForm.getString("formAnon"));
 	    		f.setSettings(inForm.getString("formSettings"));
 	    		f.setFields(inForm.getString("fields"));
 	    		f.save();
@@ -685,6 +738,7 @@ public class Craft extends HttpServlet
 		        		frm.setFormSet(fs);
 		        		frm.setName(jsonForm.getString("name"));
 		        		frm.setTestIssue(jsonForm.getString("testIssue"));
+		        		if(jsonForm.has("formAnon")) frm.setFormAnon(jsonForm.getString("formAnon"));
 		        		frm.setIssueType(jsonForm.getString("issueType"));
 		        		frm.setFormType(jsonForm.getString("formType"));
 		        		frm.setFields(jsonForm.getString("fields"));
@@ -722,17 +776,159 @@ public class Craft extends HttpServlet
 
     		}
     	}
+    	else if(iwfAction.equals("setGroupConfig"))
+    	{
+    		try
+    		{
+
+    			//backup the existing configuration first
+    			StringBuffer cConfig = new StringBuffer();
+    			cConfig.append("{\"status\":\"OK\",\"resultSet\":[");
+        		for (FormSet fs : ao.find(FormSet.class))
+                {
+        			cConfig.append(getAoFormSetJson(fs));
+                }
+        		cConfig.append("{}]}");
+        		Version v = ao.create(Version.class);
+        		v.setDate(new Date());
+        		v.setAuthor(userManager.getRemoteUsername(req));
+        		v.setConfig(cConfig.toString());
+        		v.save();
+        		cleanVersions(20);
+
+        		///todo:  add clear function to remove versions > some count...
+
+				//there should only be one new fg, and it it exists we delete, and
+				//the form names within the group must not exist in the existing forms...
+	    		JSONObject jo = new JSONObject(inJson);
+	    		JSONArray rs = jo.getJSONArray("ijfConfig");
+				JSONObject jsonFs;
+				JSONArray jsonForms;
+				JSONObject jsonForm;
+	    		JSONObject jsonSnippet;
+	    		if(rs.length()>1)
+	    		{
+					//error there is more than one form set in the load...stop...
+					final PrintWriter w = res.getWriter();
+						    		w.printf("{status:\"Failed, there is more than one form group in the file.\"}");
+						    		w.close();
+	    		    return;
+				}
+
+				jsonFs = rs.getJSONObject(0);
+				String fsName = jsonFs.getString("name");
+				Map<String, String> fNames = Maps.newHashMap();
+				//for each form, look to see if name is being used by all forms other than those owned by this guy
+				for (Form f : ao.find(Form.class))
+				{
+					if(f.getName()==null) continue;
+					String tfsName = f.getFormSet().getName();
+					if(tfsName.equals(fsName))
+					{
+						continue;
+					}
+					fNames.put(f.getName(),f.getName());
+				}
+				//rip through new names, make sure not there.
+	    		jsonForms = jsonFs.getJSONArray("forms");
+	    		for(int k = 0; k<jsonForms.length();k++)
+	    		{
+    				jsonForm = jsonForms.getJSONObject(k);
+	    			if(fNames.containsKey(jsonForm.getString("name"))==true)
+	    			{
+		    			//bail because duplicate form name
+						final PrintWriter w = res.getWriter();
+			    		w.printf("{status:\"Failed, your file contains a form name already in use: "+ jsonForm.getString("name") +"\"}");
+			    		w.close();
+			    		return;
+	    			}
+	    		}
+
+	    		//if we are here, then look for existing FS and remove it...
+        		for (FormSet fs : ao.find(FormSet.class))
+                {
+        			if(fs.getName()==null) continue;
+        			if(fs.getName().equals(fsName))
+        			{
+	        			for(Form f : fs.getForms())
+	        			{
+	        				ao.delete(f);
+	        			}
+	        			for(Snippet s : fs.getSnippets())
+	        			{
+	        				ao.delete(s);
+	        			}
+	                    ao.delete(fs);
+        			}
+                }
+
+        		//load as normal....
+    			boolean loaded = false;
+
+	    		for(int i = 0; i<rs.length();i++)
+	    		{
+	    			jsonFs = rs.getJSONObject(i);
+	    			//this is one form set...
+	        		if(!jsonFs.has("name")) break;
+	        		final FormSet fs  = ao.create(FormSet.class);
+	        		fs.setName(jsonFs.getString("name"));
+	        		fs.setSettings(jsonFs.getString("settings"));
+	        		fs.setProjectName(jsonFs.getString("projectName"));
+	        		fs.setProjectId(jsonFs.getString("projectId"));
+	        		fs.save();
+
+		    		jsonForms = jsonFs.getJSONArray("forms");
+		    		for(int k = 0; k<jsonForms.length();k++)
+		    		{
+		    			jsonForm = jsonForms.getJSONObject(k);
+		    			if(!jsonForm.has("name")) break;
+		        		Form frm = ao.create(Form.class);
+		        		frm.setFormSet(fs);
+		        		frm.setName(jsonForm.getString("name"));
+		        		frm.setTestIssue(jsonForm.getString("testIssue"));
+		        		if(jsonForm.has("formAnon")) frm.setFormAnon(jsonForm.getString("formAnon"));
+		        		frm.setIssueType(jsonForm.getString("issueType"));
+		        		frm.setFormType(jsonForm.getString("formType"));
+		        		frm.setFields(jsonForm.getString("fields"));
+		        		frm.setSettings(jsonForm.getString("formSettings"));
+		        		frm.save();
+		    		}
+
+		    		jsonForms = jsonFs.getJSONArray("snippets");
+		    		for(int k = 0; k<jsonForms.length();k++)
+		    		{
+		    			jsonSnippet = jsonForms.getJSONObject(k);
+		    			if(!jsonSnippet.has("name")) break;
+		    			Snippet s = ao.create(Snippet.class);
+		    			s.setFormSet(fs);
+		    			s.setName(jsonSnippet.getString("name"));
+		    			s.setSnippet(jsonSnippet.getString("snippet"));
+		        		s.save();
+		    		}
+	    		}
+	    		final PrintWriter w = res.getWriter();
+	    		w.printf("{\"status\":\"OK\"}");
+	    		w.close();
+	    		return;
+    		}
+    		catch(JSONException e)
+    		{
+    			//failed json read
+    			plog.error("Failed to save forms config see error" + e.getMessage());
+	    		final PrintWriter w = res.getWriter();
+	    		w.printf("{status:\"FAIL\"}");
+	    		w.close();
+	    		return;
+    		}
+    	}
     	else
     	{
-
     		final PrintWriter w = res.getWriter();
     		w.printf("{status:\"NA\"}");
     		w.close();
     		return;
 
     	}
-
-
     }
 
 	private void redirectToLogin(HttpServletRequest request, HttpServletResponse response) throws IOException

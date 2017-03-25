@@ -176,7 +176,7 @@ var ijfUtils = {
 				success: function(data) {
 				ijfUtils.hideProgress();
 
-					ijfUtils.footLog("Saved form data " + data);
+					ijfUtils.footLog("POST form data response: " + data);
 					try{
 					    var jRet = JSON.parse(data);
 				    }
@@ -265,7 +265,7 @@ var ijfUtils = {
              }
         });
 		return retVal;
-},
+   },
    jiraApi:function(inMethod,inApi, inData, onSuccess, onError){
 
      	var retVal="tbd";
@@ -396,11 +396,18 @@ renderAdminButtons:function(inContainerId)
         pnl.render(document.getElementById("ijfManage"));
     }
 },
-writeConfigFile:function()
+writeConfigFile:function(inFormSet)
 {
-	var outStr = ijfUtils.getConfigJson();
+	var outStr = ijfUtils.getConfigJson(inFormSet);
 	var blob = new Blob([outStr], {type: "text/plain;charset=utf-8"});
-	saveAs(blob,"ijfFormsConfig.txt")
+	if(inFormSet)
+	{
+		saveAs(blob,inFormSet +".txt");
+	}
+	else
+	{
+		saveAs(blob,"ijfFormsConfig.txt");
+	}
 }
 ,
 readConfigFile:function(event)
@@ -434,12 +441,21 @@ writeFullConfig:function(inConfig, doReset)
 
 					//jQuery('#main').html(jQuery(data).find('#main *'));
 					initResp= data;
-					ijfUtils.footLog("Set init data " + data.status);
-					if(doReset)
+					if((data.indexOf("Fail")) || (data.indexOf("SESSION")))
 					{
-						ijfUtils.clearExt();
-	            	    ijf.main.init(0);
-				    }
+						ijfUtils.footLog("Failed group load " + data);
+						ijfUtils.modalDialogMessage("Error","Sorry there was a problem loading the form group: " + data);
+						return;
+					}
+					else
+					{
+						ijfUtils.footLog("Success config data load: " + data);
+						if(doReset)
+						{
+							ijfUtils.clearExt();
+							ijf.main.init(0);
+						}
+					}
 				},
 				error: function(e) {
 
@@ -449,12 +465,69 @@ writeFullConfig:function(inConfig, doReset)
 		});
 
 },
-getConfigJson:function()
+readGroupConfigFile:function(event)
+{
+	    var input = event.target;
+	    var reader = new FileReader();
+	    reader.onload = function(){
+	      var text = reader.result;
+	      ijfUtils.writeGroupConfig(reader.result, true);
+	    };
+  		reader.readAsText(input.files[0]);
+},
+writeGroupConfig:function(inConfig, doReset)
+{
+		var outJsonConfig = inConfig.replace(/\%/g,"~pct~");
+
+	    var outConfig = '{"ijfConfig":'+outJsonConfig+'}';
+
+	    var initResp = "";
+	    jQuery.ajax({
+				async: false,
+				type: 'POST',
+				url: g_root + '/plugins/servlet/iforms',
+				data: {
+					jsonConfig: outConfig,
+					action: "setGroupConfig"
+				},
+				timeout: 60000,
+				success: function(data) {
+					//jQuery('#main').html(jQuery(data).find('#main *'));
+					initResp= data;
+					if((data.indexOf("Fail")) || (data.indexOf("SESSION")))
+					{
+						ijfUtils.footLog("Failed group load " + data);
+						ijfUtils.modalDialogMessage("Error","Sorry there was a problem loading the form group: " + data);
+						return;
+					}
+					else
+					{
+						ijfUtils.footLog("Success load group data " + data);
+						if(doReset)
+						{
+							ijfUtils.clearExt();
+							ijf.main.init(0);
+						}
+					}
+				},
+				error: function(e) {
+
+					ijfUtils.footLog("Failed init group data set!");
+					initResp= null;
+				}
+		});
+
+},
+getConfigJson:function(inFormSet)
 {
 	var outFormSets = [];
 	outFormSets = ijf.fw.formSets.reduce(function(outFormSets,fs)
 	{
 		if(!fs.name) return outFormSets;
+
+		//if doing one form set...
+		if((inFormSet) && (fs.name != inFormSet)) return outFormSets;
+
 		var settingsOut = new Array();
 		for(var j in fs.settings)
 		{
@@ -539,12 +612,12 @@ setElementWithStyleString:function(inDomId,inStyleString)
 
 },
 
-renderHeader:function(inContainerId, thisForm)
+renderHeader:function(inContainerId, thisForm,item)
 {
 
-    var headerLeft = ijfUtils.replaceKeyValues(thisForm.settings["headerLeft"]);
-    var headerCenter = ijfUtils.replaceKeyValues(thisForm.settings["headerCenter"]);
-    var headerRight = ijfUtils.replaceKeyValues(thisForm.settings["headerRight"]);
+    var headerLeft = ijfUtils.replaceKeyValues(thisForm.settings["headerLeft"],item);
+    var headerCenter = ijfUtils.replaceKeyValues(thisForm.settings["headerCenter"],item);
+    var headerRight = ijfUtils.replaceKeyValues(thisForm.settings["headerRight"],item);
 
     ijfUtils.setHead("<table width='100%' borders=0><tr><td width='33%' align='left'>" + headerLeft + "</td>" +
         "<td  width='33%' align ='center'>"  + headerCenter + "</td>" +
@@ -617,7 +690,6 @@ modalDialog:function(inTitle,inMessage,inFunction)
 	    icon: Ext.Msg.QUESTION,
 	    fn: function(btn) {
 	        if (btn === 'ok') {
-	            console.log('Yes pressed');
 	            inFunction();
 			}
 	    }
@@ -665,56 +737,14 @@ modalDialogMessageWithFunction:function(inTitle,inMessage,inFunction)
 showProgress:function()
 {
 
-
-
-    if(Ext.getCmp('pbar3')) return;
-
-    //var pdiv = "<div id='progress1inner' style=\"position: relative; left: -50%; border:solid lightblue 0px;\"></div>";
-
-    var pbar1 = new Ext.ProgressBar({
-        id:'ijfProgresspbar3Id',
-        //height:28,
-        //style:"height:28 !important",
-        //bodyStyle:"height:30 !important",
-        //text: "",
-        layout: 'fit',
-    });
-
-    this.pWin = new Ext.Window({
-        //layout: 'fit',
-        id:'ijfProgessBarWinId',
-        //header:false,
-        headerPosition: 'bottom',
-        title: "Working...",
-        width:200,
-        //style:"height:28 !important",
-        //bodyStyle:"height:30 !important",
-        //style: "border-width:4px",
-        closable: false,
-        items: [pbar1],
-        modal:true
-	});
-    this.pWin.show();
-
-    pbar1.wait({
-        interval:100,
-        increment:15
-    });
+	Ext.getBody().mask("Loading...");
 
 },
 
 hideProgress:function(focusTop)
 {
-    //jQuery('#progress1').html("");
-    if(Ext.getCmp('ijfProgresspbar3Id'))
-    {
-        this.pWin.close();
-        //Ext.getCmp('pbar3').destroy();
-    }
-    //jQuery('#mwfContent').show();
-    //if (focusTop == true) {
-    //   new Ext.Window({ header: false, closable: false, frame: false, baseCls: 'x-panel', cls: 'x-window', height: 1, width: 1}).showAt(-48,-48).destroy();
-    //}
+	Ext.getBody().unmask();
+
 },
 
 loadConfig:function(onSuccess, onError)
@@ -1016,6 +1046,7 @@ loadConfig:function(onSuccess, onError)
 
 	onLoadHandler:function(inFun)
 	{
+
 		var valid = true;
 		var l_br = "";
 		try
@@ -1033,7 +1064,7 @@ loadConfig:function(onSuccess, onError)
 					bVars = bVar.split(",");
 				}
 
-				var outVal = window[bFunc](bVars);
+				var outVal = ijf.snippets[bFunc](bVars);
 
 				if(outVal==false) valid = false;
 			}
@@ -1181,7 +1212,7 @@ loadConfig:function(onSuccess, onError)
 		return retText;
 	},
 
-	replaceKeyValues:function(inText)
+	replaceKeyValues:function(inText, item)
 	{
 		var retText = inText;
 		if(!inText)  return inText;
@@ -1189,22 +1220,22 @@ loadConfig:function(onSuccess, onError)
 		retText=retText.replace("#{user}",ijf.main.currentUser.displayName);
         retText=retText.replace("#{datetime}",moment().format('LL'));
 
-		if(!ijf.currentItem) return retText;
-		if(!ijf.currentItem.key) return retText;
+		if(!item) return retText;
+		if(!item) return retText;
 
-		if((!retText)||(retText=="") || (!ijf.currentItem)) return "";
+		if((!retText)||(retText=="") || (!item)) return "";
 
-		if(!ijf.currentItem) return retText;
+		if(!item.key) return retText;
 
-		retText = retText.replace("#{key}",ijf.currentItem.key);
-		retText = retText.replace("#{summary}",ijf.currentItem.fields.summary);
-		retText = retText.replace("#{status}",ijf.currentItem.fields.status.name);
-	    retText = this.switchAtts(retText);
+		retText = retText.replace("#{key}",item.key);
+		retText = retText.replace("#{summary}",item.fields.summary);
+		retText = retText.replace("#{status}",item.fields.status.name);
+	    retText = this.switchAtts(retText,item);
 
 		return retText;
 	},
 
-	switchAtts:function(inText)
+	switchAtts:function(inText,item)
 	{
 		var retText = inText;
 		var pat = "\#\{.*?\}";
@@ -1223,7 +1254,7 @@ loadConfig:function(onSuccess, onError)
 			var repVal = "";
 			if(ijf.jiraFieldsKeyed.hasOwnProperty(keyVal))
 			{
-				var jField = ijf.currentItem.fields[ijf.jiraFieldsKeyed[keyVal].id];
+				var jField = item.fields[ijf.jiraFieldsKeyed[keyVal].id];
 				if(jField)
 				{
 					repVal = this.handleJiraFieldType(ijf.jiraFieldsKeyed[keyVal],jField,true);
@@ -1270,8 +1301,12 @@ loadConfig:function(onSuccess, onError)
 				break;
 			case "priority":
 			case "status":
-			case "option":
 				 if(forDisplay) return inField.name;
+			     if(inField) return inField.id;
+ 				 return inField;
+				break;
+			case "option":
+				 if(forDisplay) return inField.value;
 			     if(inField) return inField.id;
  				 return inField;
 				break;
@@ -1281,6 +1316,23 @@ loadConfig:function(onSuccess, onError)
 			default:
 				return "unknown type";
 		}
+	},
+    translateJiraFieldsToIds:function(inCsv)
+    {
+		var fields = inCsv.split(",");
+		var raVal = [];
+		fields.forEach(function(f){
+			var tf = f.trim();
+			if(ijf.jiraFieldsKeyed.hasOwnProperty(tf))
+			{
+				raVal.push(ijf.jiraFieldsKeyed[tf].id);
+			}
+			else
+			{
+				raVal.push(tf);
+			}
+		});
+		return raVal.join(",");
 	},
 
     getJiraFieldById:function(inId)

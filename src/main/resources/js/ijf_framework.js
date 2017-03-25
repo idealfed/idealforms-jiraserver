@@ -20,40 +20,7 @@ setup:function (setup)
 	this.formSetsKeyed = new Array();
 
     //this.templates = new Array();
-/*
-    this.defaultFormId='';
-    this.workflowForms = new Array();
-    this.listButtons = new Array();
-    this.listColumns = new Array();
-    this.includeRename = "";
-    this.includeAddByTemplate = "";
-    this.includeCopy = "";
-    this.includeMove = "";
-    this.includeStage = "";
-    this.includeModifiedOn = "";
-    this.includeModifiedBy = "";
-    this.includeCreatedOn = "";
-    this.includeCreatedBy = "";
-    this.includeDelete = "";
-    this.includeReload = "";
-    this.includeReset = "";
-    this.includeNavigateToParent = "";
-    this.includeListParent = "";
-    this.includeListParentParent = "";
-    this.includeListParentParentParent = "";
-    this.includeListParentParentParentParent = "";
-    this.includeListParentParentParentParentParent = "";
-    this.saveToAdditionalTarget = "none";
-    this.includeAddByStructure = "";
-    this.includeAddByReference = "";
-    this.includeAddByTree = "";
-    this.includeExport = "";
-    this.includeGantt = "";
-    this.tabTitle = "";
-    this.listTitle = "";
-    this.messagingSource = "";
-    this.parentWindowName="";
- */
+
     this.treeCollapsed = 'false';
     this.listWidth = 900;
     this.listNameWidth = 150;
@@ -103,6 +70,7 @@ setup:function (setup)
 				thisF.name = f.name;
 				thisF.formType = f.formType;
 				(f.testIssue=="~") ? thisF.testIssue="": thisF.testIssue = f.testIssue;
+				thisF.formAnon = f.formAnon;
 				thisF.issueType = f.issueType;
 				thisF.id = f.id;
 				if(f.hasOwnProperty("settings")) thisF.rawSettings = JSON.parse(f.settings);

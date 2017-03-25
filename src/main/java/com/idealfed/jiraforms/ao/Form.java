@@ -20,6 +20,9 @@ public interface Form extends Entity
     String getIssueType();
     void setIssueType(String name);
 
+    String getFormAnon();
+    void setFormAnon(String name);
+
     String getFormType();
     void setFormType(String name);
 

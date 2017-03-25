@@ -121,14 +121,14 @@ renderField:function(inFormKey, item, inField, inContainer)
     {
         panelTitle = inField.style.substr(inField.style.indexOf('panelTitle:')+11);
         var tPt = panelTitle.split(";");
-        panelTitle= ijfUtils.replaceKeyValues(tPt[0]);
+        panelTitle= ijfUtils.replaceKeyValues(tPt[0],item);
     }
 
     var urlRe = /^(?:(?:https?|ftp):\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,}))\.?)(?::\d{2,5})?(?:[/?#]\S*)?$/i
     // url regex from https://gist.github.com/dperini/729294 under MIT license
     var iframeSrc = "http://www.google.com" // Default src
     if (inField.dataSource){
-        iframeSrc = ijfUtils.replaceKeyValues(inField.dataSource);
+        iframeSrc = ijfUtils.replaceKeyValues(inField.dataSource,item);
         //if (iframeSrc.trim().match(urlRe)) iframeSrc = iframeSrc.trim().match(urlRe)
     }
     var l_labelStyle = inField.labelStyle;
@@ -183,7 +183,7 @@ renderField:function(inFormKey, item, inField, inContainer)
     {
         panelTitle = inField.style.substr(inField.style.indexOf('panelTitle:')+11);
         var tPt = panelTitle.split(";");
-        panelTitle= ijfUtils.replaceKeyValues(tPt[0]);
+        panelTitle= ijfUtils.replaceKeyValues(tPt[0],item);
     }
 
     if(collapsible)
@@ -258,19 +258,23 @@ renderPopupForm:function(inFormKey,inItem, inAction)
     (pForm.settings.outerContainerStyle) ? null: pForm.settings.outerContainerStyle="";
     (pForm.settings.innerContainerStyle) ? null: pForm.settings.innerContainerStyle="";
 
-    var wTitle = pForm.settings.tabTitle
-
     var wWidth = ijfUtils.getNameValueFromStyleString(pForm.settings.outerContainerStyle,'width');
 	(wWidth=="") ? wWidth=300: wWidth=wWidth.replace("px","").replace("%","")/1;
 
     var wHeight = ijfUtils.getNameValueFromStyleString(pForm.settings.outerContainerStyle,'height');
 	(wHeight=="") ? wHeight=300: wHeight=wHeight.replace("px","").replace("%","")/1;
 
+    var iWidth = ijfUtils.getNameValueFromStyleString(pForm.settings.outerTableStyle,'width');
+	(iWidth=="") ? iWidth=300: iWidth=iWidth.replace("px","").replace("%","")/1;
+
+    var iHeight = ijfUtils.getNameValueFromStyleString(pForm.settings.outerTableStyle,'height');
+	(iHeight=="") ? iHeight=300: iHeight=iHeight.replace("px","").replace("%","")/1;
+
 
     var simple = new Ext.Panel({
         //bodyStyle: inAction.fieldStyle,
-        width: wWidth,
-        height: wHeight,
+        width: iWidth,
+        height: iHeight,
         style: pForm.innerContainerStyle,
         border:true,
         html: nfContainer
@@ -304,12 +308,15 @@ renderPopupForm:function(inFormKey,inItem, inAction)
 			break;
 	}
 
+    var wTitle = ijfUtils.replaceKeyValues(pForm.settings.tabTitle, rItem);
+
     var dWin = new Ext.Window({
         // layout: 'fit',
         title:  wTitle,
         width: wWidth,
         height: wHeight,
         style: pForm.outerContainerStyle,
+        scrollable: "vertical",
         closable: true,
         items: [simple],
         modal: true,
@@ -387,7 +394,7 @@ renderCommentList:function(inFormKey,item, inField, inContainer)
 		outHtml="<div class=ijfCommentList>";
 			outHtml += "<div  class=ijfCommentListHead><div class=ijfCommentListHeadName>Comment</div><div class=ijfCommentListHeadAuthor>Author</div><div class=ijfCommentListHeadDate>Date</div></div>";
 		outHtml = sortedCmnts.reduce(function(outHtml,a){
-			outHtml += "<div class=ijfCommentListRow><div  class=ijfCommentListName>" + a.body.replace("\n","<br>") + "</div><div class=ijfCommentListAuthor>" + a.author.displayName + "</div><div class=ijfCommentListDate>" + moment(a.created).format('lll') + "</div></div>";
+			outHtml += "<div class=ijfCommentListRow><div  class=ijfCommentListName>" + a.body.replace(/\n/g,"<br>") + "</div><div class=ijfCommentListAuthor>" + a.author.displayName + "</div><div class=ijfCommentListDate>" + moment(a.created).format('lll') + "</div></div>";
 			return outHtml;
 		},outHtml);
 		outHtml+="</div>";
@@ -487,7 +494,7 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     if(!l_Style) l_Style="background:transparent";
 
 
-    var outHtml = ijfUtils.replaceKeyValues(inField.dataSource);
+    var outHtml = ijfUtils.replaceKeyValues(inField.dataSource,item);
     outHtml = ijfUtils.sanitize(outHtml);
     if(!l_Style) l_Style = l_panelStyle;
     //rendeIf logic
@@ -546,7 +553,7 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 			handler: function(){
 				if(inField.dataReference)
 				{
-					ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference);
+					ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference,item);
 				}
 				else
 				{
@@ -688,7 +695,7 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 
 				if(inField.dataReference)
 				{
-					ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference);
+					ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference,item);
 				}
 				else
 				{
@@ -730,7 +737,7 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 				}
 				if(inField.dataReference)
 				{
-					ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference);
+					ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference,item);
 				}
 				else
 				{
@@ -820,7 +827,7 @@ renderNavigateToForm:function(inFormKey,item, inField, inContainer)
 
     var hFunction = function(){
         //need to get the id of the form...iterate from fw.
-        var targetForm = ijfUtils.replaceKeyValues(inField.dataSource);
+        var targetForm = ijfUtils.replaceKeyValues(inField.dataSource,item);
         var thisForm = ijf.fw.forms[targetForm];
 
         if(thisForm==null)
@@ -863,7 +870,7 @@ renderNavigateToForm:function(inFormKey,item, inField, inContainer)
     else
     {
         var bPressed = false;
-        if(window.g_formId == ijfUtils.replaceKeyValues(inField.dataSource)) bPressed = true;
+        if(window.g_formId == ijfUtils.replaceKeyValues(inField.dataSource,item)) bPressed = true;
         var pnl = new Ext.FormPanel({
             buttonAlign: 'center',
             layout:'hbox',
@@ -930,7 +937,7 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
         hideField=true;
     }
     var rOnly = false;
-    if (inField.style.indexOf('readonly:true')>-1)
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
     {
         rOnly=true;
     }
@@ -1042,7 +1049,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
         hideField=true;
     }
     var rOnly = false;
-    if (inField.style.indexOf('readonly:true')>-1)
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
     {
         rOnly=true;
     }
@@ -1288,7 +1295,7 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
         hideField=true;
     }
     var rOnly = false;
-    if (inField.style.indexOf('readonly:true')>-1)
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
     {
         rOnly=true;
     }
@@ -1397,7 +1404,7 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
         case "ijfReference":
             var ref = JSON.parse(inField.referenceFilter);
             //value only for now...
-            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value);
+            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
             var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
             break;
         default:
@@ -1447,7 +1454,7 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
         hideField=true;
     }
     var rOnly = false;
-    if (inField.style.indexOf('readonly:true')>-1)
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
     {
         rOnly=true;
     }
@@ -1543,7 +1550,7 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
         case "ijfReference":
             var ref = JSON.parse(inField.referenceFilter);
             //value only for now...
-            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value);
+            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
             var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
             break;
         default:
@@ -1599,7 +1606,7 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
         hideField=true;
     }
     var rOnly = false;
-    if (inField.style.indexOf('readonly:true')>-1)
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
     {
         rOnly=true;
     }
@@ -1700,7 +1707,7 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
         case "ijfReference":
             var ref = JSON.parse(inField.referenceFilter);
             //value only for now...
-            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value);
+            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
             var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
             break;
         default:
@@ -1753,7 +1760,7 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
         hideField=true;
     }
     var rOnly = false;
-    if (inField.style.indexOf('readonly:true')>-1)
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
     {
         rOnly=true;
     }
@@ -1870,7 +1877,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
         hideField=true;
     }
     var rOnly = false;
-    if (inField.style.indexOf('readonly:true')>-1)
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
     {
         rOnly=true;
     }
@@ -1907,6 +1914,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 										boxLabel: e.name,
 										value : (data==e.id) ?  true : false,
 										style: l_fieldStyle,
+										readOnly: rOnly,
 										name: jfFieldDef.id,
 										inputValue: e.id};
 				 });
@@ -1919,12 +1927,14 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 										value :  false,
 										style: l_fieldStyle,
 										name: jfFieldDef.id,
+										readOnly: rOnly,
 										inputValue: e.id};
 				});
 				rOptions.push({id: "radio_" + jfFieldDef.id + "_" + data,
 										boxLabel: item.fields.status.name,
 										value : true,
 										style: l_fieldStyle,
+										readOnly: rOnly,
 										name: jfFieldDef.id,
 										inputValue: data});
 				break;
@@ -1935,6 +1945,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 										boxLabel: e.value,
 										value : (data==e.id) ?  true : false,
 										style: l_fieldStyle,
+										readOnly: rOnly,
 										name: jfFieldDef.id,
 										inputValue: e.id};
 				 });
@@ -2016,7 +2027,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
           hideField=true;
       }
       var rOnly = false;
-      if (inField.style.indexOf('readonly:true')>-1)
+      if (inField.fieldStyle.indexOf('readonly:true')>-1)
       {
           rOnly=true;
       }
@@ -2057,6 +2068,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
   			     			value : getChecked(e.id),
        						style: l_fieldStyle,
   			     			name: jfFieldDef.id,
+  			     			readOnly: rOnly,
   			     			inputValue: e.id};
        });
 
@@ -2076,7 +2088,6 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
   			fieldLabel: lCaption,
   			hideLabel: hideLabel,
   			allowBlank: lAllowBlank,
-  			readOnly: rOnly,
   			selectOnFocus:true,
   			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
   			items: rOptions,
@@ -2141,7 +2152,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
                 text: lCaption,
                 style: l_panelStyle,
                handler: function(){
-			                   var url =ijfUtils.replaceKeyValues(inField.dataSource);
+			                   var url =ijfUtils.replaceKeyValues(inField.dataSource,item);
 			                   window.open(url);
             	}
             }
@@ -2349,7 +2360,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 	        hideField=true;
 	    }
 	    var rOnly = false;
-	    if (inField.style.indexOf('readonly:true')>-1)
+	    if (inField.fieldStyle.indexOf('readonly:true')>-1)
 	    {
 	        rOnly=true;
 	    }
@@ -2476,7 +2487,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
         lWidth= inField.width/1;
     }
     var rOnly = false;
-    if (inField.style.indexOf('readonly:true')>-1)
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
     {
         rOnly=true;
     }
@@ -2583,7 +2594,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     var lCaption = inField.caption;
 
     var rOnly = false;
-    if (inField.style.indexOf('readonly:true')>-1)
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
     {
         rOnly=true;
     }
@@ -2689,13 +2700,15 @@ renderItemList:function(inFormKey,item, inField, inContainer)
    }
    else
    {
-		var tSearch = "jql="+inField.dataSource+"&fields="+inField.dataReference;
+	    var translateFields = ijfUtils.translateJiraFieldsToIds(inField.dataReference);
+		var tSearch = "jql="+inField.dataSource+"&fields="+translateFields;
+
 		var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
 		//bail if dataItems not
 
 		var dataItems = rawList.issues.map(function(i){
 			var retObj ={};
-			inField.dataReference.split(",").forEach(function(f){
+			translateFields.split(",").forEach(function(f){
 				var thisField = f.trim();
 				var dVal = "unknown";
 				var jField = ijfUtils.getJiraFieldById(thisField);
@@ -2721,7 +2734,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 
 	//calculate column widths...and headers
 	var colWidths=[];
-	var colNames = inField.dataReference.split(",");
+	var colNames = translateFields.split(","); //inField.dataReference.split(",");
 	var colHeaders = [];
 	if(inField.tableWidths) colWidths=inField.tableWidths.split(",");
 	var colHeaders = [];
