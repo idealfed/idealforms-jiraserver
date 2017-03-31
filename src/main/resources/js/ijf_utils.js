@@ -348,7 +348,7 @@ applyVersionHistory:function(inId)
 {
 	ijfUtils.clearExt();
 	ijf.main.init(inId);
-	ijfUtils.modalDialogMessage("RECOVERY","You have loaded a MEMORY ONLY configuration version.  To apply this configuration you must Download the configuration, then upload the configuration.<br><br>Note, only opening form in this window will use the memory configuration.");
+	ijfUtils.modalDialogMessage("RECOVERY","You have loaded a MEMORY ONLY configuration version.  To apply this configuration you must Download the configuration, then upload the configuration.");
 },
 showSaveHistory:function()
 {
@@ -441,7 +441,7 @@ writeFullConfig:function(inConfig, doReset)
 
 					//jQuery('#main').html(jQuery(data).find('#main *'));
 					initResp= data;
-					if((data.indexOf("Fail")) || (data.indexOf("SESSION")))
+					if((data.indexOf("Fail")>-1) || (data.indexOf("SESSION")>-1))
 					{
 						ijfUtils.footLog("Failed group load " + data);
 						ijfUtils.modalDialogMessage("Error","Sorry there was a problem loading the form group: " + data);
@@ -494,7 +494,7 @@ writeGroupConfig:function(inConfig, doReset)
 				success: function(data) {
 					//jQuery('#main').html(jQuery(data).find('#main *'));
 					initResp= data;
-					if((data.indexOf("Fail")) || (data.indexOf("SESSION")))
+					if((data.indexOf("Fail")>-1) || (data.indexOf("SESSION")>-1))
 					{
 						ijfUtils.footLog("Failed group load " + data);
 						ijfUtils.modalDialogMessage("Error","Sorry there was a problem loading the form group: " + data);
@@ -568,6 +568,7 @@ getConfigJson:function(inFormSet)
 						testIssue: thisForm.testIssue,
 						formType: thisForm.formType,
 						issueType: thisForm.issueType,
+						formAnon: thisForm.formAnon,
 						name: thisForm.name,
 						fields: JSON.stringify(JSON.stringify(fieldsOut)),
 						formSettings: JSON.stringify(JSON.stringify(settingsOut))

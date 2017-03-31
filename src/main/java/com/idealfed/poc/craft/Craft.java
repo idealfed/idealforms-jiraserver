@@ -19,7 +19,9 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import javax.servlet.http.Cookie;
 
+
 import com.atlassian.activeobjects.external.ActiveObjects;
+
 import com.atlassian.jira.util.json.JSONArray;
 import com.atlassian.jira.util.json.JSONException;
 import com.atlassian.jira.util.json.JSONObject;
@@ -28,6 +30,8 @@ import com.atlassian.sal.api.auth.LoginUriProvider;
 import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
 import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import com.atlassian.upm.api.license.PluginLicenseManager;
+import com.atlassian.upm.api.license.entity.PluginLicense;
 import com.google.common.collect.Maps;
 import com.idealfed.jiraforms.ao.*;
 
@@ -35,15 +39,21 @@ import net.java.ao.Query;
 
 public class Craft extends HttpServlet
 {
+
+    //@ComponentImport
+    private final PluginLicenseManager pluginLicenseManager;
+
 	private final UserManager userManager;
 	private final LoginUriProvider loginUriProvider;
 	private final TemplateRenderer templateRenderer;
 	private final PluginSettingsFactory pluginSettingsFactory;
+
     private static final Logger plog = LogManager.getLogger("atlassian.plugin");
 
     private final ActiveObjects ao;
 
-	public Craft(ActiveObjects ao, UserManager userManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory) {
+	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory) {
+        this.pluginLicenseManager = pluginLicenseManager;
 		this.userManager = userManager;
 		this.loginUriProvider = loginUriProvider;
 		this.templateRenderer = templateRenderer;
@@ -55,6 +65,29 @@ public class Craft extends HttpServlet
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
     	String username = userManager.getRemoteUsername(request);
+
+
+		if (pluginLicenseManager.getLicense().isDefined())
+		{
+		   PluginLicense license = pluginLicenseManager.getLicense().get();
+		   if (license.getError().isDefined())
+		   {
+				// handle license error scenario
+				// (e.g., expiration or user mismatch)
+				PrintWriter w = response.getWriter();
+				w.println("Sorry, it appears your Ideal Forms for JIRA License is invalid, please update your license key.");
+				w.close();
+				return;
+		   }
+		}
+		else
+		{
+				// handle unlicensed scenario
+            PrintWriter w = response.getWriter();
+            w.println("Sorry, it appears your Ideal Forms for JIRA License is missing, please update your license key.");
+            w.close();
+            return;
+		}
 
 
 
@@ -93,7 +126,7 @@ public class Craft extends HttpServlet
 				outTemplate="main_admin";
 			}
 		}
-		if(remote.equals("true"))
+		if(!remote.equals(""))
 		{
 			outTemplate+="_remote";
 		}
@@ -218,6 +251,7 @@ public class Craft extends HttpServlet
         	craft.put("ijfDebug", debugFlag);
         	craft.put("ijfCraft", craftFlag);
         	craft.put("ijfRoot", "");
+        	craft.put("ijfRemote", remote);
 
         	response.setContentType("text/html;charset=utf-8");
 

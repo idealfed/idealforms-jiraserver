@@ -121,7 +121,7 @@ openForm:function()
 			}
 			if(!thisF.name){ ijfUtils.modalDialogMessage("Form Error","Sorry, undable to find the requested form: " + ijf.lists.itemId); return;}
 			var decorator = "";
-			if(thisF.formSet.settings["decorator"]=="true") decorator = "&decorator=true";
+			if(thisF.formSet.settings["decorator"]=="true") decorator = "&decorator=general";
 			if(thisF.testIssue)
 			{
 				var tUrl = g_root + '/plugins/servlet/iforms?itemId='+thisF.testIssue+'&formId='+thisF.name + decorator;
@@ -471,7 +471,7 @@ renderItemList_Borderlayout:function(inContainerId)
 				style: 'margin:0 0 0 10px',
 				text:"Help",
 				handler: function(){
-				   window.open("http://www.idealfed.com/forms/support");
+				   window.open("http://www.idealfed.com/support.html");
 			}}
 			]}
         },{
@@ -1196,7 +1196,7 @@ addEditFormSet:function (inFrmId)
     var projectLookup = [];
     ijf.exercise.projects.forEach(function(p){projectLookup.push([p.key,p.name]);});
     var decLookup = ["true","false"];
-	if(!thisF.settings["decorator"]) thisF.settings["decorator"]="false";
+	if(!thisF.settings["decorator"]) thisF.settings["decorator"]="general";
     ijf.lists.dWin = new Ext.Window({
         layout: 'vbox',
         title: "IJF Form Group Settings",

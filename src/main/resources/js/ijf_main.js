@@ -99,14 +99,14 @@ function init(inConfigVersion)
     	        return;
 			}
 			if(!ijf.fw) return;
-
+debugger;
 			//determine if anonymous....and not craft.....if so establish session
-			if((window.g_formId) && (window.g_craft!="true"))
+			if(window.g_formId)
 			{
 				var tForm = ijf.fw.forms[window.g_formId];
 				if(tForm)
 				{
-					if(tForm.formAnon=="true")
+					if((tForm.formAnon=="true") && (window.g_username=="$ijfUsername"))
 					{
 						//attempt to login...
 						var	putObj = {"username":tForm.formSet.settings.anonUsername,"password":tForm.formSet.settings.anonPassword};

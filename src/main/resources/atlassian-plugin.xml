@@ -5,11 +5,19 @@
     <description>${project.description}</description>
     <version>${project.version}</version>
     <vendor name="${project.organization.name}" url="${project.organization.url}"/>
-    <param name="plugin-icon">images/pluginIcon.png</param>
+    <param name="plugin-icon">images/idf.png</param>
     <param name="plugin-logo">images/pluginLogo.png</param>
+    <param name="plugin-summary">Ideal Forms for JIRA creates and serves simplified customized user interfaces that help many use cases.</param>
+    <param name="plugin-tagline">Custom forms for simplified access, for mobile access and for process automation.</param>    
+    <param name="atlassian-licensing-enabled">true</param>     
+     <screenshots>
+            <screenshot image="images/admin.png"/>
+            <screenshot image="images/list.png"/>
+    </screenshots>
   </plugin-info>
   <!-- add our i18n resource -->
   <resource type="i18n" name="i18n" location="craft"/>
+ 
   <!-- add our web resources -->
   <web-resource key="jiraforms-resources" name="craft Web Resources">
 
@@ -63,6 +71,7 @@
           <description>Component to access Active Objects functionality from the plugin</description>
   </component-import>
   <component-import key="applicationProperties" interface="com.atlassian.sal.api.ApplicationProperties"/>
+  <component-import key="pluginLicenseManager" interface="com.atlassian.upm.api.license.PluginLicenseManager" filter=""/>  
   <component-import key="templateRenderer" interface="com.atlassian.templaterenderer.TemplateRenderer" filter=""/>
   <component-import key="userManager" interface="com.atlassian.sal.api.user.UserManager" filter=""/>
   <component-import key="loginUriProvider" interface="com.atlassian.sal.api.auth.LoginUriProvider" filter=""/>

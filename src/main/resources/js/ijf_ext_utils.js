@@ -550,6 +550,7 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 			text:l_save,
 			margin: '0 4 0 0',
 			xtype:'button',
+			style: inField.fieldStyle,
 			handler: function(){
 				if(inField.dataReference)
 				{
@@ -576,6 +577,7 @@ renderHtml:function(inFormKey,item, inField, inContainer)
         lButtons.push( {
             text:l_reload,
             xtype:'button',
+            style: inField.fieldStyle,
 			margin: '0 4 0 0',
             handler: function(){
                 if(window.onbeforeunload==null)
@@ -596,6 +598,7 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     {
         lButtons.push( {
             text:l_done,
+            style: inField.fieldStyle,
             xtype:'button',
              handler: function(){
 				//target form is dataSource if it exists or default form if it exists...
@@ -838,6 +841,7 @@ renderNavigateToForm:function(inFormKey,item, inField, inContainer)
         {
             if(window.onbeforeunload==null)
             {
+				window.g_formId=targetForm;
                 ijf.main.renderForm("ijfContent", targetForm, false, item);
             }
             else
@@ -1191,6 +1195,7 @@ renderTabmenu:function(inFormKey,item, inField, inContainer)
 							if(window.onbeforeunload==null)
 							{
 								ijfUtils.clearExt();
+								window.g_formId=t.targetFormName;
 								ijf.main.renderForm("ijfContent", t.targetFormName, false, item);
 							}
 							else
@@ -1198,6 +1203,7 @@ renderTabmenu:function(inFormKey,item, inField, inContainer)
 								var dFunc = function(){
 									window.onbeforeunload= null;
 									ijfUtils.clearExt();
+									window.g_formId=t.targetFormName;
 									ijf.main.renderForm("ijfContent", t.targetFormName, false, item);
 								};
 								ijfUtils.modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
@@ -2622,7 +2628,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 	    if(!l_labelStyle) l_labelStyle="background:transparent";
 	    if(!l_panelStyle) l_panelStyle="background:transparent";
 	    if(!l_Style) l_Style="background:transparent";
-	    if(!l_fieldStyle) l_fieldStyle="background:white";
+	    if(!l_fieldStyle) l_fieldStyle="background:transparent";
 
 	var l_Height = 'auto';
     var l_Height=ijfUtils.getNameValueFromStyleString(l_panelStyle,"height");
@@ -2641,6 +2647,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
    	   var dataItems =[];
    if(inField.dataSource=="related")
    {
+	    var translateFields = inField.dataReference;
    		 dataItems = item.fields.issuelinks.map(function(ri){
 				var i = {};
 				if(ri.outwardIssue) i = ri.outwardIssue;
@@ -2671,8 +2678,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
    }
    else if(inField.dataSource=="children")
    {
-
-
+	   var translateFields = inField.dataReference;
 	   	   		 dataItems = item.fields.subtasks.map(function(i){
 	   	   			var retObj ={};
 	   	   			inField.dataReference.split(",").forEach(function(f){
@@ -2776,6 +2782,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         header: colMeta["key"].header,
         dataIndex: "iid",
         hidden: hideKey,
+        style: l_labelStyle,
         width: colMeta["key"].width,
         sortable: true
     });
@@ -2792,6 +2799,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				xtype: 'datecolumn',
 				sortable: true,
 				width: f.width,
+				style: l_labelStyle,
 				format: 'm/d/y',
 				filter: {
 				  type: 'date'
@@ -2806,6 +2814,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				width: 'auto',
 				dataIndex: f.id,
 				width: f.width,
+				style: l_labelStyle,
 				sortable: true,
 				filter: {
 				  type: 'string'

@@ -234,7 +234,7 @@ addEditForm:function (sRow)
 				fieldLabel: "Form Name",
 				fieldStyle: "background:lightgray",
 				readOnly: true,
-				labelSeparator: ijfUtils.helpLink("formName"),
+				//labelSeparator: ijfUtils.helpLink("formName"),
 				labelStyle: "color:darkblue",
 				width: 400,
 				value: thisForm.name,
@@ -248,7 +248,7 @@ addEditForm:function (sRow)
 					readOnly: true,
 					fieldLabel: "Issue Type",
 					fieldStyle: "background:lightgray",
-					labelSeparator: ijfUtils.helpLink("issueType"),
+					//labelSeparator: ijfUtils.helpLink("issueType"),
 					labelStyle: "color:darkblue",
 					width: 200,
 					value: thisForm.issueType,
@@ -262,7 +262,7 @@ addEditForm:function (sRow)
 					readOnly: true,
 					fieldLabel: "Test Issue",
 					fieldStyle: "background:lightgray",
-					labelSeparator: ijfUtils.helpLink("testIssue"),
+					//labelSeparator: ijfUtils.helpLink("testIssue"),
   				    labelStyle: "color:darkblue",
 					width: 200,
 					value: thisForm.testIssue,
@@ -278,7 +278,7 @@ addEditForm:function (sRow)
 					readOnly: true,
 					fieldLabel: "Form Type",
 					fieldStyle: "background:lightgray",
-					labelSeparator: ijfUtils.helpLink("formType"),
+					//labelSeparator: ijfUtils.helpLink("formType"),
 					labelStyle: "color:darkblue",
 					triggerAction: 'all',
 					width: 200,
@@ -295,7 +295,7 @@ addEditForm:function (sRow)
 					labelAlign: 'left',
 					labelWidth: 100,
 					fieldLabel: "Form Group",
-					labelSeparator: ijfUtils.helpLink("formGroup"),
+					//labelSeparator: ijfUtils.helpLink("formGroup"),
 					fieldStyle: "background:lightgray",
   				    labelStyle: "color:darkblue",
 					width: 400,
@@ -350,6 +350,7 @@ addEditForm:function (sRow)
 										id: ijf.admin.cwfAdmin_form.id,
 										testIssue: ijf.admin.cwfAdmin_form.testIssue,
 										formType: ijf.admin.cwfAdmin_form.formType,
+										formAnon: ijf.admin.cwfAdmin_form.formAnon,
 										issueType: ijf.admin.cwfAdmin_form.issueType,
 										name: ijf.admin.cwfAdmin_form.name,
 										fields: JSON.stringify(JSON.stringify(fieldsOut)),
@@ -384,7 +385,7 @@ addEditForm:function (sRow)
 				labelAlign: 'left',
 				labelWidth: 100,
 				fieldLabel: "Row Count",
-				labelSeparator: ijfUtils.helpLink("rowCount"),
+				//labelSeparator: ijfUtils.helpLink("rowCount"),
 				width: 150,
 				value: thisForm.settings["rows"],
 				id: "adminFormSettings_rowsId",
@@ -619,6 +620,15 @@ addEditForm:function (sRow)
    					ijf.admin.refreshFieldList();
 				}
 			});
+
+			l_tbar.push({
+				iconCls: 'icon-user-add',
+				text: 'Insert',
+				handler: function(){
+					insertFieldRow(true);
+				}
+			});
+
 			l_tbar.push({
 				ref: '../removeBtn',
 				iconCls: 'icon-user-delete',
@@ -751,30 +761,6 @@ addEditForm:function (sRow)
 				}],
 			tbar: l_tbar,
 			listeners: {
-                itemcontextmenu : function(record, item, index, e, eOpts){
-				                        var xy = eOpts.getXY();
-										new Ext.menu.Menu({
-											items : [{
-														text : 'Insert Row Above',
-														handler: function(){insertFieldRow(true);}
-											}, {
-														text : 'Insert Row Below',
-														handler: function(){insertFieldRow(false);}
-
-											}, {
-														text : 'Remove Cell',
-														handler: function(inRow, v2, c3)
-															{
-																	var s = ijf.admin.listView.getSelectionModel().getSelection();
-																	for(var i = 0, r; r = s[i]; i++){
-																		ijf.admin.listView.getStore().remove(r);
-																		delete ijf.admin.cwfAdmin_form.fields[r.data.iid];
-																	}
-																	ijf.admin.listView.getView().refresh();
-															}
-											}]
-                                                }).showAt(xy)
-				                },
 				selectionchange:function(view, record, eops) {
 
 					//view might be data if we inserted a row, look first...
@@ -1345,7 +1331,14 @@ addEditForm:function (sRow)
 								ijf.admin.saveSettings();
 
 							}
-						}]
+						},
+			{
+				xtype:'button',
+				style: 'margin:0 0 0 10px',
+				text:"Help",
+				handler: function(){
+				   window.open("http://www.idealfed.com/support.html");
+			}}]
 		 }
     });
 

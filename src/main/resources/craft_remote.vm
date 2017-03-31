@@ -1,18 +1,18 @@
 <html>
   <head>
     <title>IJF</title>
-    $webResourceManager.requireResource("com.idealfed.poc.craft:jiraforms-resources")
+    $webResourceManager.requireResource("com.idealfed.poc.idealforms:jiraforms-resources")
 
 
-    <link type="text/css" href="/download/resources/com.idealfed.poc.craft:jiraforms-resources/craft.css" rel="stylesheet" />
-    <link type="text/css" href="/download/resources/com.idealfed.poc.craft:jiraforms-resources/theme-neptune-all_1.css" rel="stylesheet" />
-    <link type="text/css" href="/download/resources/com.idealfed.poc.craft:jiraforms-resources/theme-neptune-all_2.css" rel="stylesheet" />
+    <link type="text/css" href="/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/craft.css" rel="stylesheet" />
+    <link type="text/css" href="/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/theme-neptune-all_1.css" rel="stylesheet" />
+    <link type="text/css" href="/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/theme-neptune-all_2.css" rel="stylesheet" />
              
              
-    <script src="/download/resources/com.idealfed.poc.craft:jiraforms-resources/jquery-1.11.2.min.js" type="text/javascript"></script>
-    <script src="/download/resources/com.idealfed.poc.craft:jiraforms-resources/ext-all.js" type="text/javascript"></script>
-    <script src="/download/resources/com.idealfed.poc.craft:jiraforms-resources/moment.js" type="text/javascript"></script> 
-    <script src="/download/resources/com.idealfed.poc.craft:jiraforms-resources/FileSaver.js" type="text/javascript"></script>
+    <script src="/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/jquery-1.11.2.min.js" type="text/javascript"></script>
+    <script src="/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/ext-all.js" type="text/javascript"></script>
+    <script src="/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/moment.js" type="text/javascript"></script> 
+    <script src="/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/FileSaver.js" type="text/javascript"></script>
  
    
     <metaname="decorator"content="none"/>
@@ -25,7 +25,7 @@
       g_itemId = "$ijfItemId";
       g_debug =  "$ijfDebug";
       g_root = "";
-      g_imagesRoot = g_root + "/download/resources/com.idealfed.poc.craft:jiraforms-resources/images/";
+      g_imagesRoot = g_root + "/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/";
       g_args =  '';
       g_craft = "$ijfCraft";
       g_dashboard = '';
@@ -45,49 +45,49 @@
       //load then init..     
      
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/lib/ijf_utils.js",
+			url: "http://www.idealfed.com/$ijfRemote/ijf_utils.js",
 			type: "get",
 			cache: false,
 			dataType: "script",
 			success: ijfLoaded
 		});
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/lib/ijf_model.js",
+			url: "http://www.idealfed.com/$ijfRemote/ijf_model.js",
 			type: "get",
 			cache: false,
 			dataType: "script",
 			success: ijfLoaded
 		});		
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/lib/ijf_main.js",
+			url: "http://www.idealfed.com/$ijfRemote/ijf_main.js",
 			type: "get",
 			cache: false,
 			dataType: "script",
 			success: ijfLoaded
 		});
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/lib/ijf_framework.js",
+			url: "http://www.idealfed.com/$ijfRemote/ijf_framework.js",
 			type: "get",
 			cache: false,
 			dataType: "script",
 			success: ijfLoaded
 		});
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/lib/ijf_lists.js",
+			url: "http://www.idealfed.com/$ijfRemote/ijf_lists.js",
 			type: "get",
 			cache: false,
 			dataType: "script",
 			success: ijfLoaded
 		});				      
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/lib/ijf_admin.js",
+			url: "http://www.idealfed.com/$ijfRemote/ijf_admin.js",
 			type: "get",
 			cache: false,
 			dataType: "script",
 			success: ijfLoaded
 		});				
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/lib/ijf_ext_utils.js",
+			url: "http://www.idealfed.com/$ijfRemote/ijf_ext_utils.js",
 			type: "get",
 			cache: false,
 			dataType: "script",

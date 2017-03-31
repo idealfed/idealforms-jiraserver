@@ -1,7 +1,7 @@
 <html>
   <head>
     <title>IJF</title>
-    $webResourceManager.requireResource("com.idealfed.poc.craft:jiraforms-resources")
+    $webResourceManager.requireResource("com.idealfed.poc.idealforms:jiraforms-resources")
 
     <metaname="decorator"content="atl.admin"/>
 
@@ -13,7 +13,7 @@
       g_itemId = "$ijfItemId";
       g_debug =  "$ijfDebug";
       g_root = "";
-      g_imagesRoot = g_root + "/download/resources/com.idealfed.poc.craft:jiraforms-resources/images/";
+      g_imagesRoot = g_root + "/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/";
       g_args =  '';
       g_craft = "$ijfCraft";
       g_dashboard = '';
