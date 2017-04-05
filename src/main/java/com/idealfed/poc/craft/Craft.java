@@ -89,6 +89,8 @@ public class Craft extends HttpServlet
             return;
 		}
 
+		String contextPath = request.getRequestURI();
+		contextPath = contextPath.replace("/plugins/servlet/iforms","");
 
 
     	String iwfAction = request.getParameter("ijfAction");
@@ -250,7 +252,7 @@ public class Craft extends HttpServlet
         	craft.put("ijfItemId", itemId);
         	craft.put("ijfDebug", debugFlag);
         	craft.put("ijfCraft", craftFlag);
-        	craft.put("ijfRoot", "");
+        	craft.put("ijfRoot", contextPath);
         	craft.put("ijfRemote", remote);
 
         	response.setContentType("text/html;charset=utf-8");

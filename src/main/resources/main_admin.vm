@@ -12,7 +12,7 @@
       g_formId = "$ijfFormId";
       g_itemId = "$ijfItemId";
       g_debug =  "$ijfDebug";
-      g_root = "";
+      g_root = "$ijfRoot";
       g_imagesRoot = g_root + "/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/";
       g_args =  '';
       g_craft = "$ijfCraft";

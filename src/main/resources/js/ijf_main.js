@@ -99,7 +99,7 @@ function init(inConfigVersion)
     	        return;
 			}
 			if(!ijf.fw) return;
-debugger;
+
 			//determine if anonymous....and not craft.....if so establish session
 			if(window.g_formId)
 			{
