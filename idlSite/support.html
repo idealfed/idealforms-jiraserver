@@ -70,6 +70,7 @@
 												<li><a href="#formLayout">Form Layout</a></li>
 												<li><a href="#formFields">Form Fields</a></li>
 												<li><a href="controlReference.html">Control Reference</a></li>
+												<li><a href="downloadUpload.html">Import Export</a></li>
 											</ul>
 										</section>
 
@@ -86,13 +87,14 @@
 											 If you think of JIRA Project as the database then the iforms are just wired up visual representations of the Project data.
 											 To get started:<br>
 											<br>
-											<b>Install Ideal Forms for JIRA:</b> Found in the <a href="https://marketplace.atlassian.com/addons/app/jira" target="_blank">JIRA Marketplace</a>, if you have difficulty finding it please contact us.<br>
-											<b>Refresh and Run:</b> Once installed, refresh your browser, you will see an "Ideal Forms Admin" link in the Add-Ons screen.<br>
-											<b><a href="#formGroupSettings">Create a Form Group:</a></b> All forms must be in a "Form Group" to help organize iforms.  Click Add on upper left side of administration window.<br>
-											<b>Create a Form:</b> Click Add Form at bottom of screen, name it and select your form group, save.<br>
-											<b><a href="#formDesign">Design Form:</a></b> Select your new form and click "Design Form".<br>
-											<b>Run Form:</b> Double click form or select form and click "Open".<br>
-
+											<b>1. Install Ideal Forms for JIRA:</b> Found in the <a href="https://marketplace.atlassian.com/plugins/com.idealfed.poc.idealforms/server/overview" target="_blank">JIRA Marketplace</a>, if you have difficulty finding it please contact us.<br>
+											<b>2. Refresh and Run:</b> Once installed, refresh your browser, you will see an "Ideal Forms Admin" link in the Add-Ons screen.<br>
+											<b>3. <a href="#formGroupSettings">Create a Form Group:</a></b> All forms must be in a "Form Group" to help organize iforms.  Click Add on upper left side of administration window.<br>
+											<b>4. Create a Form:</b> Click Add Form at bottom of screen, name it and select your form group, save. <br>
+											<b>5. <a href="#formDesign">Design Form:</a></b> Select your new form and click "Design Form".  <a href="simpleSettings.html">Click here for minimum form configurations.</a><br>
+											<b>6. Run Form:</b> Double click form or select form and click "Open".<br>
+<br>
+<b>Tip:</b>  <a href="downloadUpload.html">Click here for importing and exporting forms instructions.</a>
 
 										</article>
 
@@ -106,10 +108,12 @@
 											<br>
 											<b>Group Name:</b> A descriptive name for your form group.<br>
 											<b>Project:</b> A selected Project from your JIRA instance.  This is required for Add forms to set Issue types.<br>
-											<b>Default Form:</b> This is the name of a Form to open when a user clicks "Done" in a any form of the group.<br>
+											<b>Default Form:</b> This is the name of a Form to open when a user clicks "Done" in any form of the group.<br>
 											<b>Change Syle:</b> This overrides the CSS change style for changed fields.  It defaults to a blue bar on the right.
 											An example is:</b>
 											&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{border:solid red 2px}<br>
+											<b>Anon Username:</b> This is the JIRA username to use for anonymous form access. (Obviously, be careful with what permissions you grant this account)<br>
+											<b>Anon Password:</b> This is the anonymous username's password.<br>
 											<b>JIRA Decorated:</b> This determines if the form will include a JIRA background when open from the administrator.<br>
 
 											 </p>

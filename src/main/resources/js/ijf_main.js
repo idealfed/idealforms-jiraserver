@@ -43,6 +43,13 @@ var gSaveIncludesFile = false;
 
 function init(inConfigVersion)
 {
+
+	/*
+	   Set g_version for this version of the JS
+	*/
+	 window.g_version = "1.0.26";
+
+
     ijfUtils.showProgress();
 
     if(g_iwfFormSetId==null)
@@ -221,6 +228,8 @@ function loadItem(inContainerId)
     }
 
     var tItem = ijfUtils.getJiraIssueSync(ijf.main.itemId);
+
+
     if(tItem.key)
     {
 		try
@@ -256,6 +265,13 @@ function loadItem(inContainerId)
 	}
 	else
 	{
+	    if(typeof tItem=="string")
+	    {
+		    if(tItem.indexOf("Failed")>-1)
+		    {
+				 ijfUtils.modalDialogMessage("Error","Unable to load issue: " + ijf.main.itemId + "<br>" + tItem);
+		    }
+		}
 		ijf.currentItem = {};
 	}
 }

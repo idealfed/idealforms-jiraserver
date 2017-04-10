@@ -45,49 +45,49 @@
       //load then init..     
      
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/$ijfRemote/ijf_utils.js",
+			url: "https://www.idealfed.com/$ijfRemote/ijf_utils.js",
 			type: "get",
 			cache: false,
 			dataType: "script",
 			success: ijfLoaded
 		});
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/$ijfRemote/ijf_model.js",
+			url: "https://www.idealfed.com/$ijfRemote/ijf_model.js",
 			type: "get",
 			cache: false,
 			dataType: "script",
 			success: ijfLoaded
 		});		
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/$ijfRemote/ijf_main.js",
+			url: "https://www.idealfed.com/$ijfRemote/ijf_main.js",
 			type: "get",
 			cache: false,
 			dataType: "script",
 			success: ijfLoaded
 		});
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/$ijfRemote/ijf_framework.js",
+			url: "https://www.idealfed.com/$ijfRemote/ijf_framework.js",
 			type: "get",
 			cache: false,
 			dataType: "script",
 			success: ijfLoaded
 		});
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/$ijfRemote/ijf_lists.js",
+			url: "https://www.idealfed.com/$ijfRemote/ijf_lists.js",
 			type: "get",
 			cache: false,
 			dataType: "script",
 			success: ijfLoaded
 		});				      
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/$ijfRemote/ijf_admin.js",
+			url: "https://www.idealfed.com/$ijfRemote/ijf_admin.js",
 			type: "get",
 			cache: false,
 			dataType: "script",
 			success: ijfLoaded
 		});				
 	  jQuery.ajax({
-			url: "http://www.idealfed.com/$ijfRemote/ijf_ext_utils.js",
+			url: "https://www.idealfed.com/$ijfRemote/ijf_ext_utils.js",
 			type: "get",
 			cache: false,
 			dataType: "script",

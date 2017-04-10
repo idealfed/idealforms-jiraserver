@@ -45,7 +45,14 @@ var ijfUtils = {
 			},
 			error: function(e) {
 				ijfUtils.footLog("Failed cache data set!");
-				retData = "Failed issue get: " + e.message;
+				if(e.responseText)
+				{
+					retData = "Failed issue get: " + e.responseText;
+				}
+				else
+				{
+					retData = "Failed issue get: " + e.message;
+				}
 			}
 		});
 		return retData;
@@ -620,9 +627,13 @@ renderHeader:function(inContainerId, thisForm,item)
     var headerCenter = ijfUtils.replaceKeyValues(thisForm.settings["headerCenter"],item);
     var headerRight = ijfUtils.replaceKeyValues(thisForm.settings["headerRight"],item);
 
-    ijfUtils.setHead("<table width='100%' borders=0><tr><td width='33%' align='left'>" + headerLeft + "</td>" +
-        "<td  width='33%' align ='center'>"  + headerCenter + "</td>" +
-        "<td  width='33%' align='right'>" + headerRight + "</td></tr></table>");
+    ijfUtils.setHead("<div style='width:100%'><div style='display:table-cell;width:205px'>" + headerLeft + "</div>" +
+        "<div style='text-align:center;display:table-cell;width:65%'>"  + headerCenter + "</div>" +
+        "<div style='text-align:right;display:table-cell;width:205px'>" + headerRight + "</div></div>");
+
+    //ijfUtils.setHead("<table  role='presentation' width='100%' borders=0><tr><td width='33%' align='left'>" + headerLeft + "</td>" +
+    //    "<td  width='33%' align ='center'>"  + headerCenter + "</td>" +
+    //    "<td  width='33%' align='right'>" + headerRight + "</td></tr></table>");
 },
 
 setHead:function(inMsg)

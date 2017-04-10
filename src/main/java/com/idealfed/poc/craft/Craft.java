@@ -89,6 +89,7 @@ public class Craft extends HttpServlet
             return;
 		}
 
+
 		String contextPath = request.getRequestURI();
 		contextPath = contextPath.replace("/plugins/servlet/iforms","");
 
