@@ -1288,6 +1288,7 @@ loadConfig:function(onSuccess, onError)
 	handleJiraFieldType:function(inType, inField, forDisplay)
 	{
 		if(!inField) return null;
+
 		switch(inType.schema.type)
 		{
 			case "string":
@@ -1309,7 +1310,8 @@ loadConfig:function(onSuccess, onError)
  				 return inField;
 				break;
 		    case "array":
- 				 return inField;
+		        if(forDisplay) return inField.reduce(function(inStr,e){inStr+= e.value + " "; return inStr;},"");
+			    return inField;
 				break;
 			case "priority":
 			case "status":

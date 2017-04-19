@@ -801,7 +801,7 @@ addEditForm:function (sRow)
 		});
 
 
-		var lookup = ["attachmentlist","attachmentupload","button","checkbox","commentlist","datebox","dropdown","html","iframe","itemlist","formbuttons","formbuttonsforpopup","multiselect","navigatetoform","subform","openurl","openpopform","radio","tabmenu","textarea","textbox","userpicker"];
+		var lookup = ["attachmentlist","attachmentupload","button","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","html","iframe","itemlist","formbuttons","formbuttonsforpopup","multiselect","navigatetoform","subform","openurl","openpopform","radio","tabmenu","textarea","textbox","userpicker"];
 
 	    var  sectionLookup = [];
 
@@ -2032,7 +2032,7 @@ addEditForm:function (sRow)
 
         //attempt to save....
 		var jdata = JSON.stringify(jOut);
-//debugger;
+
 		var initResp = "";
 
 		var sStat = ijfUtils.saveJiraFormSync(jdata,"saveFormConfig");

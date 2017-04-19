@@ -39,6 +39,9 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'dropdown':
                 ijf.extUtils.renderDropdown (inFormKey,item,inField,inContainer);
                 break;
+            case 'dropdownwithpicker':
+                ijf.extUtils.renderDropdownWithPicker (inFormKey,item,inField,inContainer);
+                break;
             case 'radio':
                 ijf.extUtils.renderRadiogroup (inFormKey,item,inField,inContainer);
                 break;
@@ -1011,15 +1014,22 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
 {
 
     inContainer.title = inField.toolTip;
-
-	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
-    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=item.fields[jfFieldDef.id];
-    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
-
-	    var lAllowBlank = true;
+    var lAllowBlank = true;
+    //adding concept of session vars.
+    if(inField.dataSource=="session")
+    {
+		var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+	}
+	else
+	{
+		var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+	    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+		var jf=item.fields[jfFieldDef.id];
+	    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 	    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
-        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
+	}
+
+    if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
     var lMaxsize =  Number.MAX_VALUE;
 
@@ -1109,7 +1119,14 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
                     if(!inField.toolTip) inContainer.title = f.getErrors().join();
                 },
                 change: function(f,n,o){
-                    ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+                    if(inField.dataSource=="session")
+                    {
+						ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+					}
+					else
+					{
+						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					}
                     if(f.isValid())
                     {
                         ocf(f,n,o);
@@ -1530,7 +1547,219 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
     //after render....
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 },
+ renderDropdownWithPicker:function(inFormKey,item, inField, inContainer)
+{
 
+    inContainer.title = inField.toolTip;
+
+    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+	var jf=item.fields[jfFieldDef.id];
+    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+
+	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+
+    var lAllowBlank = true;
+    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
+
+
+    //manage cases for the lookups
+    //case one, simple collect constraint
+    //case two reference lookup
+    switch (inField.dataReference)
+    {
+        case "ijfReference":
+            var ref = JSON.parse(inField.referenceFilter);
+            //value only for now...
+            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
+            var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
+            break;
+        default:
+			var lookup = jfFieldMeta.allowedValues.map(function(e)
+			{
+				return [e.id,e.value];
+			});
+     		break;
+    }
+    var pickListWindow = {};
+	var openPicklistForm = function(inControl)
+	{
+
+       var colSettingsArray = [];
+       var gridFieldArray=[];
+	   var fType = 'list';
+
+	   gridFieldArray.push({name: "value", type: "string"});
+	   colSettingsArray.push({
+				header: "Option Value",
+				width: 'auto',
+				dataIndex: "value",
+				width: "100%",
+				sortable: true,
+				filter: {
+				  type: 'string'
+	            }
+			});
+		if(!Ext.ClassManager.isCreated(inField.dataSource + inField.formCell.replace(",","")))
+		{
+			Ext.define(inField.dataSource + inField.formCell.replace(",",""), {
+				extend: 'Ext.data.Model',
+				fields: gridFieldArray
+			});
+		}
+	 	var store = Ext.create('Ext.data.Store', {
+			model: inField.dataSource + inField.formCell.replace(",",""),
+			proxy: {
+				type: 'memory',
+				reader: {
+					type: 'json'
+				}},
+				autoLoad: false});
+		var fLookup = lookup.map(function(e){
+			return {"id":e[0],"value":e[1]};
+		});
+		store.proxy.data=fLookup;
+		store.load();
+		var pgrid= new Ext.grid.GridPanel({
+			store: store,
+			plugins: 'gridfilters',
+			//style: l_panelStyle,
+			height: 380,
+			width: 580,
+			inControl: inControl,
+			columns: colSettingsArray,
+			selModel: {selType: 'rowmodel', mode: 'SINGLE'},
+			listeners: {
+				'beforeitemdblclick': function(selMod, record, something ){
+					var nVal = record.data.id;
+					pickListWindow.close();
+					this.inControl.items.items[0].setValue(nVal);
+				}
+			}
+		});
+		//need a grid of lookup, ID hidden, rest one column with string search
+		pickListWindow = new Ext.Window({
+            // layout: 'fit',
+            closeAction:'destroy',
+            title:  "Make Selection",
+            width:  600,
+            height: 400,
+            closable: true,
+            items:[pgrid],
+            bodyStyle:'#fff',
+            modal: true,
+            inControl: inControl,
+            layout:'fit',
+            buttons:[{
+                text:"Select",
+                width: 80,
+                handler: function(){
+					    var thisUp = this.up().up();
+						var nVal = thisUp.items.items[0].selection;
+						pickListWindow.close();
+						if(nVal) thisUp.inControl.items.items[0].setValue(nVal.data.id);
+					}}
+            ]
+        });
+        pickListWindow.show();
+	}
+
+    var hideField = ijfUtils.renderIfShowField(data,inField);
+    var hideLabel = false;
+    if (inField.caption=="")
+        var lCaption = inField.dataSource;
+    else if(inField.caption=="none")
+    {
+        var lCaption = "";
+        hideLabel=true;
+    }
+    else
+        var lCaption = inField.caption;
+    if (inField.style.indexOf('hidden:true')>-1)
+    {
+        hideLabel=true;
+        hideField=true;
+    }
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+    if (inField.style.indexOf('enteronce:true')>-1)
+    {
+        if (!!data) rOnly=true;
+    }
+
+    var limitList = true;
+    if (inField.style.indexOf('limit:false')>-1)
+    {
+        limitList=false;
+    }
+
+    var ocf =  ijfUtils.getEvent(inField);
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
+	if(rOnly) l_fieldStyle="background:lightgray";
+
+
+    var simple = new Ext.FormPanel({
+        hidden: hideField,
+        border:false,
+        bodyStyle: l_Style,
+        layout: 'hbox',
+        items:[{xtype: 'combobox',
+            store: lookup,
+			labelAlign: 'left',
+			labelStyle: l_labelStyle,
+			style: l_panelStyle,
+			fieldStyle: l_fieldStyle,
+			fieldLabel: lCaption,
+			hideLabel: hideLabel,
+			allowBlank: lAllowBlank,
+			readOnly: rOnly,
+			value: data,
+			forceSelection: limitList,
+			triggerAction: 'all',
+			emptyText:'Please select...',
+			selectOnFocus:true,
+			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+			listeners: {
+				afterrender: function(f)
+				{
+					this.validate();
+				},
+				change: function(f,n,o){
+					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					ocf(f,n,o);
+				}
+			}},
+			{
+			            text: "(List)",
+			            style:  "background:transparent;margin-top:4px;margin-left:4px",
+                        xtype: "simplelink",
+                        handler: function(){
+							openPicklistForm(this.up());
+						}
+			}]
+    });
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple, inFormKey,item, inField, inContainer);
+
+    simple.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
+},
 
 renderUserPicker:function(inFormKey,item, inField, inContainer)
 {
@@ -1579,7 +1808,7 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 					type: 'ajax',
 					url: g_root + "/rest/api/2/user/assignable/search",
 					extraParams : {
-								issueKey:'TPO-1'},
+								issueKey:item.key},
 					filterParam: 'username',
 					groupParam: '',
 					limitParam: '',
@@ -2007,11 +2236,22 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 
     inContainer.title = inField.toolTip;
 
-  	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
-      var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-  	var jf=item.fields[jfFieldDef.id];
+	if(inField.dataSource=="session")
+	{
+		  var jfFieldMeta = {};
+		  jfFieldMeta.allowedValues = JSON.parse(inField.dataReference);
+		  var jfFieldDef = {};
+		  jfFieldDef.id=inField.formCell;
+		  var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+	}
+	else
+	{
+		  var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+		  var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+		  var jf=item.fields[jfFieldDef.id];
+		  var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+	}
 
-      var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 
       var lAllowBlank = true;
       if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
@@ -2076,7 +2316,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
   			     			name: jfFieldDef.id,
   			     			readOnly: rOnly,
   			     			inputValue: e.id};
-       });
+      });
 
       var ocf =  ijfUtils.getEvent(inField);
       var hideField = ijfUtils.renderIfShowField(data,inField);
@@ -2103,7 +2343,22 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
   					this.validate();
   				},
   				change: function(f,n,o){
-  					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					if(inField.dataSource=="session")
+					{
+	  					//somehow ijf.session needs the current values of this animal....
+	  					//perhaps: up().items[], create lData and set session to it
+
+	  					var newVals = f.items.items.reduce(function(iVal,e){
+							if(e.value) iVal.push({"id":e.inputValue});
+							return iVal;
+						},[]);
+						ijf.session[inFormKey+'_fld_'+inField.formCell]=newVals;
+
+					}
+					else
+					{
+	  					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					}
   					ocf(f,n,o);
   				}
   			}}]
@@ -2806,8 +3061,26 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 	            }
 			});
 		}
+		else if(f.schema.type=="datetime")
+		{
+			gridFieldArray.push({name: f.id, type: "date"});
+			colSettingsArray.push({
+				header: f.header,
+				dataIndex: f.id,
+				xtype: 'datecolumn',
+				sortable: true,
+				width: f.width,
+				style: l_labelStyle,
+				format: 'm/d/y',
+				filter: {
+				  type: 'date'
+	            }
+			});
+		}
 		else
 		{
+			var fType = 'list';
+			if(f.id=="summary") fType='string';
 			gridFieldArray.push({name: f.id, type: "string"});
 			colSettingsArray.push({
 				header: f.header,
@@ -2817,7 +3090,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				style: l_labelStyle,
 				sortable: true,
 				filter: {
-				  type: 'string'
+				  type: fType
 	            }
 			});
         }

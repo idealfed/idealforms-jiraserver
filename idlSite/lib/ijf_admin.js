@@ -829,8 +829,7 @@ addEditForm:function (sRow)
 			}
 		});
 
-
-		var lookup = ["attachmentlist","attachmentupload","button","checkbox","commentlist","datebox","dropdown","html","iframe","itemlist","formbuttons","formbuttonsforpopup","multiselect","navigatetoform","subform","openurl","openpopform","radio","tabmenu","textarea","textbox","userpicker"];
+		var lookup = ["attachmentlist","attachmentupload","button","checkbox","commentlist","datebox","dropdown","html","iframe","itemlist","itemlistfilter_textbox","formbuttons","formbuttonsforpopup","multiselect","navigatetoform","subform","openurl","openpopform","radio","tabmenu","textarea","textbox","userpicker"];
 
 	    var  sectionLookup = [];
 

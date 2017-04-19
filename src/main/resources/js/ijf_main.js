@@ -81,7 +81,7 @@ function init(inConfigVersion)
 			ijf.jiraEditMetaKeyed = [];
 			ijf.jiraAddMeta = [];
 			ijf.jiraAddMetaKeyed = [];
-
+			ijf.session = {};
             ijf.main.controlSet = new Array();
 //          dataServices = new DataServices();
             ijf.main.items = new Array();

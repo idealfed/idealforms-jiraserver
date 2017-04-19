@@ -572,19 +572,23 @@ public class Craft extends HttpServlet
     		{
 	    		JSONObject inForm = new JSONObject(inJson);
 
-	    		FormSet f=null;
+				FormSet f;
+
+
 				int fsId = new Integer(inForm.getString("formSetId")).intValue();
 				if(fsId==0)
 				{
 					//formSet must exist by ID and we need it....
 					//OK, now get the object by ID
-					f = ao.create(FormSet.class);
+
+					f =  ao.create(FormSet.class);
 				}
 				else
 				{
 					//OK, now get the object by ID
 					f = ao.get(FormSet.class, fsId);
 				}
+
 	    		f.setName(inForm.getString("name"));
         		f.setProjectId(inForm.getString("projectId"));
         		f.setProjectName(inForm.getString("projectName"));
