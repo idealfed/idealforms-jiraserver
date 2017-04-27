@@ -66,7 +66,7 @@ public class Craft extends HttpServlet
     {
     	String username = userManager.getRemoteUsername(request);
 
-
+/*
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -88,7 +88,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-
+*/
 
 		String contextPath = request.getRequestURI();
 		contextPath = contextPath.replace("/plugins/servlet/iforms","");

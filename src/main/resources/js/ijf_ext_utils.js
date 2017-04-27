@@ -368,6 +368,8 @@ renderPopupForm:function(inFormKey,inItem, inAction)
     });
     dWin.show();
     ijf.main.gPopupFormHandle = dWin;
+    //need to force the render to get metadata for the new thing, null out the meta...
+    ijf.jiraMeta=null;
     ijf.main.renderForm(nfId, inAction.form, true, rItem);
 },
 renderCommentList:function(inFormKey,item, inField, inContainer)
@@ -498,7 +500,7 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 
 
     var outHtml = ijfUtils.replaceKeyValues(inField.dataSource,item);
-    outHtml = ijfUtils.sanitize(outHtml);
+    //outHtml = ijfUtils.sanitize(outHtml);
     if(!l_Style) l_Style = l_panelStyle;
     //rendeIf logic
     var hideField = ijfUtils.renderIfShowField("",inField);
@@ -1790,9 +1792,17 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
             break;
         default:
 
-
-            var apiUrl = "/rest/api/2/user/assignable/search";
-            if(inField.controlType="userpicker") apiUrl = "/rest/api/2/user/search";
+			var apiUrl = "/rest/api/2/user/picker";
+			var	fParam = "query";
+			var xtrParam = null;
+			var uRoot = 'users';
+            if(inField.dataSource=="Assignee")
+            {
+	            apiUrl = "/rest/api/2/user/assignable/search";
+	            fParam = "username";
+	            xtrParam={project:inField.form.formSet.projectId};
+	            uRoot = '';
+			}
 
 
      		Ext.define('JiraUserModel', {
@@ -1803,13 +1813,12 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 			var lookup = Ext.create('Ext.data.Store', {
 				storeId: 'userDropdownId',
 				model: 'JiraUserModel',
-				autoLoad: true,
+				autoLoad: false,
 				proxy: {
 					type: 'ajax',
-					url: g_root + "/rest/api/2/user/assignable/search",
-					extraParams : {
-								issueKey:item.key},
-					filterParam: 'username',
+					url: g_root + apiUrl,
+					extraParams : xtrParam,
+					filterParam: fParam,
 					groupParam: '',
 					limitParam: '',
 					pageParam: '',
@@ -1817,10 +1826,12 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 					startParam: '',
 					reader: {
 						type: 'json',
-						root: ''
+						root: uRoot
 					}
 				}
 		    });
+		    //now you need to load the inital data:
+			if(jf)  lookup.loadData([{"name":jf.key, "displayName":jf.displayName}]);
      		break;
     }
 
@@ -1870,7 +1881,6 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
     if(!l_fieldStyle) l_fieldStyle="background:white";
 	if(rOnly) l_fieldStyle="background:lightgray";
 
-
     var simple = new Ext.FormPanel({
         hidden: hideField,
         border:false,
@@ -1892,7 +1902,7 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 			hideTrigger: true,
 			triggerAction: 'all',
 			queryMode: 'remote',
-			queryParam: 'username',
+			queryParam: fParam,
 			minChars: 2,
 			emptyText:'Start typing...',
 			selectOnFocus:true,

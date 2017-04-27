@@ -896,8 +896,7 @@ loadConfig:function(onSuccess, onError)
 		 outId = outId.replace(/\//g,"_");
 		return outId;
 	},
-
-	sanitize:function(inText)
+	sanitize2:function(inText)
 	{
 		if(inText)
 		{
@@ -906,7 +905,27 @@ loadConfig:function(onSuccess, onError)
 		}
 		return inText;
 	},
-
+	sanitize:function(html) {
+		var tagBody = '(?:[^"\'>]|"[^"]*"|\'[^\']*\')*';
+		var tagOrComment = new RegExp(
+			'<(?:'
+			// Comment body.
+			+ '!--(?:(?:-*[^->])*--+|-?)'
+			// Special "raw text" elements whose content should be elided.
+			+ '|script\\b' + tagBody + '>[\\s\\S]*?</script\\s*'
+			+ '|style\\b' + tagBody + '>[\\s\\S]*?</style\\s*'
+			// Regular name
+			+ '|/?[a-z]'
+			+ tagBody
+			+ ')>',
+			'gi');
+	  var oldHtml;
+	  do {
+	    oldHtml = html;
+	    html = html.replace(tagOrComment, '');
+	  } while (html !== oldHtml);
+	  return html.replace(/</g, '&lt;');
+    },
 	clearExt:function()
 	{
 		//var mcm = new Ext.ComponentManager();
@@ -942,10 +961,6 @@ loadConfig:function(onSuccess, onError)
 			return true;
 		return false;
 	},
-
-
-
-
 
 	getComboList:function(inList, inComboRef, inKeys)
 	{
@@ -1239,9 +1254,9 @@ loadConfig:function(onSuccess, onError)
 
 		if(!item.key) return retText;
 
-		retText = retText.replace("#{key}",item.key);
-		retText = retText.replace("#{summary}",item.fields.summary);
-		retText = retText.replace("#{status}",item.fields.status.name);
+		retText = retText.replace(/\#\{key\}/g,item.key);
+		retText = retText.replace(/\#\{summary\}/g,item.fields.summary);
+		retText = retText.replace(/\#\{status\}/g,item.fields.status.name);
 	    retText = this.switchAtts(retText,item);
 
 		return retText;
@@ -1292,7 +1307,7 @@ loadConfig:function(onSuccess, onError)
 		switch(inType.schema.type)
 		{
 			case "string":
-				return inField;
+				return ijfUtils.sanitize(inField);
 				break;
 			case "issuetype":
 				return inField.name;

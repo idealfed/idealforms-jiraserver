@@ -47,7 +47,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-	 window.g_version = "1.0.26";
+	 window.g_version = "1.0.29";
 
 
     ijfUtils.showProgress();
@@ -170,6 +170,7 @@ function processSetup(inContainerId)
 
     ijfUtils.clearAll();
     ijfUtils.clearExt();
+    ijf.jiraMeta=null;
 
     //hook to allow non-item based forms, ie reports
     if (ijf.main.itemId=="0")
@@ -324,36 +325,48 @@ function renderForm(inContainerId, inFormId, isNested, item)
 
 	//look to see if form is add or edit? based on form type, load meta if necessary
 
-	ijf.jiraMeta={};
-	ijf.jiraMetaKeyed=[];
+	//and you might be in a subform of an Add event...so, if item.fields exists AND item.jiraMeta exists, then
+	//you want to skip this...I think...
 
-	if(item)
+   	if((!isNested) || (!ijf.jiraMeta)) //should only need this if NOT nested
 	{
-		//item exists, pull the edit meta
-		if(!ijf.jiraEditMeta.hasOwnProperty(item.key))
+		ijf.jiraMeta={};
+		ijf.jiraMetaKeyed=[];
+
+		//look to see if an Add type.  If so, null out the Item.
+		if(thisForm.formType=="Add") item=null;
+
+		if(item)
 		{
-			ijf.jiraEditMeta[item.key] = ijfUtils.getJiraIssueMetaSync(item.key);
-			ijf.jiraEditMetaKeyed[item.key] = [];
-			Object.keys(ijf.jiraEditMeta[item.key].fields).forEach(function(f)
+			//item exists, pull the edit meta
+			if(item.key)
 			{
-				ijf.jiraEditMetaKeyed[item.key][ijf.jiraEditMeta[item.key].fields[f].name]=ijf.jiraEditMeta[item.key].fields[f];
-			});
+				if(!ijf.jiraEditMeta.hasOwnProperty(item.key))
+				{
+					ijf.jiraEditMeta[item.key] = ijfUtils.getJiraIssueMetaSync(item.key);
+					ijf.jiraEditMetaKeyed[item.key] = [];
+					Object.keys(ijf.jiraEditMeta[item.key].fields).forEach(function(f)
+					{
+						ijf.jiraEditMetaKeyed[item.key][ijf.jiraEditMeta[item.key].fields[f].name]=ijf.jiraEditMeta[item.key].fields[f];
+					});
+				}
+				ijf.jiraMeta=ijf.jiraEditMeta[item.key];
+				ijf.jiraMetaKeyed=ijf.jiraEditMetaKeyed[item.key];
+			}
 		}
-		ijf.jiraMeta=ijf.jiraEditMeta[item.key];
-		ijf.jiraMetaKeyed=ijf.jiraEditMetaKeyed[item.key];
-	}
-	else
-	{
-		//no item, look for Add form
-		if(thisForm.formType=="Add")
+		else
 		{
-			ijfUtils.loadIssueTypeDetails(thisForm.formSet.projectId);
+			//no item, look for Add form
+			if(thisForm.formType=="Add")
+			{
+				ijfUtils.loadIssueTypeDetails(thisForm.formSet.projectId);
 
-			//meta is keyed by issue type for add
-			ijf.jiraMeta.fields=ijf.jiraAddMeta[thisForm.formSet.projectId][thisForm.issueType]
-			ijf.jiraMetaKeyed=ijf.jiraAddMetaKeyed[thisForm.formSet.projectId][thisForm.issueType]
-			//for add items
-            if(!item)  item={"fields":{}};
+				//meta is keyed by issue type for add
+				ijf.jiraMeta.fields=ijf.jiraAddMeta[thisForm.formSet.projectId][thisForm.issueType]
+				ijf.jiraMetaKeyed=ijf.jiraAddMetaKeyed[thisForm.formSet.projectId][thisForm.issueType]
+				//for add items
+				if(!item)  item={"fields":{}};
+			}
 		}
 	}
 
