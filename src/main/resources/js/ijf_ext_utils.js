@@ -11,7 +11,7 @@ renderField:function(inFormKey, item, inField, inContainer)
 	(inField.renderif) ? null: inField.renderif="";
 	(inField.caption) ? null: inField.caption="";
 	(inField.dataSource) ? null: inField.dataSource="";
-	(inField.tooltip) ? null: inField.toolTip="";
+	(inField.toolTip) ? null: inField.toolTip="";
 
 
     //attempt to pull data....
@@ -74,6 +74,12 @@ renderField:function(inFormKey, item, inField, inContainer)
                 break;
             case 'itemlist':
                 ijf.extUtils.renderItemList (inFormKey,item,inField,inContainer);
+                break;
+            case 'chart-pie':
+                ijf.extUtils.renderPieChart (inFormKey,item,inField,inContainer);
+                break;
+            case 'chart-bar':
+                ijf.extUtils.renderBarChart (inFormKey,item,inField,inContainer);
                 break;
             case 'openpopform':
                 ijf.extUtils.renderPopFormButton(inFormKey,item,inField,inContainer);
@@ -498,8 +504,14 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
 
-
-    var outHtml = ijfUtils.replaceKeyValues(inField.dataSource,item);
+    if(inField.dataReference=="html")
+    {
+	    var outHtml = ijfUtils.replaceKeyValues(inField.dataSource,item, true);
+	}
+    else
+    {
+	    var outHtml = ijfUtils.replaceKeyValues(inField.dataSource,item);
+	}
     //outHtml = ijfUtils.sanitize(outHtml);
     if(!l_Style) l_Style = l_panelStyle;
     //rendeIf logic
@@ -1027,7 +1039,16 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
 		var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
 	    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
 		var jf=item.fields[jfFieldDef.id];
-	    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+
+		if(inField.dataReference == "html")
+		{
+			var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf,false,true);
+		}
+		else
+		{
+			var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+		}
+
 	    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
 	}
 
@@ -2593,7 +2614,15 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
     var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
 	var jf=item.fields[jfFieldDef.id];
-    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+
+	if(inField.dataReference == "html")
+	{
+	    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf,false,true);
+	}
+	else
+	{
+	    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+	}
 
 	    var lAllowBlank = true;
 	    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
@@ -3305,6 +3334,337 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     ijf.main.controlSet[thisControl.id]=thisControl;
     //after render....
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](layout, inFormKey,item, inField, inContainer);
+},
+
+//charting
+renderPieChart :function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+
+    var curIndex = 0;
+
+    var lCaption = inField.caption;
+
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+
+    var hideField = ijfUtils.renderIfShowField("",inField);
+
+    var collapsible = true;
+    if (inField.style.indexOf('collapsible:false')>-1)
+    {
+        collapsible=false;
+    }
+    var collapsed = false;
+    if (inField.style.indexOf('collapsed:true')>-1)
+    {
+        collapsed=true;
+    }
+
+
+	    var l_labelStyle = inField.labelStyle;
+	    var l_panelStyle = inField.panelStyle;
+	    var l_Style = inField.style;
+	    var l_fieldStyle = inField.fieldStyle;
+
+
+	    if(!l_labelStyle) l_labelStyle="background:transparent";
+	    if(!l_panelStyle) l_panelStyle="background:transparent";
+	    if(!l_Style) l_Style="background:transparent";
+	    if(!l_fieldStyle) l_fieldStyle="background:transparent";
+
+	var l_Height = 'auto';
+    var l_Height=ijfUtils.getNameValueFromStyleString(l_panelStyle,"height");
+    if(l_Height=="")
+    {
+		l_Height='auto';
+	}
+	else
+	{
+    	l_Height = l_Height.replace("px","")/1;
+	}
+
+
+    var store = Ext.create('Ext.data.Store', {
+		fields: ['wedge', 'data1' ],
+		data: [
+			{ wedge: 'Android', data1: 68.3 },
+			{ wedge: 'BlackBerry', data1: 1.7 },
+			{ wedge: 'iOS', data1: 17.9 },
+			{ wedge: 'Windows Phone', data1: 10.2 },
+			{ wedge: 'Others', data1: 1.9 }
+		]
+	});
+
+    var layout = new Ext.Panel({
+        title: lCaption,
+        collapsible: false,
+        collapsed: false,
+        hidden: hideField,
+        width: "100%",
+        controller:  Ext.create('Ext.app.ViewController', {
+		    onDataRender: function (v) {
+		        return v + '%';
+		    },
+		    onSeriesTooltipRender: function (tooltip, record, item) {
+		        tooltip.setHtml(record.get('wedge') + ': ' + record.get('data1') + '%');
+		    }
+		}),
+        layoutConfig: {
+            columns: 1
+        },
+        style: l_Style,
+        items: [Ext.create('Ext.chart.PolarChart',{
+			        theme: 'default-gradients',
+			        width: '100%',
+			        height: 500,
+			        insetPadding: 50,
+			        innerPadding: 20,
+			        store: store,
+			        legend: {
+			            docked: 'bottom'
+			        },
+			        interactions: ['rotate'],
+			        sprites: [{
+			            type: 'text',
+			            text: 'Title of my Pie Chart',
+			            fontSize: 22,
+			            width: 100,
+			            height: 30,
+			            x: 40, // the sprite x position
+			            y: 20  // the sprite y position
+			        }, {
+			            type: 'text',
+			            text: 'Use beforeRender to alter data',
+			            x: 12,
+			            y: 375
+			        }, {
+			            type: 'text',
+			            text: 'signature of before render: (chart, inFormKey,item, inField, inContainer)',
+			            x: 12,
+			            y: 390
+			        }],
+			        series: [{
+			            type: 'pie',
+			            angleField: 'data1',
+			            label: {
+			                field: 'wedge',
+			                calloutLine: {
+			                    length: 60,
+			                    width: 3
+			                    // specifying 'color' is also possible here
+			                }
+			            },
+			            highlight: true,
+			            tooltip: {
+			                trackMouse: true,
+			                renderer: 'onSeriesTooltipRender'
+			            }
+			        }]
+    		})]
+    });
+
+
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](layout, inFormKey,item, inField, inContainer);
+
+    layout.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, layout, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](layout, inFormKey,item, inField, inContainer);
 }
+,
+
+renderBarChart :function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+
+    var curIndex = 0;
+
+    var lCaption = inField.caption;
+
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+
+    var hideField = ijfUtils.renderIfShowField("",inField);
+
+    var collapsible = true;
+    if (inField.style.indexOf('collapsible:false')>-1)
+    {
+        collapsible=false;
+    }
+    var collapsed = false;
+    if (inField.style.indexOf('collapsed:true')>-1)
+    {
+        collapsed=true;
+    }
+
+
+	    var l_labelStyle = inField.labelStyle;
+	    var l_panelStyle = inField.panelStyle;
+	    var l_Style = inField.style;
+	    var l_fieldStyle = inField.fieldStyle;
+
+
+	    if(!l_labelStyle) l_labelStyle="background:transparent";
+	    if(!l_panelStyle) l_panelStyle="background:transparent";
+	    if(!l_Style) l_Style="background:transparent";
+	    if(!l_fieldStyle) l_fieldStyle="background:transparent";
+
+	var l_Height = 'auto';
+    var l_Height=ijfUtils.getNameValueFromStyleString(l_panelStyle,"height");
+    if(l_Height=="")
+    {
+		l_Height='auto';
+	}
+	else
+	{
+    	l_Height = l_Height.replace("px","")/1;
+	}
+
+
+    var store = Ext.create('Ext.data.Store', {
+    fields: ['category', 'value'],
+    data: [
+        { category: 'USA',     value:20},
+        { category: 'China',   value:30},
+        { category: 'Japan',   value:40},
+        { category: 'UK',      value:50}
+    ]
+	});
+
+    var layout = new Ext.Panel({
+        title: lCaption,
+        collapsible: false,
+        collapsed: false,
+        hidden: hideField,
+        width: "100%",
+        layoutConfig: {
+            columns: 1
+        },
+        style: l_Style,
+        controller:  Ext.create('Ext.app.ViewController', {
+
+				onAxisLabelRender: function (axis, label, layoutContext) {
+					return Ext.util.Format.number(layoutContext.renderer(label), '0,000');
+				},
+
+				onSeriesLabelRender: function (v) {
+					return Ext.util.Format.number(v, '0,000');
+				},
+
+				onItemEditTooltipRender: function (tooltip, item, target, e) {
+					var formatString = '0,000',
+						record = item.record;
+
+					tooltip.setHtml(record.get('category') + ': ' +
+						Ext.util.Format.number(target.yValue, formatString));
+				},
+
+				onSeriesTooltipRender: function(tooltip, record, item) {
+					var formatString = '0,000';
+
+					tooltip.setHtml(record.get('category') + ': ' +
+						Ext.util.Format.number(record.get('value'), formatString));
+				},
+
+				onColumnRender: function (v) {
+					return v;
+				}
+		}),
+          items: [Ext.create('Ext.chart.CartesianChart',{
+		        width: '100%',
+		        height: 500,
+		        insetPadding: 40,
+		        flipXY: false,
+		        interactions: {
+		            type: 'itemedit',
+		            style: {
+		                lineWidth: 2
+		            },
+		            tooltip: {
+		                renderer: 'onItemEditTooltipRender'
+		            }
+		        },
+		        animation: {
+		            easing: 'easeOut',
+		            duration: 500
+		        },
+		        store: store,
+		        axes: [{
+		            type: 'numeric',
+		            position: 'left',
+		            fields: 'value',
+		            grid: false,
+		            maximum: 100,
+		            majorTickSteps: 10,
+		            title: 'My Axis Title',
+		            renderer: 'onAxisLabelRender'
+		        }, {
+		            type: 'category',
+		            position: 'bottom',
+		            fields: 'category',
+		            grid: true
+		        }],
+		        series: [{
+		            type: 'bar',
+		            xField: 'category',
+		            yField: 'value',
+		            style: {
+		                minGapWidth: 10
+		            },
+		            highlightCfg: {
+		                strokeStyle: 'black',
+		                radius: 10
+		            },
+		            label: {
+		                field: 'value',
+		                display: 'insideEnd',
+		                renderer: 'onSeriesLabelRender'
+		            },
+		            tooltip: {
+		                trackMouse: true,
+		                renderer: 'onSeriesTooltipRender'
+		            }
+		        }],
+		        sprites: [{
+		            type: 'text',
+		            text: 'Title of My Bar Chart',
+		            fontSize: 22,
+		            width: 100,
+		            height: 30,
+		            x: 40, // the sprite x position
+		            y: 20  // the sprite y position
+		        }, {
+		            type: 'text',
+		            text: 'Use beforeRender to alter: signature(chart, inFormKey, item, inField, inContainer)',
+		            fontSize: 10,
+		            x: 12,
+		            y: 490
+		        }]
+		    })]
+
+    });
+
+
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](layout, inFormKey,item, inField, inContainer);
+
+    layout.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, layout, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](layout, inFormKey,item, inField, inContainer);
+}
+
 
 }

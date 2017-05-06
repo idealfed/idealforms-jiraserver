@@ -47,7 +47,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-	 window.g_version = "1.0.29";
+	 window.g_version = "1.0.31";
 
 
     ijfUtils.showProgress();

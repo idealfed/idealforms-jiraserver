@@ -315,11 +315,6 @@ applyStyle:function(element, style){
     });
 },
 
-helpLink:function(inCaller)
-{
-
-	return "&nbsp;&nbsp;<img src='https://pilot1.tcg.com/javascripts/test/ijf/blueQuestion14.png' onclick=alert(\"hi\")>";
-},
 
 cssToJson: function (inStr) {
 
@@ -667,6 +662,7 @@ setContent:function(cId,x,y,colSpans,cellsOnly)
 
 
 		var cellStyle = 'ijf-cell';
+		var cellContent = '';
 		if(cellsOnly) cellStyle = 'ijfAdmin-cell';
 
 		for (var i = 1; i<rows;i++)
@@ -674,15 +670,18 @@ setContent:function(cId,x,y,colSpans,cellsOnly)
 			cHtml += "<tr>";
 			for (var j=1; j<cols; j++)
 			{
+				cellContent = '';
+				if(cellsOnly) cellContent = "<span onclick=ijf.admin.onLayoutHover(this)>"+i+","+j+"</span>";
+
 				if(colSpans.hasOwnProperty(i+"_"+j))
 				{
 					var cSpan = colSpans[i+"_"+j];
-					cHtml += "<td  valign='top' colspan='" + cSpan + "'><div class='"+cellStyle+"' id='"+cId+"_"+i+"_"+j+"'></div></td>";
+					cHtml += "<td  valign='top' colspan='" + cSpan + "'><div class='"+cellStyle+"' id='"+cId+"_"+i+"_"+j+"'>"+cellContent+"</div></td>";
 					j=j+(cSpan/1)-1;
 				}
 				else
 				{
-					cHtml += "<td valign='top'><div  class='"+cellStyle+"' id='"+cId+"_"+i+"_"+j+"'></div></td>";
+					cHtml += "<td valign='top'><div  class='"+cellStyle+"' id='"+cId+"_"+i+"_"+j+"'>"+cellContent+"</div></td>";
 				}
 			}
 			cHtml += "<tr>";
@@ -1239,7 +1238,7 @@ loadConfig:function(onSuccess, onError)
 		return retText;
 	},
 
-	replaceKeyValues:function(inText, item)
+	replaceKeyValues:function(inText, item, noSanitize)
 	{
 		var retText = inText;
 		if(!inText)  return inText;
@@ -1257,12 +1256,12 @@ loadConfig:function(onSuccess, onError)
 		retText = retText.replace(/\#\{key\}/g,item.key);
 		retText = retText.replace(/\#\{summary\}/g,item.fields.summary);
 		retText = retText.replace(/\#\{status\}/g,item.fields.status.name);
-	    retText = this.switchAtts(retText,item);
+	    retText = this.switchAtts(retText,item,noSanitize);
 
 		return retText;
 	},
 
-	switchAtts:function(inText,item)
+	switchAtts:function(inText,item,noSanitize)
 	{
 		var retText = inText;
 		var pat = "\#\{.*?\}";
@@ -1284,7 +1283,7 @@ loadConfig:function(onSuccess, onError)
 				var jField = item.fields[ijf.jiraFieldsKeyed[keyVal].id];
 				if(jField)
 				{
-					repVal = this.handleJiraFieldType(ijf.jiraFieldsKeyed[keyVal],jField,true);
+					repVal = this.handleJiraFieldType(ijf.jiraFieldsKeyed[keyVal],jField,true,noSanitize);
 				}
 			}
 			if(repVal)
@@ -1300,14 +1299,21 @@ loadConfig:function(onSuccess, onError)
 		return retText;
 	},
 
-	handleJiraFieldType:function(inType, inField, forDisplay)
+	handleJiraFieldType:function(inType, inField, forDisplay,noSanitize)
 	{
 		if(!inField) return null;
 
 		switch(inType.schema.type)
 		{
 			case "string":
-				return ijfUtils.sanitize(inField);
+			    if(noSanitize)
+			    {
+					return inField;
+				}
+				else
+				{
+					return ijfUtils.sanitize(inField);
+				}
 				break;
 			case "issuetype":
 				return inField.name;
