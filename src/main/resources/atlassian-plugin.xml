@@ -9,7 +9,7 @@
     <param name="plugin-logo">images/pluginLogo.png</param>
     <param name="plugin-summary">Ideal Forms for JIRA creates and serves simplified customized user interfaces that help many use cases.</param>
     <param name="plugin-tagline">Custom forms for simplified access, for mobile access and for process automation.</param>    
-    <param name="atlassian-licensing-enabled">false</param>     
+    <param name="atlassian-licensing-enabled">true</param>     
      <screenshots>
             <screenshot image="images/admin.png"/>
             <screenshot image="images/list.png"/>

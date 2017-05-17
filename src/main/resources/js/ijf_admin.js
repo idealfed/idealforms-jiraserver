@@ -184,13 +184,13 @@ addEditForm:function (sRow)
                 }
             },
             {
-			            html: "Javascript",
-			            border: false,
-			            bodyStyle: "color:darkblue",
-			            width: 580,
-			            margin: '0 5 0 5',
-			            frame: false,
-            xtype: "panel"},
+				html: "Javascript",
+				border: false,
+				bodyStyle: "color:darkblue",
+				width: 580,
+				margin: '0 5 0 5',
+				frame: false,
+            	xtype: "panel"},
             {
 				xtype: 'textarea',
 				labelAlign: 'left',
@@ -512,6 +512,19 @@ addEditForm:function (sRow)
 	   // showProgress();
 	   // mwf_reloadFramework(fw,inContainerId, false);
 		//mwf_reloadFramework(setup, "mwfContent", true);
+
+		//bootstrap to 1 row and 1 column
+		if(!thisForm.settings["rows"])
+		{
+			thisForm.settings["rows"]= "1";
+			ijf.admin.cwfAdmin_form.settings["rows"]="1";
+		}
+		if(!thisForm.settings["columns"])
+		{
+			thisForm.settings["columns"]= "1";
+			ijf.admin.cwfAdmin_form.settings["columns"]="1";
+		}
+
 
 		var pnl = new Ext.FormPanel({
 			labelAlign: 'left',
@@ -1286,8 +1299,44 @@ addEditForm:function (sRow)
 			collapsed: true,
 			title: "Form Fields",
 			id: "cwfAdmin_fieldsPanel_id",
-			//hidden: hideField,
-			//bodyStyle: l_Style,
+			header:{
+						titlePosition: 0,
+						items:[{
+							xtype:'button',
+							text:"Field Reference",
+							handler: function(){
+					   			var headStyle =  " style='background:lightgray;border-bottom:solid blue 2px' ";
+								var htmlOut = "<table cellspacing=0 width=100%><tr><td"+headStyle+">Field Name</td><td"+headStyle+">JIRA ID</td><td"+headStyle+">Type</td><td"+headStyle+">Forms Reference</td></tr>";
+								Object.keys(ijf.jiraMetaKeyed).forEach(function(f){
+									var field = ijf.jiraMetaKeyed[f];
+									var fRef = "#{"+f+"}";
+									var fId = field.schema.system;
+									if(field.schema.type=="array") fRef="na";
+									if(fId=="comment") fRef="na";
+									if(field.schema.customId) fId = "customfield_" +field.schema.customId;
+									htmlOut += "<tr><td>"+f+"</td><td>"+fId+"</td><td>"+field.schema.type+"</td><td>"+fRef+"</td></tr>";
+								});
+								htmlOut += "</table>";
+
+								var fieldRefWin = new Ext.Window({
+								layout: 'vbox',
+								title: "Field Reference: " + thisForm.testIssue,
+								width: 550,
+								height:600,
+								closable: true,
+								items: [{
+											xtype: 'panel',
+											html: htmlOut,
+											width: '100%',
+											scrollable: true,
+											maxHeight: 580
+										}],
+								modal: true
+								});
+								fieldRefWin.show();
+							}
+						}]
+			},
 			items: [ijf.admin.listView, fieldPanel]
 		});
 
@@ -2393,7 +2442,7 @@ addEditForm:function (sRow)
 						if(tRowNum>rowNum)
 						{
 							//need to reduce the row by one
-							f.formCell=(tRowNum-1) + "," + rc[1];
+							f.formCell=(tRowNum-1) + "," + tRow[1];
 						}
 					});
 
@@ -2829,6 +2878,183 @@ addEditForm:function (sRow)
 											//repaint preview...
 											ijfUtils.clearAll();
 											ijf.admin.renderForm("ijfContent",true);
+							}}
+						   ,
+							{
+								text:'Cancel',
+								handler: function(){
+									widthEditWin.close();
+								}}
+						],
+						modal: true
+					});
+					widthEditWin.show();
+
+
+				} }
+			    ,{ text: 'Copy Field', handler: function()  {
+					    var fromCell = cell[0].trim();
+						var rc = cell[0].split(",");
+						var toRow = 1;
+						var toCol = 1;
+
+				  var widthEditWin = new Ext.Window({
+						layout: 'vbox',
+						title: "Copy Field to Cell",
+						width: 300,
+						height:150,
+						closable: true,
+						items: [{
+									xtype: 'textfield',
+									labelAlign: 'left',
+									fieldLabel: 'To Row',
+									labelWidth: 100,
+									labelStyle: "color:darkblue",
+									margin: '4 0 0 10',
+									width: 200,
+									value: 1,
+									allowBlank:false,
+									listeners: {
+										change: function(f,n,o){
+											toRow = n;
+										}
+									}
+								},
+								{
+									xtype: 'textfield',
+									labelAlign: 'left',
+									fieldLabel: 'To Column',
+									labelWidth: 100,
+									labelStyle: "color:darkblue",
+									margin: '4 0 0 10',
+									width: 200,
+									value: 1,
+									allowBlank:false,
+									listeners: {
+										change: function(f,n,o){
+											toCol = n;
+										}
+									}
+								}],
+						buttons:[{
+							text:'OK',
+							handler: function(f,i,n){
+
+											//need to create a field object copying source cell...
+											var sourceCell = null;
+											ijf.admin.listView.getStore().each(function(r)
+											{
+												if(r.data.cell==cell[0])
+												{
+													sourceCell = ijf.admin.cwfAdmin_form.fields[r.data.iid];
+												}
+											});
+
+											if(sourceCell)
+											{
+												var targetCell = JSON.parse(JSON.stringify(sourceCell));
+												targetCell.formCell = toRow + "," + toCol;
+												targetCell.iid = new Date().getTime();
+											    ijf.admin.cwfAdmin_form.fields[targetCell.iid]=targetCell;
+												widthEditWin.close();
+												ijf.admin.refreshFieldList();
+												ijf.admin.listView.getView().refresh();
+												//repaint preview...
+												ijfUtils.clearAll();
+												ijf.admin.renderForm("ijfContent",true);
+											}
+											else
+											{
+												ijfUtils.modalDialogMessage("Information","Sorry no source field was found");
+												widthEditWin.close();
+											}
+							}}
+						   ,
+							{
+								text:'Cancel',
+								handler: function(){
+									widthEditWin.close();
+								}}
+						],
+						modal: true
+					});
+					widthEditWin.show();
+
+
+				} }
+				,{ text: 'Move Field', handler: function()  {
+					    var fromCell = cell[0].trim();
+						var rc = cell[0].split(",");
+						var toRow = 1;
+						var toCol = 1;
+
+				  var widthEditWin = new Ext.Window({
+						layout: 'vbox',
+						title: "Move Field to Cell",
+						width: 300,
+						height:150,
+						closable: true,
+						items: [{
+									xtype: 'textfield',
+									labelAlign: 'left',
+									fieldLabel: 'To Row',
+									labelWidth: 100,
+									labelStyle: "color:darkblue",
+									margin: '4 0 0 10',
+									width: 200,
+									value: 1,
+									allowBlank:false,
+									listeners: {
+										change: function(f,n,o){
+											toRow = n;
+										}
+									}
+								},
+								{
+									xtype: 'textfield',
+									labelAlign: 'left',
+									fieldLabel: 'To Column',
+									labelWidth: 100,
+									labelStyle: "color:darkblue",
+									margin: '4 0 0 10',
+									width: 200,
+									value: 1,
+									allowBlank:false,
+									listeners: {
+										change: function(f,n,o){
+											toCol = n;
+										}
+									}
+								}],
+						buttons:[{
+							text:'OK',
+							handler: function(f,i,n){
+
+											//need to create a field object copying source cell...
+											var sourceCell = null;
+											ijf.admin.listView.getStore().each(function(r)
+											{
+												if(r.data.cell==cell[0])
+												{
+													sourceCell = ijf.admin.cwfAdmin_form.fields[r.data.iid];
+												}
+											});
+
+											if(sourceCell)
+											{
+												sourceCell.formCell = toRow + "," + toCol;
+												widthEditWin.close();
+												ijf.admin.refreshFieldList();
+												ijf.admin.listView.getView().refresh();
+												//repaint preview...
+												ijfUtils.clearAll();
+												ijf.admin.renderForm("ijfContent",true);
+											}
+											else
+											{
+												ijfUtils.modalDialogMessage("Information","Sorry no source field was found");
+												widthEditWin.close();
+											}
 							}}
 						   ,
 							{

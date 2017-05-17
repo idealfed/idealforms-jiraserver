@@ -30,6 +30,7 @@
     <metaname="decorator"content="none"/>
 
   <script>
+     
       g_username = "$ijfUsername";
       g_version = "$ijfVersion";
       g_iwfFormSetId = "firstFormSet";

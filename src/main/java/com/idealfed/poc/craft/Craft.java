@@ -8,10 +8,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.Map;
 import java.io.InputStream;
 
 import javax.servlet.ServletException;
+import javax.servlet.SessionTrackingMode;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -47,9 +49,7 @@ public class Craft extends HttpServlet
 	private final LoginUriProvider loginUriProvider;
 	private final TemplateRenderer templateRenderer;
 	private final PluginSettingsFactory pluginSettingsFactory;
-
     private static final Logger plog = LogManager.getLogger("atlassian.plugin");
-
     private final ActiveObjects ao;
 
 	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory) {
@@ -59,14 +59,45 @@ public class Craft extends HttpServlet
 		this.templateRenderer = templateRenderer;
 		this.pluginSettingsFactory = pluginSettingsFactory;
 		this.ao = checkNotNull(ao);
+				  //attempt to set servlet context
+		  //ServletContext sc = this.getServletContext();
+		  //sc.setSessionTrackingModes(EnumSet.of(SessionTrackingMode.COOKIE));
+		  //this.setOnce=false;
 	}
+
+	private String sanitize(String inString)
+	{
+		String wString = inString;
+
+		wString=wString.replace("<","");
+		wString=wString.replace(">","");
+		wString=wString.replace(";","");
+		wString=wString.replace("/","");
+		wString=wString.replace("\"","");
+
+		wString=wString.replace("%3c","");
+    	wString=wString.replace("%3e","");
+    	wString=wString.replace("%3b","");
+    	wString=wString.replace("%2f","");
+    	wString=wString.replace("%22","");
+
+		wString=wString.replace("%3C","");
+		wString=wString.replace("%3E","");
+		wString=wString.replace("%3B","");
+		wString=wString.replace("%2F","");
+    	wString=wString.replace("%22","");
+
+		return wString;
+	}
+
 
 	@Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
+
+
     	String username = userManager.getRemoteUsername(request);
 
-/*
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -88,7 +119,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-*/
+
 
 		String contextPath = request.getRequestURI();
 		contextPath = contextPath.replace("/plugins/servlet/iforms","");
@@ -111,6 +142,42 @@ public class Craft extends HttpServlet
     	if(decorator==null) decorator="";
     	String gVersionNum = request.getParameter("version");
     	if(gVersionNum==null) gVersionNum="0";
+
+		//XSS cleans
+    	remote=sanitize(remote);
+    	itemId=sanitize(itemId);
+    	formId=sanitize(formId);
+    	craftFlag=sanitize(craftFlag);
+    	debugFlag=sanitize(debugFlag);
+    	decorator=sanitize(decorator);
+    	gVersionNum=sanitize(gVersionNum);
+
+
+
+        //determine if Admin call or a Craft call, either way, require Administrator....
+        if(iwfAction.equals("noAction"))
+        {
+			if ((craftFlag.equals("true")) || (formId.equals("")))
+			{
+				if (username == null)
+				{
+						final PrintWriter w = response.getWriter();
+						w.printf("{\"status\":\"NOSESSION\"}");
+						w.close();
+						return;
+				}
+				if (!userManager.isSystemAdmin(username))
+				{
+						final PrintWriter w = response.getWriter();
+						w.printf("{\"status\":\"INVALIDSESSION\"}");
+						w.close();
+						return;
+				}
+			}
+	    }
+
+
+
 
 
     	String outTemplate = "main";
@@ -248,7 +315,7 @@ public class Craft extends HttpServlet
         	Map<String, Object> craft = Maps.newHashMap();
         	craft.put("ijfUsername",username);
         	craft.put("ijfExercise", "123");
-        	craft.put("ijfVersion", "IJF Version 0.1");
+        	craft.put("ijfVersion", "NA");
         	craft.put("ijfFormId", formId);
         	craft.put("ijfItemId", itemId);
         	craft.put("ijfDebug", debugFlag);

@@ -3027,9 +3027,10 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     }
     if(inField.referenceFilter)
     {
+
         //filter the peerItems...
-        if(ijf.snippets.hasOwnPropery(inField.referenceFilter))
-	        dataItems = window[iFilters.snippet](dataItems);
+        if(ijf.snippets.hasOwnProperty(inField.referenceFilter))
+	        dataItems = ijf.snippets[inField.referenceFilter](dataItems);
     }
 
 	//calculate column widths...and headers

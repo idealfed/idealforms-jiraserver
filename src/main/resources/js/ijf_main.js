@@ -47,7 +47,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-	 window.g_version = "1.0.31";
+	 window.g_version = "1.0.32.2";
 
 
     ijfUtils.showProgress();
@@ -64,8 +64,8 @@ function init(inConfigVersion)
 	ijf.main.debug = g_debug;
 
 
-    var jdata = '[{"id":"1","name":"first form set","projectName":"Test Project One","projectId":"TPO","settings":"[]","forms":[{"id":"1","name":"first Form","testIssue":"TPO-1","formType":"Add","formSettings":"[]","fields":"[]"}]}]';
-         jdata='[{"id":"40","name":"first form set","projectName":"Test Project One","projectId":"TPO","settings":"[]","snippets":[],"forms":[{"id":"38","testIssue":"TPO-1","formType":"Add","name":"first Form","fields":"[]","formSettings":"[]"}]}]';
+    //var jdata = '[{"id":"1","name":"first form set","projectName":"Test Project One","projectId":"TPO","settings":"[]","forms":[{"id":"1","name":"first Form","testIssue":"TPO-1","formType":"Add","formSettings":"[]","fields":"[]"}]}]';
+    //var jdata='[{"id":"40","name":"first form set","projectName":"Test Project One","projectId":"TPO","settings":"[]","snippets":[],"forms":[{"id":"38","testIssue":"TPO-1","formType":"Add","name":"first Form","fields":"[]","formSettings":"[]"}]}]';
     //ijfUtils.writeFullConfig(jdata,false);
 
 
@@ -108,12 +108,13 @@ function init(inConfigVersion)
 			if(!ijf.fw) return;
 
 			//determine if anonymous....and not craft.....if so establish session
-			if(window.g_formId)
+			if((window.g_formId) && (window.g_craft!="true"))
 			{
 				var tForm = ijf.fw.forms[window.g_formId];
 				if(tForm)
 				{
-					if((tForm.formAnon=="true") && (window.g_username=="$ijfUsername"))
+					//if((tForm.formAnon=="true") && (window.g_username=="$ijfUsername"))
+					if(tForm.formAnon=="true")
 					{
 						//attempt to login...
 						var	putObj = {"username":tForm.formSet.settings.anonUsername,"password":tForm.formSet.settings.anonPassword};

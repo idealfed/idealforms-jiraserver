@@ -1292,7 +1292,9 @@ loadConfig:function(onSuccess, onError)
 			}
 			else
 			{
-				retText = inText.replace(m[0], " ("+keyVal+" not found) ");
+				//retText = inText.replace(m[0], " ("+keyVal+" not found) ");
+				ijfUtils.footLog(keyVal + " not found");
+				retText = inText.replace(m[0], "");
 			}
 			retText = this.switchAtts(retText);
 		}
