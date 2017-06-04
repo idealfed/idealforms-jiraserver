@@ -652,9 +652,8 @@ setFoot:function(inMsg)
 
 },
 
-setContent:function(cId,x,y,colSpans,cellsOnly)
+setContent:function(cId,x,y,colSpans,cellsOnly,rowSpans)
 {
-
 		var rows = x/1+1;
 		var cols = y/1+1;
 
@@ -664,6 +663,7 @@ setContent:function(cId,x,y,colSpans,cellsOnly)
 		var cellStyle = 'ijf-cell';
 		var cellContent = '';
 		if(cellsOnly) cellStyle = 'ijfAdmin-cell';
+		var runningRowSpans = [];
 
 		for (var i = 1; i<rows;i++)
 		{
@@ -673,18 +673,44 @@ setContent:function(cId,x,y,colSpans,cellsOnly)
 				cellContent = '';
 				if(cellsOnly) cellContent = "<span onclick=ijf.admin.onLayoutHover(this)>"+i+","+j+"</span>";
 
+
+				//are you attempting to write a cell that should be missing due to rowspan?
+				if(runningRowSpans.hasOwnProperty(j))
+				{
+					var testToSpan = runningRowSpans[j];
+					if(testToSpan>0)
+					{
+						runningRowSpans[j] = testToSpan-1;
+						continue;
+					}
+				}
+
+				var rspanString = "";
+				if(rowSpans.hasOwnProperty(i+"_"+j))
+				{
+					rspanString = "rowspan='"+rowSpans[i+"_"+j]+"'";
+					//j is the column that is spanned over rows...
+					runningRowSpans[j] = rowSpans[i+"_"+j]/1-1;
+					//need to look at colspans, if this cell has a colspan, add runningRowSpans to it's child columns
+					if(colSpans.hasOwnProperty(i+"_"+j))
+					{
+					  var cSpan = colSpans[i+"_"+j]/1;
+					  for(var c=j+1;c<(j+cSpan);c++) runningRowSpans[c] = rowSpans[i+"_"+j]/1-1;
+					}
+				}
+
 				if(colSpans.hasOwnProperty(i+"_"+j))
 				{
 					var cSpan = colSpans[i+"_"+j];
-					cHtml += "<td  valign='top' colspan='" + cSpan + "'><div class='"+cellStyle+"' id='"+cId+"_"+i+"_"+j+"'>"+cellContent+"</div></td>";
+					cHtml += "<td  valign='top' " + rspanString + " colspan='" + cSpan + "'><div class='"+cellStyle+"' id='"+cId+"_"+i+"_"+j+"'>"+cellContent+"</div></td>";
 					j=j+(cSpan/1)-1;
 				}
 				else
 				{
-					cHtml += "<td valign='top'><div  class='"+cellStyle+"' id='"+cId+"_"+i+"_"+j+"'>"+cellContent+"</div></td>";
+					cHtml += "<td " + rspanString + " valign='top'><div  class='"+cellStyle+"' id='"+cId+"_"+i+"_"+j+"'>"+cellContent+"</div></td>";
 				}
 			}
-			cHtml += "<tr>";
+			cHtml += "</tr>";
 		}
 		cHtml += "</table>";
 		var fContent = document.getElementById(cId);

@@ -47,7 +47,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-	 window.g_version = "1.0.32.2";
+	 window.g_version = "1.0.34";
 
 
     ijfUtils.showProgress();
@@ -432,7 +432,35 @@ function renderForm(inContainerId, inFormId, isNested, item)
         colSpans={};
     }
 
-    ijfUtils.setContent(inContainerId,thisForm.settings["rows"],thisForm.settings["columns"],colSpans);
+    //rowspans
+	   var rowSpans = {};
+	   var colsWithSpans = {};
+
+		try
+		{
+			if (thisForm.settings["rowSpans"]!=null)
+			{
+				var rSpans = thisForm.settings["rowSpans"].split(";");
+				if(rSpans[0]!="")
+				{
+					for(var k in rSpans)
+					{
+						if(!rSpans.hasOwnProperty(k)) continue;
+						var svals = rSpans[k].split(",");
+						rowSpans[svals[0].trim()+"_"+svals[1].trim()]= svals[2].trim();
+						colsWithSpans[svals[0].trim() + "spannedCol"] = "spanned col";
+					}
+				}
+			}
+		}
+		catch(e)
+		{
+			ijfUtils.footLog("Error in rowspan settings")
+			rowSpans={};
+		}
+
+
+    ijfUtils.setContent(inContainerId,thisForm.settings["rows"],thisForm.settings["columns"],colSpans,false,rowSpans);
 
 
     if (thisForm.settings["columnWidths"]!=null)
@@ -592,7 +620,7 @@ function saveBatch(onSuccess,inFields,inForm, item)
         if(ijf.main.saveQueueBatch.hasOwnProperty(i))
         {
             var thisCnt = ijf.main.saveQueueBatch[i];
-            if(thisCnt.field.controlType=="attachmentupload")
+            if((thisCnt.field.controlType=="attachmentupload") || (thisCnt.field.controlType=="attachmentmanaged"))
             {
 				attachment = thisCnt;
 				continue;
@@ -707,9 +735,10 @@ function saveBatch(onSuccess,inFields,inForm, item)
 		//upload attachment...
 		var uForm = attachment.control.form;
 
+        var uploadFormId = "#" + attachment.id.replace(",","_")+"UploadFormId";
 		if(uForm.isValid())
 		{
-			var fd = new FormData(jQuery("#attachmentUploadFormId")[0]);
+			var fd = new FormData(jQuery(uploadFormId)[0]);
 			//fd.append("CustomField", "This is some extra data");
 			jQuery.ajax({
 				url: g_root + "/rest/api/2/issue/"+item.key+"/attachments",

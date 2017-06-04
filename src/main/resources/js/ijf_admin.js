@@ -32,11 +32,17 @@ helpLink:function(inLabel, inCaller)
 	{
 
 		//field styles
+		case "itemtree":
+		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-29#" + inLabel);
+		break;
 		case "textbox":
 		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-1#" + inLabel);
 		break;
 		case "attachmentlist":
 		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-25#" + inLabel);
+		break;
+		case "attachmentmanaged":
+		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-28#" + inLabel);
 		break;
 		case "attachmentupload":
 		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-3#" + inLabel);
@@ -115,6 +121,9 @@ helpLink:function(inLabel, inCaller)
 		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
 		break;
 		case "columnspans":
+		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		break;
+		case "rowspans":
 		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
 		break;
 		case "columnwidths":
@@ -314,7 +323,6 @@ addEditForm:function (sRow)
 	},
 	renderFormAdmin:function(inForm)
 	{
-
 		var outStr = "Editing form: " + window.g_formId + "<br>";
 
 		if(!ijf.main.outerForm)
@@ -578,6 +586,21 @@ addEditForm:function (sRow)
 					listeners: {
 						change: function(f, n, o){
 							ijf.admin.cwfAdmin_form.settings["columnSpans"] = n;
+							f.addCls("cwf-dirty");
+						}}
+				},
+				{
+					xtype: 'textfield',
+					labelAlign: 'left',
+					labelWidth: 120,
+					fieldLabel: "Row Spans",
+				labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"rowspans\",null)>",
+					width: 850,
+					value: thisForm.settings["rowSpans"],
+					id: "adminFormSettings_rowSpanId",
+					listeners: {
+						change: function(f, n, o){
+							ijf.admin.cwfAdmin_form.settings["rowSpans"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				},
@@ -968,7 +991,7 @@ addEditForm:function (sRow)
 		});
 
 
-		var lookup = ["attachmentlist","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","html","iframe","itemlist","formbuttons","formbuttonsforpopup","multiselect","navigatetoform","subform","openurl","openpopform","radio","tabmenu","textarea","textbox","userpicker"];
+		var lookup = ["attachmentlist","attachmentmanaged","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","html","iframe","itemlist","itemtree","formbuttons","formbuttonsforpopup","multiselect","navigatetoform","subform","openurl","openpopform","radio","tabmenu","textarea","textbox","userpicker"];
 
 	    var  sectionLookup = [];
 
@@ -2309,7 +2332,33 @@ addEditForm:function (sRow)
 			colSpans={};
 		}
 
-		ijfUtils.setContent(inContainerId,ijf.admin.cwfAdmin_form.settings["rows"],ijf.admin.cwfAdmin_form.settings["columns"],colSpans,cellsOnly);
+	   var rowSpans = {};
+	   var colsWithSpans = {};
+
+		try
+		{
+			if (ijf.admin.cwfAdmin_form.settings["rowSpans"]!=null)
+			{
+				var rSpans = ijf.admin.cwfAdmin_form.settings["rowSpans"].split(";");
+				if(rSpans[0]!="")
+				{
+					for(var k in rSpans)
+					{
+						if(!rSpans.hasOwnProperty(k)) continue;
+						var svals = rSpans[k].split(",");
+						rowSpans[svals[0].trim()+"_"+svals[1].trim()]= svals[2].trim();
+						colsWithSpans[svals[0].trim() + "spannedCol"] = "spanned col";
+					}
+				}
+			}
+		}
+		catch(e)
+		{
+			ijfUtils.footLog("Error in rowspan settings")
+			rowSpans={};
+		}
+
+		ijfUtils.setContent(inContainerId,ijf.admin.cwfAdmin_form.settings["rows"],ijf.admin.cwfAdmin_form.settings["columns"],colSpans,cellsOnly,rowSpans);
 
 
 		if (ijf.admin.cwfAdmin_form.settings["columnWidths"]!=null)
@@ -2466,21 +2515,23 @@ addEditForm:function (sRow)
 						Ext.getCmp('adminFormSettings_colSpanId').setValue(newSpans.join(";"));
 					}
 
-
-					//adjust column spans   adminFormSettings_colSpanId
-					var rawColumnSpans = Ext.getCmp('adminFormSettings_colSpanId').getValue();
-					if(rawColumnSpans)
+					//delete row spans that match the cell
+					var rawRowSpans = Ext.getCmp('adminFormSettings_rowSpanId').getValue();
+					if(rawRowSpans)
 					{
-						var spans = rawColumnSpans.split(";");
+						var spans = rawRowSpans.split(";");
 						var newSpans = [];
 						spans.forEach(function(s){
 							var spanParts = s.split(",");
+							if(rc[0]==spanParts[0]) return;
 							var spanRow = spanParts[0]/1;
 							if(spanRow>(rc[0]/1))spanRow=spanRow-1;
 							newSpans.push(spanRow + "," + spanParts[1].trim() + "," + spanParts[2].trim());
 						});
-						Ext.getCmp('adminFormSettings_colSpanId').setValue(newSpans.join(";"));
+						Ext.getCmp('adminFormSettings_rowSpanId').setValue(newSpans.join(";"));
 					}
+
+
 
 					ijf.admin.refreshFieldList();
 					ijf.admin.listView.getView().refresh();
@@ -2512,20 +2563,54 @@ addEditForm:function (sRow)
 						}
 					});
 
-						//adjust column widths
-						var rawColumnWidths = Ext.getCmp('adminFormSettings_colWidthId').getValue();
-						if(rawColumnWidths)
-						{
-							var widths = rawColumnWidths.split(";");
-							var newWidths = [];
-							widths.forEach(function(s){
-								var spanParts = s.split(":");
-								var w = spanParts[0]/1;
-								if(w>colNum) w=w-1;
-								newWidths.push(w + ":" + spanParts[1].trim());
-							});
-							Ext.getCmp('adminFormSettings_colWidthId').setValue(newWidths.join(";"));
-						}
+					//adjust column widths
+					var rawColumnWidths = Ext.getCmp('adminFormSettings_colWidthId').getValue();
+					if(rawColumnWidths)
+					{
+						var widths = rawColumnWidths.split(";");
+						var newWidths = [];
+						widths.forEach(function(s){
+							var spanParts = s.split(":");
+							var w = spanParts[0]/1;
+							if(w>colNum) w=w-1;
+							newWidths.push(w + ":" + spanParts[1].trim());
+						});
+						Ext.getCmp('adminFormSettings_colWidthId').setValue(newWidths.join(";"));
+					}
+
+					//adjust column spans that match the cell
+					var rawColumnSpans = Ext.getCmp('adminFormSettings_colSpanId').getValue();
+					if(rawColumnSpans)
+					{
+						var spans = rawColumnSpans.split(";");
+						var newSpans = [];
+						spans.forEach(function(s){
+							var spanParts = s.split(",");
+							var spanPart = spanParts[1]/1;
+							if(colNum==spanPart) return;
+							if(colNum < spanPart) spanPart=spanPart-1;
+							newSpans.push(spanParts[0].trim() + "," + spanPart + "," + spanParts[2].trim());
+						});
+						Ext.getCmp('adminFormSettings_colSpanId').setValue(newSpans.join(";"));
+					}
+
+					//adjust row spans that match the cell
+					var rawRowSpans = Ext.getCmp('adminFormSettings_rowSpanId').getValue();
+					if(rawRowSpans)
+					{
+						var spans = rawRowSpans.split(";");
+						var newSpans = [];
+						spans.forEach(function(s){
+							var spanParts = s.split(",");
+							var spanPart = spanParts[1]/1;
+							if(colNum==spanPart) return;
+							if(colNum < spanPart) spanPart=spanPart-1;
+							newSpans.push(spanParts[0].trim() + "," + spanPart + "," + spanParts[2].trim());
+						});
+						Ext.getCmp('adminFormSettings_rowSpanId').setValue(newSpans.join(";"));
+					}
+
+
 
 
 					//adjust total rows
@@ -2554,7 +2639,7 @@ addEditForm:function (sRow)
 						if(tRowNum>=rowNum)
 						{
 							//need to reduce the row by one
-							f.formCell=(tRowNum+1) + "," + rc[1];
+							f.formCell=(tRowNum+1) + "," + tRow[1];
 						}
 					});
 
@@ -2577,6 +2662,21 @@ addEditForm:function (sRow)
 						Ext.getCmp('adminFormSettings_colSpanId').setValue(newSpans.join(";"));
 					}
 
+					//adjust row spans   adminFormSettings_colSpanId
+					var rawColumnSpans = Ext.getCmp('adminFormSettings_rowSpanId').getValue();
+					if(rawColumnSpans)
+					{
+						var spans = rawColumnSpans.split(";");
+						var newSpans = [];
+						spans.forEach(function(s){
+							var spanParts = s.split(",");
+							var spanRow = spanParts[0]/1;
+							if(spanRow>=(rc[0]/1))spanRow=spanRow+1;
+							newSpans.push(spanRow + "," + spanParts[1].trim() + "," + spanParts[2].trim());
+						});
+						Ext.getCmp('adminFormSettings_rowSpanId').setValue(newSpans.join(";"));
+					}
+
 					ijf.admin.refreshFieldList();
 					ijf.admin.listView.getView().refresh();
 					//repaint preview...
@@ -2597,7 +2697,7 @@ addEditForm:function (sRow)
 									if(tRowNum>rowNum)
 									{
 										//need to reduce the row by one
-										f.formCell=(tRowNum+1) + "," + rc[1];
+										f.formCell=(tRowNum+1) + "," + tRow[1];
 									}
 								});
 
@@ -2618,6 +2718,20 @@ addEditForm:function (sRow)
 										newSpans.push(spanRow + "," + spanParts[1].trim() + "," + spanParts[2].trim());
 									});
 									Ext.getCmp('adminFormSettings_colSpanId').setValue(newSpans.join(";"));
+								}
+								//adjust row spans   adminFormSettings_colSpanId
+								var rawColumnSpans = Ext.getCmp('adminFormSettings_rowSpanId').getValue();
+								if(rawColumnSpans)
+								{
+									var spans = rawColumnSpans.split(";");
+									var newSpans = [];
+									spans.forEach(function(s){
+										var spanParts = s.split(",");
+										var spanRow = spanParts[0]/1;
+										if(spanRow>(rc[0]/1))spanRow=spanRow+1;
+										newSpans.push(spanRow + "," + spanParts[1].trim() + "," + spanParts[2].trim());
+									});
+									Ext.getCmp('adminFormSettings_rowSpanId').setValue(newSpans.join(";"));
 								}
 
 								ijf.admin.refreshFieldList();
@@ -2658,6 +2772,37 @@ addEditForm:function (sRow)
 									newWidths.push(w + ":" + spanParts[1].trim());
 								});
 								Ext.getCmp('adminFormSettings_colWidthId').setValue(newWidths.join(";"));
+							}
+
+
+							//adjust column spans that match the cell
+							var rawColumnSpans = Ext.getCmp('adminFormSettings_colSpanId').getValue();
+							if(rawColumnSpans)
+							{
+								var spans = rawColumnSpans.split(";");
+								var newSpans = [];
+								spans.forEach(function(s){
+									var spanParts = s.split(",");
+									var spanPart = spanParts[1]/1;
+									if(colNum < spanPart) spanPart=spanPart+1;
+									newSpans.push(spanParts[0].trim() + "," + spanPart + "," + spanParts[2].trim());
+								});
+								Ext.getCmp('adminFormSettings_colSpanId').setValue(newSpans.join(";"));
+							}
+
+							//adjust row spans that match the cell
+							var rawRowSpans = Ext.getCmp('adminFormSettings_rowSpanId').getValue();
+							if(rawRowSpans)
+							{
+								var spans = rawRowSpans.split(";");
+								var newSpans = [];
+								spans.forEach(function(s){
+									var spanParts = s.split(",");
+									var spanPart = spanParts[1]/1;
+									if(colNum < spanPart) spanPart=spanPart+1;
+									newSpans.push(spanParts[0].trim() + "," + spanPart + "," + spanParts[2].trim());
+								});
+								Ext.getCmp('adminFormSettings_rowSpanId').setValue(newSpans.join(";"));
 							}
 
 							//adjust total rows
@@ -2703,6 +2848,37 @@ addEditForm:function (sRow)
 								});
 								Ext.getCmp('adminFormSettings_colWidthId').setValue(newWidths.join(";"));
 							}
+
+							//adjust column spans that match the cell
+							var rawColumnSpans = Ext.getCmp('adminFormSettings_colSpanId').getValue();
+							if(rawColumnSpans)
+							{
+								var spans = rawColumnSpans.split(";");
+								var newSpans = [];
+								spans.forEach(function(s){
+									var spanParts = s.split(",");
+									var spanPart = spanParts[1]/1;
+									if(colNum <= spanPart) spanPart=spanPart+1;
+									newSpans.push(spanParts[0].trim() + "," + spanPart + "," + spanParts[2].trim());
+								});
+								Ext.getCmp('adminFormSettings_colSpanId').setValue(newSpans.join(";"));
+							}
+
+							//adjust row spans that match the cell
+							var rawRowSpans = Ext.getCmp('adminFormSettings_rowSpanId').getValue();
+							if(rawRowSpans)
+							{
+								var spans = rawRowSpans.split(";");
+								var newSpans = [];
+								spans.forEach(function(s){
+									var spanParts = s.split(",");
+									var spanPart = spanParts[1]/1;
+									if(colNum <= spanPart) spanPart=spanPart+1;
+									newSpans.push(spanParts[0].trim() + "," + spanPart + "," + spanParts[2].trim());
+								});
+								Ext.getCmp('adminFormSettings_rowSpanId').setValue(newSpans.join(";"));
+							}
+
 
 							//adjust total rows
 							var maxCols = Ext.getCmp('adminFormSettings_colsId').getValue()/1;
@@ -2808,35 +2984,44 @@ addEditForm:function (sRow)
 					ijfUtils.clearAll();
 					ijf.admin.renderForm("ijfContent",true);
 			  } }
-			,{ text: 'Set Field Span', handler: function()  {
+			,{ text: 'Set Field Spans', handler: function()  {
 
-						var rawColumnSpans = Ext.getCmp('adminFormSettings_colSpanId').getValue();
+
 						var cSpan = 1;
+						var rSpan = 1;
 						var rc = cell[0].split(",");
 						var cRow = rc[0]/1;
 						var cCol = rc[1]/1;
 						var currentSpans = [];
+						var currentRowSpans = [];
 
+
+						var rawColumnSpans = Ext.getCmp('adminFormSettings_colSpanId').getValue();
 						if(rawColumnSpans)
 						{
 							var spans = rawColumnSpans.split(";");
-							var newSpans = [];
 							spans.forEach(function(s){
 								var spanParts = s.split(",");
 								currentSpans[spanParts[0].trim() + "," + spanParts[1].trim()]=spanParts[2].trim();
-								if((cRow==spanParts[0].trim())&& (cRow==spanParts[0].trim())) cSpan = cRow==spanParts[2].trim();
+								if((cRow==spanParts[0].trim())&& (cCol==spanParts[1].trim())) cSpan = spanParts[2].trim();
 							});
-							//newSpans.push(spanRow + "," + spanParts[1].trim() + "," + spanParts[2].trim());
-							//Ext.getCmp('adminFormSettings_colSpanId').setValue(newSpans.join(";"));
 						}
-						if(currentSpans.hasOwnProperty(cRow + "," + cCol))
+						if(!currentSpans.hasOwnProperty(cRow + "," + cCol)) currentSpans[cRow + "," + cCol]=cSpan;
+
+
+						var rawRowSpans = Ext.getCmp('adminFormSettings_rowSpanId').getValue();
+						if(rawRowSpans)
 						{
-							cSpan=currentSpans[cRow + "," + cCol];
+							var spans = rawRowSpans.split(";");
+							spans.forEach(function(s){
+								var spanParts = s.split(",");
+								currentRowSpans[spanParts[0].trim() + "," + spanParts[1].trim()]=spanParts[2].trim();
+								if((cRow==spanParts[0].trim())&& (cCol==spanParts[1].trim())) rSpan = spanParts[2].trim();
+							});
 						}
-						else
-						{
-							currentSpans[cRow + "," + cCol]=cSpan;
-						}
+						if(!currentRowSpans.hasOwnProperty(cRow + "," + cCol)) currentRowSpans[cRow + "," + cCol]=rSpan;
+
+
 
 
 				  var widthEditWin = new Ext.Window({
@@ -2848,16 +3033,32 @@ addEditForm:function (sRow)
 						items: [{
 									xtype: 'textfield',
 									labelAlign: 'left',
-									fieldLabel: 'Span for: ' + cRow + "," + cCol,
-									labelWidth: 100,
+									fieldLabel: 'Column Span for: ' + cRow + "," + cCol,
+									labelWidth: 160,
 									labelStyle: "color:darkblue",
 									margin: '4 0 0 10',
-									width: 200,
+									width: 220,
 									value: cSpan,
 									allowBlank:false,
 									listeners: {
 										change: function(f,n,o){
 											cSpan = n;
+										}
+									}
+								},
+								{
+									xtype: 'textfield',
+									labelAlign: 'left',
+									fieldLabel: 'Row Span for: ' + cRow + "," + cCol,
+									labelWidth: 160,
+									labelStyle: "color:darkblue",
+									margin: '4 0 0 10',
+									width: 220,
+									value: rSpan,
+									allowBlank:false,
+									listeners: {
+										change: function(f,n,o){
+											rSpan = n;
 										}
 									}
 								}],
@@ -2872,6 +3073,14 @@ addEditForm:function (sRow)
 												return inNs;
 											},[]);
 											Ext.getCmp('adminFormSettings_colSpanId').setValue(ns.join(";"));
+											ns = Object.keys(currentRowSpans).reduce(function(inNs,w){
+												var tspan = currentRowSpans[w];
+												if(w==(cRow + "," + cCol)) tspan = rSpan;
+												if((tspan/1)<2) return inNs;
+												inNs.push(w + "," + tspan);
+												return inNs;
+											},[]);
+											Ext.getCmp('adminFormSettings_rowSpanId').setValue(ns.join(";"));
 											widthEditWin.close();
 											ijf.admin.refreshFieldList();
 											ijf.admin.listView.getView().refresh();
@@ -2998,10 +3207,10 @@ addEditForm:function (sRow)
 									xtype: 'textfield',
 									labelAlign: 'left',
 									fieldLabel: 'To Row',
-									labelWidth: 100,
+									labelWidth: 140,
 									labelStyle: "color:darkblue",
 									margin: '4 0 0 10',
-									width: 200,
+									width: 220,
 									value: 1,
 									allowBlank:false,
 									listeners: {
@@ -3014,10 +3223,10 @@ addEditForm:function (sRow)
 									xtype: 'textfield',
 									labelAlign: 'left',
 									fieldLabel: 'To Column',
-									labelWidth: 100,
+									labelWidth: 140,
 									labelStyle: "color:darkblue",
 									margin: '4 0 0 10',
-									width: 200,
+									width: 220,
 									value: 1,
 									allowBlank:false,
 									listeners: {

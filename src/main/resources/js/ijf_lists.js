@@ -149,7 +149,7 @@ renderItemList_Borderlayout:function(inContainerId)
     }
 
     var colSpans = {};
-    ijfUtils.setContent(inContainerId,1,1,colSpans);
+    ijfUtils.setContent(inContainerId,1,1,colSpans,false,colSpans);
 
     var Tree = Ext.tree;
     //var treeStruct = ijf.exercise.getTreeStructure(true);

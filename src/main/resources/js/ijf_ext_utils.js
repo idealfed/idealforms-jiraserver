@@ -63,6 +63,9 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'attachmentlist':
                 ijf.extUtils.renderAttchmentList (inFormKey,item,inField,inContainer);
                 break;
+            case 'attachmentmanaged':
+                ijf.extUtils.renderAttchmentManaged (inFormKey,item,inField,inContainer);
+                break;
             case 'attachmentupload':
                 ijf.extUtils.renderAttachmentUpload(inFormKey,item,inField,inContainer);
                 break;
@@ -74,6 +77,9 @@ renderField:function(inFormKey, item, inField, inContainer)
                 break;
             case 'itemlist':
                 ijf.extUtils.renderItemList (inFormKey,item,inField,inContainer);
+                break;
+            case 'itemtree':
+                ijf.extUtils.renderItemTree (inFormKey,item,inField,inContainer);
                 break;
             case 'chart-pie':
                 ijf.extUtils.renderPieChart (inFormKey,item,inField,inContainer);
@@ -457,6 +463,27 @@ renderAttchmentList:function(inFormKey,item, inField, inContainer)
 		return a>b ? -1 : a<b ? 1 : 0;
 	});
 
+    if(inField.dataReference)
+    {
+		//filter out any occurence of the CSV list...
+		sortedAttachments = sortedAttachments.reduce(function(inArray, f)
+		{
+			if(f.filename.indexOf(inField.dataReference)>-1) inArray.push(f);
+			return inArray;
+		},[]);
+	}
+
+    if(inField.referenceFilter)
+    {
+		//filter out any occurence of the CSV list...
+		sortedAttachments = sortedAttachments.reduce(function(inArray, f)
+		{
+			if(inField.referenceFilter.indexOf(f.filename)>-1) return inArray;
+			inArray.push(f);
+			return inArray;
+		},[]);
+	}
+
     var outHtml = "<div class=ijfAttachList>";
 		outHtml += "<div  class=ijfAttachListHead><div class=ijfAttachListHeadName>Name</div><div class=ijfAttachListHeadAuthor>Author</div><div class=ijfAttachListHeadDate>Date</div></div>";
     outHtml = sortedAttachments.reduce(function(outHtml,a){
@@ -481,6 +508,116 @@ renderAttchmentList:function(inFormKey,item, inField, inContainer)
             border: false,
             bodyStyle:  l_panelStyle,
             xtype: "panel"}
+    });
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](pnl, inFormKey,item, inField, inContainer);
+    pnl.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
+
+},
+renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+
+
+    var attachments = item.fields.attachment.reduce(function(inArray, a)
+	{
+		if(a.filename==inField.dataSource) inArray.push(a);
+		return inArray;
+	},[]);
+
+
+	//sort desc
+	var sortedAttachments = attachments.sort(function(a, b)
+	{
+		a = new Date(a.created);
+		b = new Date(b.created);
+		return a>b ? -1 : a<b ? 1 : 0;
+	});
+
+
+    var currentAttachment = sortedAttachments[0];
+	//bootstrap null
+	if(!currentAttachment)
+	{
+		currentAttachment = {"author":{"displayName": "(not loaded)"},"created":"(not loaded)"};
+	}
+
+
+    var outHtml = "<div class=ijfAttachList>";
+		outHtml += "<div  class=ijfAttachListHead><div class=ijfAttachListHeadName>Name</div><div class=ijfAttachListHeadAuthor>Author</div><div class=ijfAttachListHeadDate>Date</div></div>";
+    outHtml = sortedAttachments.reduce(function(outHtml,a){
+		outHtml += "<div class=ijfAttachListRow><div  class=ijfAttachListName><a href='"+a.content+"' target='_blank'>" + a.filename + "</a></div><div class=ijfAttachListAuthor>" + a.author.displayName + "</div><div class=ijfAttachListDate>" + moment(a.created).format('lll') + "</div></div>";
+		return outHtml;
+	},outHtml);
+	outHtml+="</div>";
+
+
+    if(!l_Style) l_Style = l_panelStyle;
+    //rendeIf logic
+    var hideField = ijfUtils.renderIfShowField("",inField);
+
+	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_ctr_'+inField.formCell.replace(",","_")+"' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+inField.dataSource+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+inField.dataSource+"');}\"></form>";
+
+    var pnl = new Ext.FormPanel({
+        labelAlign: 'left',
+        border:false,
+        hidden: hideField,
+        bodyStyle: l_Style,
+        items: [{
+		       header:{
+						titlePosition: 1,
+						items:[{
+							xtype:'panel',
+							html: "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId'>File: " + inField.dataSource + "<br> uploaded by " + currentAttachment.author.displayName + " on " + moment(currentAttachment.created).format('lll') + "</div>",
+							bodyStyle: 'background:transparent;color:white;width:100px'
+						 },
+						 {
+							xtype:'button',
+							text:"Download",
+							handler: function(){
+							   // render a local version
+							   if(currentAttachment) window.open(currentAttachment.content);
+							}
+						 },
+						 {
+							xtype:'button',
+							text:"Upload",
+								listeners: {
+									click: function(f,n,o){
+										var clickKey = '#'+inFormKey+'_ctr_'+inField.formCell.replace(",","_");
+										jQuery(clickKey).trigger('click');
+									}
+							    }
+
+						 }]
+					 },
+			//title: "Attachment: " + inField.dataSource + " uploaded by " + currentAttachment.author.displayName + " on " + moment(currentAttachment.created).format('lll'),
+			collapsible: true,
+			collapsed: true,
+            html: outHtml,
+            frame: true,
+            border: true,
+            bodyStyle:  l_panelStyle,
+            xtype: "panel"},
+           {
+            html: fileLoad,
+            frame: false,
+            hidden: true,
+            border: false,
+            xtype: "panel"}]
     });
 	//before render....
 	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](pnl, inFormKey,item, inField, inContainer);
@@ -976,7 +1113,7 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
 	if(rOnly) l_fieldStyle="background:lightgray";
 
     var ocf =  ijfUtils.getEvent(inField);
-	var fileLoad = "<form enctype='multipart/form-data' id='attachmentUploadFormId'><input id='attachmentUploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('attachmentFileDisplayId').update(this.value);></form>";
+	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='attachmentUploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('attachmentFileDisplayId').update(this.value);></form>";
     var simple = new Ext.FormPanel({
         border:false,
         hidden: hideField,
@@ -3326,6 +3463,366 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         },
         style: l_Style,
         items: [grid]
+    });
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](layout, inFormKey,item, inField, inContainer);
+
+    layout.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, layout, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](layout, inFormKey,item, inField, inContainer);
+},
+
+renderItemTree:function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+
+    var curIndex = 0;
+
+    var lCaption = inField.caption;
+
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+
+    var hideField = ijfUtils.renderIfShowField("",inField);
+
+    var collapsible = true;
+    if (inField.style.indexOf('collapsible:false')>-1)
+    {
+        collapsible=false;
+    }
+    var collapsed = false;
+    if (inField.style.indexOf('collapsed:true')>-1)
+    {
+        collapsed=true;
+    }
+
+
+	    var l_labelStyle = inField.labelStyle;
+	    var l_panelStyle = inField.panelStyle;
+	    var l_Style = inField.style;
+	    var l_fieldStyle = inField.fieldStyle;
+
+
+	    if(!l_labelStyle) l_labelStyle="background:transparent";
+	    if(!l_panelStyle) l_panelStyle="background:transparent";
+	    if(!l_Style) l_Style="background:transparent";
+	    if(!l_fieldStyle) l_fieldStyle="background:transparent";
+
+	var l_Height = 'auto';
+    var l_Height=ijfUtils.getNameValueFromStyleString(l_panelStyle,"height");
+    if(l_Height=="")
+    {
+		l_Height='auto';
+	}
+	else
+	{
+    	l_Height = l_Height.replace("px","")/1;
+	}
+
+   //item list may be query, related or child
+   	   var colMeta = [];
+   	   colMeta["key"]={"id":"key","name":"key","schema":{}};
+   	   var dataItems =[];
+
+	    var translateFields = ijfUtils.translateJiraFieldsToIds(inField.dataReference);
+		var tSearch = "jql="+inField.dataSource+"&fields="+translateFields+",issuelinks";
+
+		var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
+		//bail if dataItems not
+
+		var dataItems = rawList.issues.map(function(i){
+			var retObj ={};
+			translateFields.split(",").forEach(function(f){
+				var thisField = f.trim();
+				var dVal = "unknown";
+				var jField = ijfUtils.getJiraFieldById(thisField);
+				if(i.fields.hasOwnProperty(jField.id))
+				{
+					dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
+					//perhaps build the types here...
+					colMeta[jField.id]=jField;
+				}
+				retObj[thisField]= dVal;
+			});
+			//retObj.iid=i.id;
+			retObj.iid=i.key;
+
+			if(i.fields.issuelinks.length > 0)
+			{
+				//set an issues parent assignments
+				retObj.parents = i.fields.issuelinks.reduce(function(inParents,link)
+				{
+					if(link.inwardIssue)
+					{
+						inParents.push(link.inwardIssue.key);
+					}
+					return inParents;
+				},[]);
+			}
+			retObj.leaf = true;
+			return retObj;
+		});
+
+        //now rip through and set parent assignments,
+        dataItems.forEach(function(i){
+			if(i.parents)
+			{
+				i.parents.forEach(function(pKey){
+					dataItems.forEach(function(p){
+						if(p.iid==pKey)
+						{
+							//this is parent of i
+							i.moved=true;
+							p.leaf=false;
+							if(p.children)	p.children.push(i);
+							else p.children = [i];
+						}
+					});
+				});
+			}
+		});
+		//reduce moved
+		dataItems = dataItems.reduce(function(inArray,i){
+			if(i.moved) return inArray;
+			inArray.push(i);
+			return inArray;
+		},[]);
+
+   //data items are here, you now need to restructure into a tree based on Item relations...
+
+    if(inField.referenceFilter)
+    {
+        //filter the items...
+        if(ijf.snippets.hasOwnProperty(inField.referenceFilter))
+	        dataItems = ijf.snippets[inField.referenceFilter](dataItems);
+    }
+
+	//calculate column widths...and headers
+	var colWidths=[];
+	var colNames = translateFields.split(","); //inField.dataReference.split(",");
+	var colHeaders = [];
+	if(inField.tableWidths) colWidths=inField.tableWidths.split(",");
+	var colHeaders = [];
+	if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
+	for (var i = 0; i<colNames.length;i++)
+	{
+		if(colWidths[i]>0)
+		{
+			try{
+			if(colMeta[colNames[i]]) colMeta[colNames[i]].width=colWidths[i]/1;}catch(e){}
+		}
+		else
+		{
+			if(colMeta[colNames[i]]) colMeta[colNames[i]].width=100;
+		}
+
+		if(colHeaders[i])
+		{
+			if(colMeta[colNames[i]]) colMeta[colNames[i]].header=colHeaders[i];
+		}
+		else
+		{
+			if(colMeta[colNames[i]]) colMeta[colNames[i]].header=colMeta[colNames[i]].name;
+		}
+	}
+
+
+
+    var colSettingsArray = [];
+    var gridFieldArray=[];
+    //colSettingsArray.push(new Ext.grid.RowNumberer());
+    //push iid as special first field...
+
+    //look for key, hide if not there...
+	var hideKey=true;
+    if(inField.dataReference.indexOf("key")>-1) hideKey=false;
+	var kWidth = 150;
+	if(colMeta.key) kWidth = colMeta.key.width/1;
+    gridFieldArray.push({name: "iid", type: "string"});
+    colSettingsArray.push({
+		xtype: 'treecolumn',
+        text: colMeta["key"].header,
+        dataIndex: "iid",
+        hidden: hideKey,
+        //flex: 1,
+        style: l_labelStyle,
+        width: kWidth,
+        sortable: true
+    });
+	delete colMeta["key"];
+
+    Object.keys(colMeta).forEach(function(k){
+		var f = colMeta[k];
+		if(f.schema.type=="date")
+		{
+			gridFieldArray.push({name: f.id, type: "date"});
+			colSettingsArray.push({
+				text: f.header,
+				dataIndex: f.id,
+				xtype: 'datecolumn',
+				sortable: true,
+				width: f.width,
+				style: l_labelStyle,
+				format: 'm/d/y',
+				filter: {
+				  type: 'date'
+	            }
+			});
+		}
+		else if(f.schema.type=="datetime")
+		{
+			gridFieldArray.push({name: f.id, type: "date"});
+			colSettingsArray.push({
+				text: f.header,
+				dataIndex: f.id,
+				xtype: 'datecolumn',
+				sortable: true,
+				width: f.width,
+				style: l_labelStyle,
+				format: 'm/d/y',
+				filter: {
+				  type: 'date'
+	            }
+			});
+		}
+		else
+		{
+			var fType = 'list';
+			if(f.id=="summary") fType='string';
+			gridFieldArray.push({name: f.id, type: "string"});
+			colSettingsArray.push({
+				text: f.header,
+				width: 'auto',
+				dataIndex: f.id,
+				width: f.width,
+				style: l_labelStyle,
+				sortable: true,
+				filter: {
+				  type: fType
+	            }
+			});
+        }
+	});
+
+    //preap and apply actions.
+    var actions=null;
+    var aWidth = 10;
+
+    if(!Ext.ClassManager.isCreated(inField.dataSource + inField.formCell.replace(",","")))
+    {
+        Ext.define(inField.dataSource + inField.formCell.replace(",",""), {
+            extend: 'Ext.data.Model',
+            fields: gridFieldArray
+        });
+    }
+    var store = Ext.create('Ext.data.TreeStore', {
+        model: inField.dataSource + inField.formCell.replace(",",""),
+        root: {
+			 	expanded:true,
+			 	children: dataItems
+			}
+	});
+
+/*
+var store = Ext.create('Ext.data.TreeStore', {
+    root: {
+        expanded: true,
+        children: [
+            { text: 'detention', leaf: true },
+            { text: 'homework', expanded: true, children: [
+                { text: 'book report', leaf: true },
+                { text: 'algebra', leaf: true}
+            ] },
+            { text: 'buy lottery tickets', leaf: true }
+        ]
+    }
+});
+*/
+    var tree= new Ext.tree.Panel({
+        store: store,
+        style: l_panelStyle,
+        height: l_Height,
+        useArrows: true,
+        width: "100%",
+        rootVisible: false,
+        columns: colSettingsArray,
+        ijfForm: inField,
+		listeners: {
+            'selectionchange':  function(selMod, record, something ){
+				//if event,
+					//see if name = form, if so, set the item to this selectoin and render form
+					//look for event by name, then run if there...
+
+                ijf.main.gItemSectionGridIndex = record[0].data.iid;
+				var tEvent = this.ijfForm.event;
+				if(ijf.fw.forms.hasOwnProperty(tEvent))
+				{
+					ijf.currentItem=null;
+                    ijf.main.itemId= record[0].data.iid;
+                    window.g_formId=tEvent;
+                    ijf.main.processSetup("ijfContent");
+					return;
+				}
+				//look for snippet...
+				if(ijf.snippets.hasOwnProperty(tEvent))
+				{
+
+
+					ijf.snippets[tEvent](record[0].data.iid,this);
+					return;
+				}
+            },
+			'beforeitemdblclick': function(selMod, record, something ){
+
+                ijf.main.gItemSectionGridIndex = record.data.iid;
+				var tEvent = this.ijfForm.tableDblClick;
+				if(ijf.fw.forms.hasOwnProperty(tEvent))
+				{
+					ijf.currentItem=null;
+                    ijf.main.itemId= record.data.iid;
+                    window.g_formId=tEvent;
+                    ijf.main.processSetup("ijfContent");
+					return;
+				}
+				//look for snippet...
+				if(ijf.snippets.hasOwnProperty(tEvent))
+				{
+					ijf.snippets[tEvent](record.data.iid,this);
+					return;
+				}
+				//look for popform: xxx and pop the form
+				tEvent=tEvent.replace("popform:","");
+				if(ijf.fw.forms.hasOwnProperty(tEvent))
+				{
+ 				    var action = {};
+					action.form = tEvent;
+					action.type = "open item";
+					action.itemId = record.data.iid;
+					action.inField = inField;
+                    ijf.extUtils.renderPopupForm(inFormKey, item, action)
+					return;
+				}
+			}
+		}
+    });
+
+    var layout = new Ext.Panel({
+        title: lCaption,
+        collapsible: false,
+        collapsed: false,
+        hidden: hideField,
+        width: "100%",
+        layoutConfig: {
+            columns: 1
+        },
+        style: l_Style,
+        items: [tree]
     });
 	//before render....
 	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](layout, inFormKey,item, inField, inContainer);
