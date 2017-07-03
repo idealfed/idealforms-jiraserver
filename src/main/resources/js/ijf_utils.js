@@ -404,11 +404,11 @@ writeConfigFile:function(inFormSet)
 	var blob = new Blob([outStr], {type: "text/plain;charset=utf-8"});
 	if(inFormSet)
 	{
-		saveAs(blob,inFormSet +".txt");
+		saveAs(blob,inFormSet +".json");
 	}
 	else
 	{
-		saveAs(blob,"ijfFormsConfig.txt");
+		saveAs(blob,"ijfFormsConfig.json");
 	}
 }
 ,
@@ -581,11 +581,36 @@ getConfigJson:function(inFormSet)
 		}
 		outFormSets.push(fsOut);
 		return outFormSets;
-},outFormSets);
+	},outFormSets);
 
-var outStr = JSON.stringify(outFormSets);
 
-return outStr;
+	//look for existance of specific formset, if NOT there, also get the custom types
+	if(!inFormSet)
+	{
+			var outCustomTypes = ijf.fw.CustomTypes.reduce(function(outCustomTypes,ctype)
+			{
+				if(!ctype.name) return outCustomTypes;
+				var ctOut = {
+							customTypeId: ctype.id,
+							name: ctype.name,
+							description: ctype.description,
+							customType: ctype.customType,
+							fieldName: ctype.fieldName,
+							settings: JSON.stringify(ctype.settings)
+				};
+				outCustomTypes.push(ctOut);
+				return outCustomTypes;
+			},[]);
+
+			var tempOutObj = {formSets:outFormSets,customTypes:outCustomTypes};
+			var outStr = JSON.stringify(tempOutObj);
+	}
+	else
+	{
+		var outStr = JSON.stringify(outFormSets);
+	}
+
+	return outStr;
 },
 clearAll:function()
 {
@@ -1348,6 +1373,9 @@ loadConfig:function(onSuccess, onError)
 				break;
 			case "user":
 				if(forDisplay) if(inField) return inField.displayName;
+				return inField.name;
+				break;
+			case "group":
 				return inField.name;
 				break;
 			case "datetime":

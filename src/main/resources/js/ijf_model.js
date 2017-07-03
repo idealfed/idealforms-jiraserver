@@ -501,6 +501,7 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 	{
 		//check for transition change, add schema if necessary
 		if(tSection.jiraMeta.transitions) tSection.jiraMeta.schema = {"type":"status"};
+
 		switch(tSection.jiraMeta.schema.type)
 		{
 			case 'other':
@@ -516,6 +517,13 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				var sc = {};
 				var newUser = this.control.items.items[0].getValue();
 				var tv = {"name":newUser};
+ 				this.newVal = tv;
+				break;
+			case 'group':
+				//std text value
+				var sc = {};
+				var newGroup = this.control.items.items[0].getValue();
+				var tv = {"name":newGroup};
  				this.newVal = tv;
 				break;
 			case 'status':
@@ -547,6 +555,18 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 					  var tv = sc.map(function(av){ return {"id":av};});
 					  this.newVal = tv;
 				  }
+				  else if(this.field.controlType=="userpickermulti")
+				  {
+					   var sc = this.control.items.items[0].getValue();
+					   var tv = sc.map(function(av){ return {"name":av};});
+					   this.newVal = tv;
+			      }
+				  else if(this.field.controlType=="grouppickermulti")
+				  {
+					   var sc = this.control.items.items[0].getValue();
+					   var tv = sc.map(function(av){ return {"name":av};});
+					   this.newVal = tv;
+			      }
 				  else if(this.field.controlType=="attachmentupload")
 				  {
 					  this.newVal = 'na';

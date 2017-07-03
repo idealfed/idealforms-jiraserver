@@ -991,11 +991,17 @@ addEditForm:function (sRow)
 		});
 
 
-		var lookup = ["attachmentlist","attachmentmanaged","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","html","iframe","itemlist","itemtree","formbuttons","formbuttonsforpopup","multiselect","navigatetoform","subform","openurl","openpopform","radio","tabmenu","textarea","textbox","userpicker"];
+		var lookup = ["attachmentlist","attachmentmanaged","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","grouppicker","grouppickermulti","html","iframe","itemlist","itemtree","multiselect","navigatetoform","subform","openurl","openpopform","radio","tabmenu","textarea","textbox","userpicker","userpickermulti"];
 
 	    var  sectionLookup = [];
 
 	    sectionLookup = Object.keys(ijf.jiraMetaKeyed);
+
+		//add custom type GRID names
+		sectionLookup = ijf.fw.CustomTypes.reduce(function(inList,ct){
+			if(ct.customType=="GRID") inList.push(ct.name);
+			return inList;
+		},sectionLookup);
 
 		sectionLookup.push("Status");
 	 	sectionLookup=sectionLookup.sort();
@@ -2395,7 +2401,7 @@ addEditForm:function (sRow)
 
 			if(!ijf.admin.cwfAdmin_form.fields.hasOwnProperty(f)) continue;
 			var thisField = ijf.admin.cwfAdmin_form.fields[f];
-
+			thisField.form = ijf.admin.cwfAdmin_form;
 			var frmCell = thisField.formCell.split(",");
 			var targetCell =  inContainerId+"_"+frmCell[0]+"_"+frmCell[1];
 			var container = document.getElementById(targetCell);

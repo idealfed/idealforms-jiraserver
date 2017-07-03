@@ -5,6 +5,9 @@ ijf.lists = {
 filteredItemList:null,
 checkedList:null,
 itemStore:null,
+typeStore:null,
+typeSpecStore:null,
+thisTypeSpec:null,
 checkedNodes:[],
 parentNodeId:null,
 templateNodeId:null,
@@ -71,8 +74,8 @@ filterItemList:function(inId)
         filteredItemList = this.checkedList.slice();
     }
 
-    itemStore.removeAll();
-    itemStore.loadData(filteredItemList);
+    this.itemStore.removeAll();
+    this.itemStore.loadData(filteredItemList);
 },
 
 clearFilter:function(inId)
@@ -290,6 +293,17 @@ renderItemList_Borderlayout:function(inContainerId)
 			ijf.lists.deleteForm(ijf.lists.itemId);
             }});
 
+    var aButtons = [];
+    aButtons.push({
+        text:'Custom Types',
+        xtype: 'button',
+        margin: '0 3 0 3',
+        handler: function(){
+            ijf.lists.addEditCustomType();
+        }});
+
+
+
     var selectItem = new Ext.FormPanel({
         //labelAlign: 'left',
         //title: "hey",
@@ -297,12 +311,9 @@ renderItemList_Borderlayout:function(inContainerId)
         //layout: 'fit',
         border:false,
         frame:false,
-        layout: {
-            type: 'hbox',
-            align: 'end'
-        },
-        buttons: cButtons
-
+        bodyStyle: 'margin-left:250px;background:transparent',
+        items: cButtons,
+        buttons: aButtons
     });
 
 
@@ -328,7 +339,7 @@ renderItemList_Borderlayout:function(inContainerId)
             width:ijf.fw.listNameWidth,
             sortable: true,
             hidden: false,
-            width: 300,
+            width: 270,
             dataIndex: 'iFormName',
             filter: {
                 type: 'string'
@@ -377,7 +388,7 @@ renderItemList_Borderlayout:function(inContainerId)
     }
 
 
-    itemStore = new Ext.data.Store({
+    this.itemStore = new Ext.data.Store({
         model: 'gridFieldArray'
     });
 
@@ -388,7 +399,7 @@ renderItemList_Borderlayout:function(inContainerId)
     if(Ext.getCmp('itemListViewId')) Ext.getCmp('itemListViewId').destroy();
 
     var listView = new Ext.grid.GridPanel({
-        store: itemStore,
+        store: this.itemStore,
         height:500,
         width:500,
         plugins: 'gridfilters',
@@ -432,7 +443,7 @@ renderItemList_Borderlayout:function(inContainerId)
             xtype: 'container',
             region: 'south',     // position for region
             frame: false,
-            height: 50,
+            height: 70,
             //layout: 'vbox',
             //split: true,         // enable resizing
             //minSize: 90,         // defaults to 50
@@ -1160,6 +1171,49 @@ deleteFormSet: function(inFrmId)
 	    ijfUtils.modalDialog("Warning","Are you certain you want to delete this form group?",dFunc);
 
 },
+deleteCustomType: function(inCtId)
+{
+		if(!inCtId) return;
+    	var thisT ={};
+		var thisTIndex=0;
+		for(var tF in ijf.fw.CustomTypes){
+			if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+			if(ijf.fw.CustomTypes[tF].id==inCtId)
+			{
+				thisTIndex = tF;
+				thisT=ijf.fw.CustomTypes[tF];
+			}
+		}
+		if(!thisT.name){ ijfUtils.modalDialogMessage("Error","Sorry, undable to find the requested form type for: " + inCtId); return;}
+
+        var dFunc = function(thisCtIndex)
+        {
+		        var jOut = {
+							customTypeId: thisT.id
+				};
+				var jdata = JSON.stringify(jOut);
+
+//todo, change to customtype
+				var sStat = ijfUtils.saveJiraFormSync(jdata,"deleteCustomType");
+				if(isNaN(sStat))
+				{
+					ijfUtils.modalDialogMessage("Error","Sorry, something went wrong with the delete: " + sStat);
+				}
+				else
+				{
+ 	                //need to delete the entry from CTs.  sStat is the ID of the entry....
+ 	                delete ijf.fw.CustomTypes[sStat];
+ 	                for(var tF in ijf.fw.CustomTypes){
+						if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+						if(ijf.fw.CustomTypes[tF].id==sStat) delete ijf.fw.CustomTypes[tF];
+					}
+					ijf.lists.dWin.focus();
+				}
+	    };
+
+	    ijfUtils.modalDialog("Warning","Are you certain you want to delete this type?",dFunc);
+
+},
 addEditFormSet:function (inFrmId)
 {
 
@@ -1401,8 +1455,763 @@ addEditFormSet:function (inFrmId)
                 }}
         ],
         modal: true
+        //listeners:{
+		//		focus: function(f)
+		//		{
+		//			alert('refresh the table');
+		//		}
+		//}
     });
     ijf.lists.dWin.show();
+},
+
+//beginning custom types...
+
+addEditCustomType:function (inFrmId)
+{
+
+    var listColumns = [];
+    var tFields = [];
+    tFields.push({name: 'iid',  type: 'string'});
+
+    listColumns.push({
+        header: 'ID',
+        width:10,
+        hidden: true,
+        dataIndex: 'iid'
+    });
+
+    tFields.push({name: 'iTypeName', type: 'string'});
+    tFields.push({name: 'iTypeType', type: 'string'});
+    tFields.push({name: 'iInstances', type: 'string'});
+
+    listColumns.push({
+            header: 'Name',
+            sortable: true,
+            hidden: false,
+            width: 500,
+            dataIndex: 'iTypeName',
+            filter: {
+                type: 'string'
+            }
+    });
+    listColumns.push({
+		            header: 'Type',
+		            width:200,
+		            sortable: true,
+		            hidden: false,
+		            dataIndex: 'iTypeType',
+		            filter: {
+		                type: 'string'
+		            }
+    });
+    listColumns.push({
+            header: 'Instances',
+            width:100,
+            sortable: true,
+            hidden: false,
+            dataIndex: 'iInstances',
+            filter: {
+                type: 'string'
+            }
+    });
+
+    if(!Ext.ClassManager.isCreated('typeGridFieldArray'))
+    {
+        Ext.define('typeGridFieldArray', {
+            extend: 'Ext.data.Model',
+            fields: tFields
+        });
+    }
+
+    this.typeStore = new Ext.data.Store({
+        model: 'typeGridFieldArray'
+    });
+
+
+    if(Ext.getCmp('typeListViewId')) Ext.getCmp('typeListViewId').destroy();
+
+    var typeListView = new Ext.grid.GridPanel({
+        store: this.typeStore,
+        //height:500,
+        width:820,
+        plugins: 'gridfilters',
+        id: "typeListViewId",
+        //reserveScrollOffset: true,
+        columns: listColumns,
+        listeners: {
+          rowdblclick: function(grid,rowIndex,e) {
+              var tId = rowIndex.data.iid;
+              if(!tId) return;
+              if(rowIndex.data.iTypeType=="GRID")
+              	ijf.lists.addEditCustomTypeDetails(tId);
+              else
+              	ijf.lists.addEditCustomTypeReference(tId);
+            }}
+    });
+
+    ijf.lists.dWin = new Ext.Window({
+        layout: 'vbox',
+        title: "IJF Custom Types",
+        width: 800,
+        height:520,
+        closable: true,
+        items: [typeListView],
+        buttons:[{
+            text:'Add',
+            handler: function(f,i,n){
+				 ijf.lists.addEditType(0);
+			}},{
+            text:'Edit',
+            handler: function(f,i,n){
+				if(!ijf.lists.dWin.items.items[0].selection) return;
+				var thisId = ijf.lists.dWin.items.items[0].selection.data.iid;
+				ijf.lists.addEditType(thisId);
+			}},
+			{
+            text:'Edit Details',
+            handler: function(f,i,n){
+				if(!ijf.lists.dWin.items.items[0].selection) return;
+				var thisId = ijf.lists.dWin.items.items[0].selection.data.iid;
+				var thisT = ijf.fw.CustomTypes.reduce(function(inT, ct){if(ct.id==thisId) return ct;},null);
+				if(!thisT) return;
+				if(thisT.customType=="GRID")
+					ijf.lists.addEditCustomTypeDetails(thisId);
+				else
+					ijf.lists.addEditCustomTypeReference(thisId);
+			}},{
+            text:'Delete',
+            handler: function(f,i,n){
+				if(!ijf.lists.dWin.items.items[0].selection) return;
+				var thisId = ijf.lists.dWin.items.items[0].selection.data.iid;
+				ijf.lists.deleteCustomType(thisId);
+			}},
+            {
+                text:'Close',
+                handler: function(){
+                    ijf.lists.dWin.close();
+            }}
+        ],
+        modal: true,
+        listeners:{
+			focus: function(f)
+			{
+					var cts = new Array();
+					ijf.fw.CustomTypes.forEach(function(ct){
+						cts.push([ct.id, ct.name, ct.customType, "tbd"]);
+					});
+					ijf.lists.typeStore.removeAll();
+					ijf.lists.typeStore.loadData(cts);
+			}
+		}
+    });
+    ijf.lists.dWin.show();
+},
+addEditCustomTypeDetails:function (inTypeId)
+{
+    ijf.lists.thisTypeSpec = {};
+	var thisT = ijf.lists.thisTypeSpec;
+    if(inTypeId)
+    {
+		for(var tF in ijf.fw.CustomTypes){
+			if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+			if(ijf.fw.CustomTypes[tF].id==inTypeId) thisT=ijf.fw.CustomTypes[tF];
+		}
+		if(!thisT.name){ ijfUtils.modalDialogMessage("Error","Sorry, undable to find the requested type for: " + inTypeId); return;}
+		ijf.lists.thisTypeSpec=thisT;
+    }
+
+    var listColumns = [];
+    var tFields = [];
+
+    tFields.push({name: 'columnName', type: 'string'});
+    tFields.push({name: 'columnType', type: 'string'});
+    tFields.push({name: 'controlType', type: 'string'});
+    tFields.push({name: 'default', type: 'string'});
+	tFields.push({name: 'required', type: 'string'});
+	tFields.push({name: 'order', type: 'integer'});
+	tFields.push({name: 'format', type: 'string'});
+	tFields.push({name: 'regEx', type: 'string'});
+	tFields.push({name: 'reference', type: 'string'});
+
+
+	//lookups
+    var typeLookup = ["text","date","number","lookup"];
+    var requiredLookup = ["Yes","No"];
+    var controlLookup = ["textbox","textarea","checkbox","datebox","combobox"];
+
+    listColumns.push({
+            header: 'Col Name',
+            sortable: true,
+            hidden: false,
+            width: 120,
+            dataIndex: 'columnName',
+            filter: {
+                type: 'string'
+            },
+            editor: {
+				completeOnEnter: false,
+				field: {
+					xtype: 'textfield',
+					allowBlank: false
+				}
+            }
+    });
+    listColumns.push({
+		            header: 'Col Type',
+		            width:120,
+		            sortable: true,
+		            hidden: false,
+		            dataIndex: 'columnType',
+		            filter: {
+		                type: 'string'
+		            },
+		            editor: {
+						field: {
+							xtype: 'combobox',
+							allowBlank: false,
+							forceSelection: true,
+							queryMode: 'local',
+							store:typeLookup
+						}
+            		}
+    });
+    listColumns.push({
+		            header: 'Cont. Type',
+		            width:120,
+		            sortable: true,
+		            hidden: false,
+		            dataIndex: 'controlType',
+		            filter: {
+		                type: 'string'
+		            },
+		            editor: {
+						field: {
+							xtype: 'combobox',
+							allowBlank: false,
+							forceSelection: true,
+							queryMode: 'local',
+							store:controlLookup
+						}
+            		}
+    });
+    listColumns.push({
+            header: 'Default',
+            sortable: true,
+            hidden: false,
+            width: 120,
+            dataIndex: 'default',
+            filter: {
+                type: 'string'
+            },
+            editor: {
+				completeOnEnter: false,
+				field: {
+					xtype: 'textfield',
+					allowBlank: false
+				}
+            }
+    });
+        listColumns.push({
+			            header: 'Required',
+			            width:120,
+			            sortable: true,
+			            hidden: false,
+			            dataIndex: 'required',
+			            filter: {
+			                type: 'string'
+			            },
+			            editor: {
+							field: {
+								xtype: 'combobox',
+								allowBlank: false,
+								forceSelection: true,
+								queryMode: 'local',
+								store:requiredLookup
+							}
+	            		}
+    });
+        listColumns.push({
+	            header: 'Order',
+	            sortable: true,
+	            hidden: false,
+	            width: 120,
+	            dataIndex: 'order',
+	            filter: {
+	                type: 'integer'
+	            },
+	            editor: {
+					completeOnEnter: false,
+					field: {
+						xtype: 'textfield',
+						allowBlank: false
+					}
+	            }
+    });
+
+    listColumns.push({
+            header: 'Format',
+            sortable: true,
+            hidden: false,
+            width: 120,
+            dataIndex: 'format',
+            filter: {
+                type: 'string'
+            },
+            editor: {
+				completeOnEnter: false,
+				field: {
+					xtype: 'textfield',
+					allowBlank: false
+				}
+            }
+    });
+        listColumns.push({
+	            header: 'Reg. Ex.',
+	            sortable: true,
+	            hidden: false,
+	            width: 120,
+	            dataIndex: 'regEx',
+	            filter: {
+	                type: 'string'
+	            },
+	            editor: {
+					completeOnEnter: false,
+					field: {
+						xtype: 'textfield',
+						allowBlank: false
+					}
+	            }
+    });
+        listColumns.push({
+	            header: 'Reference',
+	            sortable: true,
+	            hidden: false,
+	            width: 120,
+	            dataIndex: 'reference',
+	            filter: {
+	                type: 'string'
+	            },
+	            editor: {
+					completeOnEnter: false,
+					field: {
+						xtype: 'textfield',
+						allowBlank: false
+					}
+	            }
+    });
+
+    if(!Ext.ClassManager.isCreated('typeGridSpecsArray'))
+    {
+        Ext.define('typeGridSpecsArray', {
+            extend: 'Ext.data.Model',
+            fields: tFields
+        });
+    }
+
+    ijf.lists.typeSpecStore = new Ext.data.Store({
+        model: 'typeGridSpecsArray'
+    });
+
+
+    //thisT.settings...
+	try
+	{
+		var cts = JSON.parse(thisT.settings);
+		ijf.lists.typeSpecStore.loadData(cts);
+	}
+	catch(e)
+	{
+		ijfUtils.footLog('Failed to parse the control type settings');
+	}
+
+    if(Ext.getCmp('typeListSpecViewId')) Ext.getCmp('typeListSpecViewId').destroy();
+
+    var typeListSpecView = new Ext.grid.GridPanel({
+		 dockedItems: [{
+		                xtype: 'toolbar',
+		                items: [{
+		                    iconCls: 'icon-add',
+		                    text: 'Add',
+		                    scope: this,
+		                    handler: function(){
+								 //create record...
+								 var rec = new typeGridSpecsArray({
+								             columnName: '',
+								             columnType: '',
+								             controlType: '',
+								             "default": '',
+								             required: '',
+								             order: '',
+								             format: '',
+								             regEx: '',
+								             reference: '',
+								             columnType: ''
+        						 });
+								 this.typeSpecStore.insert(0, rec);
+							}
+		                }, {
+		                    iconCls: 'icon-delete',
+		                    text: 'Delete',
+		                    scope: this,
+		                    handler: function(){
+								var selection = ijf.lists.dWin2.items.items[0].getView().getSelectionModel().getSelection()[0];
+								if (selection) {
+									this.typeSpecStore.remove(selection);
+								}
+							}
+		                }]
+				   }],
+        store: ijf.lists.typeSpecStore,
+        //height:500,
+        width:1100,
+        plugins: 'gridfilters',
+        id: "typeListSpecViewId",
+        //reserveScrollOffset: true,
+        columns: listColumns,
+        selModel: 'cellmodel',
+		    plugins: {
+		        ptype: 'cellediting',
+		        clicksToEdit: 1
+        }
+    });
+
+    ijf.lists.dWin2 = new Ext.Window({
+        layout: 'vbox',
+        title: "IJF Custom Type Specs",
+        width: 1120,
+        height:420,
+        closable: true,
+        items: [typeListSpecView],
+        buttons:[ {
+                text:'Save',
+                handler: function(){
+
+					var sArray = [];
+					ijf.lists.typeSpecStore.getData().each(function(r){
+						r.commit();
+						sArray.push(r.data);
+					});
+					ijf.lists.thisTypeSpec.settings = JSON.stringify(sArray);
+
+					var jOut = {
+								customTypeId: ijf.lists.thisTypeSpec.id,
+								name: ijf.lists.thisTypeSpec.name,
+								description: ijf.lists.thisTypeSpec.description,
+								customType: ijf.lists.thisTypeSpec.customType,
+								fieldName: ijf.lists.thisTypeSpec.fieldName,
+								settings: JSON.stringify(ijf.lists.thisTypeSpec.settings)
+					};
+					var jdata = JSON.stringify(jOut);
+
+					var sStat = ijfUtils.saveJiraFormSync(jdata,"saveCustomType");
+
+					if(isNaN(sStat))
+					{
+						ijfUtils.modalDialogMessage("Save Error","Sorry, something went wrong with the save: " + sStat);
+					}
+            }},
+            {
+                text:'Close',
+                handler: function(){
+                    ijf.lists.dWin2.close();
+                    ijf.lists.dWin.focus();
+            }}
+        ],
+        modal: true
+    });
+    ijf.lists.dWin2.show();
+}
+,
+addEditCustomTypeReference:function (inTypeId)
+{
+    ijf.lists.thisTypeSpec = {};
+	var thisT = ijf.lists.thisTypeSpec;
+    if(inTypeId)
+    {
+		for(var tF in ijf.fw.CustomTypes){
+			if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+			if(ijf.fw.CustomTypes[tF].id==inTypeId) thisT=ijf.fw.CustomTypes[tF];
+		}
+		if(!thisT.name){ ijfUtils.modalDialogMessage("Error","Sorry, undable to find the requested type for: " + inTypeId); return;}
+		ijf.lists.thisTypeSpec=thisT;
+    }
+
+    //thisT.settings...
+	try
+	{
+		var cts = JSON.parse(thisT.settings);
+	}
+	catch(e)
+	{
+		ijfUtils.footLog('Failed to parse the control type settings');
+	}
+
+    if(Ext.getCmp('typeListSpecViewId')) Ext.getCmp('typeListSpecViewId').destroy();
+
+
+    ijf.lists.dWin2 = new Ext.Window({
+        layout: 'vbox',
+        title: "IJF Custom Type Reference Specs",
+        width: 800,
+        height:520,
+        closable: true,
+        items: [
+			{
+                xtype: 'textarea',
+  				margin: '0 0 0 0',
+                width: '100%',
+                height: '100%',
+                value: cts,
+                allowBlank:false,
+                listeners: {
+                afterrender: function(f)
+                {
+                    this.validate();
+                },
+                change: function(f,n,o){
+                        cts = n;
+                    }
+                }
+            },
+        ],
+        buttons:[ {
+                text:'Save',
+                handler: function(){
+
+					ijf.lists.thisTypeSpec.settings = JSON.stringify(cts);
+
+					var jOut = {
+								customTypeId: ijf.lists.thisTypeSpec.id,
+								name: ijf.lists.thisTypeSpec.name,
+								description: ijf.lists.thisTypeSpec.description,
+								customType: ijf.lists.thisTypeSpec.customType,
+								fieldName: ijf.lists.thisTypeSpec.fieldName,
+								settings: JSON.stringify(ijf.lists.thisTypeSpec.settings)
+					};
+					var jdata = JSON.stringify(jOut);
+
+					var sStat = ijfUtils.saveJiraFormSync(jdata,"saveCustomType");
+
+					if(isNaN(sStat))
+					{
+						ijfUtils.modalDialogMessage("Save Error","Sorry, something went wrong with the save: " + sStat);
+					}
+            }},
+            {
+                text:'Close',
+                handler: function(){
+                    ijf.lists.dWin2.close();
+                    ijf.lists.dWin.focus();
+            }}
+        ],
+        modal: true
+    });
+    ijf.lists.dWin2.show();
+}
+,
+addEditType:function (inTypeId)
+{
+
+	var editForm = false;
+	ijf.lists.thisType = {};
+	var thisT = ijf.lists.thisType;
+    if(inTypeId)
+    {
+		editForm = true;
+		for(var tF in ijf.fw.CustomTypes){
+			if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+			if(ijf.fw.CustomTypes[tF].id==inTypeId) thisT=ijf.fw.CustomTypes[tF];
+		}
+		if(!thisT.name){ ijfUtils.modalDialogMessage("Error","Sorry, undable to find the requested form group for: " + inTypeId); return;}
+		ijf.lists.thisType=thisT;
+    }
+    else
+    {
+		//construct blank type...
+		thisT.name = "";
+		thisT.description = "";
+		thisT.customType = "";
+		thisT.fieldName = "";
+		thisT.id = 0;
+		thisT.settings=[];
+	}
+
+    var dMes = "Adding a new custom control type, this creates";
+    dMes+=" a control type you can use in your forms.  Please note:";
+    dMes+="<ul><li>JIRA Field is the storage location for this item for reporting</li>";
+    dMes+="<ul><li>JIRA Field is not applicable for REFERENCE types</li>";
+
+    var fieldLookup = [];
+
+	if(!ijf.jiraFields)
+	{
+		ijf.jiraFields = ijfUtils.getJiraFieldsSync();
+		ijf.jiraFieldsKeyed = [];
+		ijf.jiraFields.forEach(function(f)
+		{
+			ijf.jiraFieldsKeyed[f.name]=f;
+		});
+	}
+
+	fieldLookup = ijf.jiraFields.reduce(function(inArr, f){
+		if(f.custom) inArr.push([f.name,f.name]);
+		return inArr;
+	},fieldLookup);
+
+	fieldLookup.sort();
+
+    var typeLookup = ["GRID","REFERENCE"];
+
+    ijf.lists.dWin2 = new Ext.Window({
+        layout: 'vbox',
+        title: "IJF Custom Type Settings",
+        width: 500,
+        height:350,
+        closable: true,
+        items: [{
+            html: dMes,
+            border: false,
+            width: 580,
+            margin: '4 0 0 10',
+            frame: false,
+            xtype: "panel"},
+            {
+                xtype: 'textfield',
+                labelAlign: 'left',
+                fieldLabel: 'Name',
+                labelWidth: 100,
+                labelStyle: "color:darkblue",
+  				margin: '4 0 0 10',
+                width: 400,
+                value: thisT.name,
+                allowBlank:false,
+                listeners: {
+                afterrender: function(f)
+                {
+                    this.validate();
+                },
+                change: function(f,n,o){
+
+                        thisT.name = n;
+                    }
+                }
+            },
+ 			{
+                xtype: 'textarea',
+                labelAlign: 'left',
+                fieldLabel: 'Description',
+                labelWidth: 100,
+                labelStyle: "color:darkblue",
+  				margin: '4 0 0 10',
+                width: 400,
+                value: thisT.description,
+                allowBlank:false,
+                listeners: {
+                afterrender: function(f)
+                {
+                    this.validate();
+                },
+                change: function(f,n,o){
+
+                        thisT.description = n;
+                    }
+                }
+            },
+			{
+				xtype: 'combobox',
+				labelAlign: 'left',
+				forceSelection: true,
+				store: typeLookup,
+				forceSelection: true,
+				labelWidth: 100,
+				margin: '4 0 0 10',
+				fieldLabel: "Control Type",
+				allowBlank:false,
+				labelStyle: "color:darkblue",
+				triggerAction: 'all',
+				width: 400,
+				value: thisT.customType,
+				listeners: {
+					afterrender: function(f)
+					                {
+					                    this.validate();
+                    },
+					change: function(f, n, o){
+						thisT.customType = n;
+					}}
+			},
+			{
+				xtype: 'combobox',
+				labelAlign: 'left',
+				forceSelection: true,
+				store: fieldLookup,
+				forceSelection: true,
+				labelWidth: 100,
+				margin: '4 0 0 10',
+				fieldLabel: "JIRA Field",
+				labelStyle: "color:darkblue",
+				triggerAction: 'all',
+				width: 400,
+				value: thisT.fieldName,
+				listeners: {
+									afterrender: function(f)
+									                {
+									                    this.validate();
+				                    },
+									change: function(f, n, o){
+										thisT.fieldName = n;
+					}}
+			},
+        ],
+        buttons:[{
+            text:'Save',
+            handler: function(f,i,n){
+				var thisCustomType = ijf.lists.thisType;
+
+				if(thisCustomType.name=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the name cannot be blank."); return;}
+				if(thisCustomType.description=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the description cannot be blank."); return;}
+				if(thisCustomType.customType=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the type cannot be blank."); return;}
+				if(thisCustomType.fieldName=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the fieldname cannot be blank."); return;}
+
+		        var jOut = {
+							customTypeId: thisCustomType.id,
+							name: thisCustomType.name,
+							description: thisCustomType.description,
+							customType: thisCustomType.customType,
+							fieldName: thisCustomType.fieldName,
+							settings: JSON.stringify(thisCustomType.settings)
+				};
+				var jdata = JSON.stringify(jOut);
+
+				var sStat = ijfUtils.saveJiraFormSync(jdata,"saveCustomType");
+
+				if(isNaN(sStat))
+				{
+					ijfUtils.modalDialogMessage("Save Error","Sorry, something went wrong with the save: " + sStat);
+				}
+				else
+				{
+					//update the custom type with this new one...list will refesh on focus
+					if(ijf.lists.thisType.id==0)
+					{
+						ijf.lists.thisType.id=sStat;
+						ijf.fw.CustomTypes.push(ijf.lists.thisType);
+					}
+					ijf.lists.dWin2.close();
+					ijf.lists.dWin.focus();
+				}
+
+            }},
+            {
+                text:'Cancel',
+                handler: function(){
+                    ijf.lists.dWin2.close();
+                }}
+        ],
+        modal: true
+    });
+    ijf.lists.dWin2.show();
 }
 
 };

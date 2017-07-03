@@ -60,6 +60,15 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'userpicker':
                 ijf.extUtils.renderUserPicker (inFormKey,item,inField,inContainer);
                 break;
+            case 'userpickermulti':
+                ijf.extUtils.renderUserMultiselect (inFormKey,item,inField,inContainer);
+                break;
+            case 'grouppicker':
+                ijf.extUtils.renderGroupPicker (inFormKey,item,inField,inContainer);
+                break;
+            case 'grouppickermulti':
+                ijf.extUtils.renderGroupMultiselect (inFormKey,item,inField,inContainer);
+                break;
             case 'attachmentlist':
                 ijf.extUtils.renderAttchmentList (inFormKey,item,inField,inContainer);
                 break;
@@ -583,6 +592,129 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 							xtype:'panel',
 							html: "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId'>File: " + inField.dataSource + "<br> uploaded by " + currentAttachment.author.displayName + " on " + moment(currentAttachment.created).format('lll') + "</div>",
 							bodyStyle: 'background:transparent;color:white;width:100px'
+						 },
+						{
+							xtype:'button',
+							text:"Edit",
+							handler: function(){
+							   // render a local version
+							   if(window.onbeforeunload!=null)
+							   {
+								   //cannot run, tell them to save first
+								   ijfUtils.modalDialogMessage("Information","Sorry you cannot edit a file with unsaved fields in your form.  Please save first then try again.");
+								   return;
+                			   }
+							   if(currentAttachment)
+							   {
+								   var token = "xxx";
+								   //start job, open window, poll, finalize...
+								   var jobSpec = {fileIdentifierString:window.location.origin +"?fileID=" + currentAttachment.id};
+							   }
+							   else
+							   {
+								  ijfUtils.modalDialogMessage("Error","Failed to get the current attachment.");
+								  return;
+							   }
+							   var	tApi = "/rest/goedit/2.0/job/create?instanceID=local";
+							   var	jData = JSON.stringify(jobSpec);
+						       var  fileEditJob = ijfUtils.jiraApiSync("POST",tApi,jData);
+
+							   if(fileEditJob.job)
+							   {
+
+								   //OK, open to the URL and open a window to poll and save when done...
+								   window.open("goedit://"+window.location.host+"/?platform=jira&protocol=http&goeditProtocolVersion=2.0&token="+fileEditJob.job.token+"&instanceID=local");
+
+									var filePollerFunction = function()
+									{
+										var lookForResult = ijfUtils.jiraApiSync("GET","/rest/goedit/2.0/job/" + fileEditJob.job.token + "?instanceID=local",null);
+										if(lookForResult.status)
+										{
+											if(lookForResult.status.saveAllowed)
+											{
+												dWin2.items.items[0].update("<br>&nbsp;Ready to Save<br><br>&nbsp;Updated: " + new Date(lookForResult.latestDraft.timestamp).toLocaleString());
+												dWin2.dockedItems.items[1].items.items[0].setHidden(false);
+											}
+										}
+									}
+									var filePoller = setInterval(filePollerFunction, 3000);
+
+								   var dWin2 = new Ext.Window({
+										layout: 'vbox',
+										title: "Editing file: " + currentAttachment.filename,
+										width: 350,
+										height:200,
+										closable: false,
+										items: [
+											{
+												xtype: 'panel',
+												margin: '0 0 0 0',
+												width: '100%',
+												height: '100%',
+												html: "<br>&nbsp;Nothing to save yet"
+											},
+										],
+										buttons:[ {
+												text:'Save',
+												hidden:true,
+												handler: function(){
+												window.clearInterval(filePoller);
+												//get status, if OK, then save and finalize...
+												var lookForResult = ijfUtils.jiraApiSync("GET","/rest/goedit/2.0/job/" + fileEditJob.job.token + "?instanceID=local",null);
+												if(lookForResult.status)
+												{
+													if(lookForResult.status.saveAllowed)
+													{
+														//finalize
+														var finSpec = {finalizemode:"create", revisioncomment:""};
+														var	tApi = "/rest/goedit/2.0/job/" + fileEditJob.job.token + "/finalize?instanceID=local";
+														var	jData = JSON.stringify(finSpec);
+						       							var  fileFinJob = ijfUtils.jiraApiSync("POST",tApi,jData);
+						       							if(fileFinJob.status!="success")
+						       							{
+															ijfUtils.modalDialogMessage("Error","Failed to get finalize the job.");
+														}
+														dWin2.close();
+													}
+												}
+												else
+												{
+													ijfUtils.modalDialogMessage("Error","Failed to get status of the job so we cannot finalize.");
+													dWin2.close();
+												}
+
+											}},
+											{
+												text:'Cancel',
+												handler: function(){
+
+												window.clearInterval(filePoller);
+												var	tApi = "/rest/goedit/2.0/job/" + fileEditJob.job.token + "?instanceID=local";
+												var cancelJob = ijfUtils.jiraApiSync("DELETE",tApi,null);
+												dWin2.close();
+
+											}}
+										],
+										listeners:{
+											destroy: function(tObj)
+											{
+												ijfUtils.footLog("Edit dialog done, reload the item and rerender...");
+												ijf.main.resetForm();
+											}
+										},
+										modal: true
+									});
+
+
+
+									dWin2.show();
+								}
+								else
+								{
+									ijfUtils.modalDialogMessage("Error","Failed to create file edit job");
+								}
+
+							}
 						 },
 						 {
 							xtype:'button',
@@ -1962,7 +2094,6 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 	            uRoot = '';
 			}
 
-
      		Ext.define('JiraUserModel', {
 			        extend: 'Ext.data.Model',
 			        fields: [{name:'name', type: 'string'},
@@ -2084,6 +2215,474 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
     var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
     ijf.main.controlSet[thisControl.id]=thisControl;
         //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
+}
+,
+renderUserMultiselect:function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+
+	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+	var jf=item.fields[jfFieldDef.id];
+    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+
+    var lAllowBlank = true;
+    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
+
+    switch (inField.dataReference)
+    {
+        case "ijfReference":
+            var ref = JSON.parse(inField.referenceFilter);
+            //value only for now...
+            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
+            var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
+            break;
+        default:
+
+            var apiUrl = "/rest/api/2/user/picker";
+			var	fParam = "query";
+			var xtrParam = null;
+			var uRoot = 'users';
+
+     		Ext.define('JiraUserMultiModel', {
+			        extend: 'Ext.data.Model',
+			        fields: [{name:'name', type: 'string'},
+			                 {name: 'displayName', type: 'string'}]
+    		});
+			var lookup = Ext.create('Ext.data.Store', {
+				storeId: 'userDropdownMultiId',
+				model: 'JiraUserMultiModel',
+				autoLoad: false,
+				proxy: {
+					type: 'ajax',
+					url: g_root + apiUrl,
+					extraParams : xtrParam,
+					filterParam: fParam,
+					groupParam: '',
+					limitParam: '',
+					pageParam: '',
+					sortParam: '',
+					startParam: '',
+					reader: {
+						type: 'json',
+						root: uRoot
+					}
+				}
+		    });
+			var cValue = [];
+			if(data)
+			{
+				cValue = data.map(function(cv){return cv.name;});
+				lookup.loadData(data.map(function(cv){return {name:cv.name, displayName:cv.displayName};}));
+			}
+     		break;
+    }
+
+
+    var hideField = ijfUtils.renderIfShowField(data,inField);
+    var hideLabel = false;
+    if (inField.caption=="")
+        var lCaption = inField.dataSource;
+    else if(inField.caption=="none")
+    {
+        var lCaption = "";
+        hideLabel=true;
+    }
+    else
+        var lCaption = inField.caption;
+    if (inField.style.indexOf('hidden:true')>-1)
+    {
+        hideLabel=true;
+        hideField=true;
+    }
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+    if (inField.style.indexOf('enteronce:true')>-1)
+    {
+        if (!!data) rOnly=true;
+    }
+
+    var limitList = true;
+    if (inField.style.indexOf('limit:false')>-1)
+    {
+        limitList=false;
+    }
+
+    var ocf =  ijfUtils.getEvent(inField);
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
+	if(rOnly) l_fieldStyle="background:lightgray";
+
+    var simple = new Ext.FormPanel({
+        hidden: hideField,
+        border:false,
+        bodyStyle: l_Style,
+        items:[{xtype: 'tagfield',
+            store: lookup,
+            filterPickList: true,
+			labelStyle: l_labelStyle,
+			style: l_panelStyle,
+			fieldStyle: l_fieldStyle,
+			fieldLabel: lCaption,
+			hideLabel: hideLabel,
+			allowBlank: lAllowBlank,
+			readOnly: rOnly,
+			valueField: 'name',
+			displayField: 'displayName',
+			value: cValue,
+			triggerAction: 'all',
+			//selectOnFocus:false,
+			forceSelection: true,
+			queryMode: 'remote',
+			queryParam: fParam,
+			minChars: 2,
+			emptyText:'Start typing...',
+			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+			listeners: {
+				afterrender: function(f)
+				{
+					this.validate();
+				},
+				change: function(f,n,o){
+					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					ocf(f,n,o);
+				}
+			}}]
+    });
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple, inFormKey,item, inField, inContainer);
+
+    simple.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
+}
+,
+renderGroupPicker:function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+
+	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+	var jf=item.fields[jfFieldDef.id];
+
+    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+
+    var lAllowBlank = true;
+    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
+
+
+    //manage cases for the lookups
+    //case one, simple collect constraint
+    //case two reference lookup
+    switch (inField.dataReference)
+    {
+        case "ijfReference":
+            var ref = JSON.parse(inField.referenceFilter);
+            //value only for now...
+            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
+            var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
+            break;
+        default:
+
+			var apiUrl = "/rest/api/2/groups/picker";
+			var	fParam = "query";
+			var xtrParam = null;
+			var uRoot = 'groups';
+
+     		Ext.define('JiraGroupModel', {
+			        extend: 'Ext.data.Model',
+			        fields: [{name:'name', type: 'string'},
+			                 {name: 'html', type: 'string'}]
+    		});
+			var lookup = Ext.create('Ext.data.Store', {
+				storeId: 'groupDropdownId',
+				model: 'JiraGroupModel',
+				autoLoad: false,
+				proxy: {
+					type: 'ajax',
+					url: g_root + apiUrl,
+					extraParams : xtrParam,
+					filterParam: fParam,
+					groupParam: '',
+					limitParam: '',
+					pageParam: '',
+					sortParam: '',
+					startParam: '',
+					reader: {
+						type: 'json',
+						root: uRoot
+					}
+				}
+		    });
+		    //now you need to load the inital data:
+			if(jf)  lookup.loadData([{"name":jf.name, "html":jf.name}]);
+     		break;
+    }
+
+    var hideField = ijfUtils.renderIfShowField(data,inField);
+    var hideLabel = false;
+    if (inField.caption=="")
+        var lCaption = inField.dataSource;
+    else if(inField.caption=="none")
+    {
+        var lCaption = "";
+        hideLabel=true;
+    }
+    else
+        var lCaption = inField.caption;
+    if (inField.style.indexOf('hidden:true')>-1)
+    {
+        hideLabel=true;
+        hideField=true;
+    }
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+    if (inField.style.indexOf('enteronce:true')>-1)
+    {
+        if (!!data) rOnly=true;
+    }
+
+    var limitList = true;
+    if (inField.style.indexOf('limit:false')>-1)
+    {
+        limitList=false;
+    }
+
+    var ocf =  ijfUtils.getEvent(inField);
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
+	if(rOnly) l_fieldStyle="background:lightgray";
+
+    var simple = new Ext.FormPanel({
+        hidden: hideField,
+        border:false,
+        bodyStyle: l_Style,
+        items:[{xtype: 'combobox',
+            store: lookup,
+            displayField: 'html',
+            valueField: 'name',
+			labelAlign: 'left',
+			labelStyle: l_labelStyle,
+			style: l_panelStyle,
+			fieldStyle: l_fieldStyle,
+			fieldLabel: lCaption,
+			hideLabel: hideLabel,
+			allowBlank: lAllowBlank,
+			readOnly: rOnly,
+			value: data,
+			forceSelection: true,
+			hideTrigger: true,
+			triggerAction: 'all',
+			queryMode: 'remote',
+			queryParam: fParam,
+			minChars: 2,
+			emptyText:'Please select...',
+			selectOnFocus:true,
+			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+			listeners: {
+				afterrender: function(f)
+				{
+					this.validate();
+				},
+				change: function(f,n,o){
+					if(!n) return;
+					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					ocf(f,n,o);
+				}
+			}}]
+    });
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple, inFormKey,item, inField, inContainer);
+
+    simple.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+        //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
+}
+,
+renderGroupMultiselect:function(inFormKey,item, inField, inContainer)
+{
+    inContainer.title = inField.toolTip;
+
+	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+	var jf=item.fields[jfFieldDef.id];
+    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+
+    var lAllowBlank = true;
+    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
+
+    switch (inField.dataReference)
+    {
+        case "ijfReference":
+            var ref = JSON.parse(inField.referenceFilter);
+            //value only for now...
+            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
+            var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
+            break;
+        default:
+
+            var apiUrl = "/rest/api/2/groups/picker";
+			var	fParam = "query";
+			var xtrParam = null;
+			var uRoot = 'groups';
+
+     		Ext.define('JiraGroupModelMulti', {
+			        extend: 'Ext.data.Model',
+			        fields: [{name:'name', type: 'string'},
+			                 {name: 'html', type: 'string'}]
+    		});
+			var lookup = Ext.create('Ext.data.Store', {
+				storeId: 'groupDropdownMultiId',
+				model: 'JiraGroupModelMulti',
+				autoLoad: false,
+				proxy: {
+					type: 'ajax',
+					url: g_root + apiUrl,
+					extraParams : xtrParam,
+					filterParam: fParam,
+					groupParam: '',
+					limitParam: '',
+					pageParam: '',
+					sortParam: '',
+					startParam: '',
+					reader: {
+						type: 'json',
+						root: uRoot
+					}
+				}
+		    });
+			var cValue = [];
+			if(data)
+			{
+				cValue = data.map(function(cv){return cv.name;});
+				lookup.loadData(data.map(function(cv){return {name:cv.name, html:cv.name};}));
+			}
+     		break;
+    }
+
+    var hideField = ijfUtils.renderIfShowField(data,inField);
+    var hideLabel = false;
+    if (inField.caption=="")
+        var lCaption = inField.dataSource;
+    else if(inField.caption=="none")
+    {
+        var lCaption = "";
+        hideLabel=true;
+    }
+    else
+        var lCaption = inField.caption;
+    if (inField.style.indexOf('hidden:true')>-1)
+    {
+        hideLabel=true;
+        hideField=true;
+    }
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+    if (inField.style.indexOf('enteronce:true')>-1)
+    {
+        if (!!data) rOnly=true;
+    }
+
+    var limitList = true;
+    if (inField.style.indexOf('limit:false')>-1)
+    {
+        limitList=false;
+    }
+
+    var ocf =  ijfUtils.getEvent(inField);
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
+	if(rOnly) l_fieldStyle="background:lightgray";
+
+    var simple = new Ext.FormPanel({
+        hidden: hideField,
+        border:false,
+        bodyStyle: l_Style,
+        items:[{xtype: 'tagfield',
+            store: lookup,
+            filterPickList: true,
+			labelStyle: l_labelStyle,
+			style: l_panelStyle,
+			fieldStyle: l_fieldStyle,
+			fieldLabel: lCaption,
+			hideLabel: hideLabel,
+			allowBlank: lAllowBlank,
+			readOnly: rOnly,
+			valueField: 'name',
+			displayField: 'html',
+			value: cValue,
+			triggerAction: 'all',
+			//selectOnFocus:false,
+			forceSelection: true,
+			queryMode: 'remote',
+			queryParam: fParam,
+			minChars: 2,
+			emptyText:'Please select...',
+			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+			listeners: {
+				afterrender: function(f)
+				{
+					this.validate();
+				},
+				change: function(f,n,o){
+					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					ocf(f,n,o);
+				}
+			}}]
+    });
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple, inFormKey,item, inField, inContainer);
+
+    simple.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
@@ -2847,11 +3446,11 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 	        collapsed: collapsed,
 	        title: panelTitle,
 	        width: 'auto',
+	        height: 'auto',
 	        bodyStyle: l_Style,
 	        items:[{
 	            xtype: 'textarea',
 	            labelAlign: 'left',
-	            //labelWidth: labelWidth,
 	            labelStyle: l_labelStyle,
 	            style: l_panelStyle,
 	            fieldStyle: l_fieldStyle,
@@ -2861,7 +3460,6 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 	            maxLength: lMaxsize,
 	            validator: lValidator,
 	            readOnly: rOnly,
-	            //width: lWidth,
 	            value: data,
 	            id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
 	            listeners: {

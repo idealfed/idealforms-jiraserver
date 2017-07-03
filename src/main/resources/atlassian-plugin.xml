@@ -9,7 +9,7 @@
     <param name="plugin-logo">images/pluginLogo.png</param>
     <param name="plugin-summary">Ideal Forms for JIRA creates and serves simplified customized user interfaces that help many use cases.</param>
     <param name="plugin-tagline">Custom forms for simplified access, for mobile access and for process automation.</param>    
-    <param name="atlassian-licensing-enabled">true</param>     
+    <param name="atlassian-licensing-enabled">false</param>     
      <screenshots>
             <screenshot image="images/admin.png"/>
             <screenshot image="images/list.png"/>
@@ -55,6 +55,7 @@
      <entity>com.idealfed.jiraforms.ao.FormSet</entity>
      <entity>com.idealfed.jiraforms.ao.Snippet</entity>
      <entity>com.idealfed.jiraforms.ao.Version</entity>     
+     <entity>com.idealfed.jiraforms.ao.CustomType</entity>     
    </ao>
   
  <web-section key="ijf_Forms_Section" name="IJF Forms Section" location="system.admin" weight="50">

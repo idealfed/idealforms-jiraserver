@@ -12,6 +12,8 @@ setup:function (setup)
     //this.id=setup.id;
     //this.setup = setup;
 
+    var inCustomTypes = setup.customTypes;
+
     //this.settings = new Array();
     this.reference = new Array();
     this.referenceFile = null;
@@ -38,12 +40,33 @@ setup:function (setup)
     this.saveErrorStyle = {"border-right":"solid red 4px"};
 
 
+//manage custom types....
+  ijf.fw.CustomTypes = [];
+  try
+  {
+	  ijf.fw.CustomTypes = inCustomTypes.reduce(function(inArray,ct){
+		  if(!ct.hasOwnProperty("name")) return inArray;
+		  var thisCt = {};
+		  	thisCt.id = ct.id;
+		  	thisCt.name = ct.name;
+		  	thisCt.description = ct.description;
+		  	thisCt.customType = ct.customType;
+		  	thisCt.fieldName = ct.fieldName;
+		  	thisCt.settings = ct.settings;
+		  inArray.push(thisCt);
+		  return inArray;
+	  },[]);
+  }
+  catch(e)
+  {
+	  ijfUtils.footLog('Sorry failed to load the custom types...');
+	  ijf.fw.CustomTypes = [];
+  }
+
 
 /*
 	this actually has several form sets in it... parse them all....
 */
-
-
     ijf.formList = new Array();
     this.forms= new Array();
     try

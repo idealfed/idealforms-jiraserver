@@ -100,6 +100,7 @@ public class Craft extends HttpServlet
 
 //section to comment or uncomment license
 
+/*
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -121,7 +122,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-
+*/
 
 		String contextPath = request.getRequestURI();
 		contextPath = contextPath.replace("/plugins/servlet/iforms","");
@@ -159,6 +160,7 @@ public class Craft extends HttpServlet
 //comment for unlicensed running
 
         //determine if Admin call or a Craft call, either way, require Administrator....
+/*
         if(iwfAction.equals("noAction"))
         {
 			if ((craftFlag.equals("true")) || (formId.equals("")))
@@ -179,7 +181,7 @@ public class Craft extends HttpServlet
 				}
 			}
 	    }
-
+*/
 
 
 
@@ -251,11 +253,19 @@ public class Craft extends HttpServlet
     		{
 	    		final PrintWriter w = response.getWriter();
 	    		w.printf("{\"status\":\"OK\",\"resultSet\":[");
+
 	    		for (FormSet fs : ao.find(FormSet.class))
 	            {
 	                w.printf(getAoFormSetJson(fs));
 	            }
+	    		w.printf("{}],\"customTypes\":[");
+
+	    		for (CustomType ct : ao.find(CustomType.class))
+	            {
+	                w.printf(getCustomTypeJson(ct));
+	            }
 	    		w.printf("{}]}");
+
 	    		w.close();
 	    		return;
     		}
@@ -301,6 +311,13 @@ public class Craft extends HttpServlet
     	}
     	else if(iwfAction.equals("clearConfig"))
     	{
+			if (!userManager.isSystemAdmin(username))
+			{
+					final PrintWriter w = response.getWriter();
+					w.printf("{\"status\":\"INVALIDSESSION\"}");
+					w.close();
+					return;
+			}
     		for (FormSet fs : ao.find(FormSet.class))
             {
     			for(Form f : fs.getForms())
@@ -313,6 +330,14 @@ public class Craft extends HttpServlet
     			}
                 ao.delete(fs);
             }
+            for (CustomType ct : ao.find(CustomType.class))
+			{
+				ao.delete(ct);
+			}
+			final PrintWriter w = response.getWriter();
+				w.printf("OK");
+				w.close();
+    		return;
     	}
     	else
     	{
@@ -390,6 +415,19 @@ public class Craft extends HttpServlet
     	}
 
     }
+
+	private String getCustomTypeJson(CustomType ct)
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append("{\"id\":\"" + ct.getID() + "\",");
+		sb.append("\"name\":\"" + ct.getName() + "\",");
+		sb.append("\"description\":\"" + ct.getDescription() + "\",");
+		sb.append("\"customType\":\"" + ct.getCustomType() + "\",");
+		sb.append("\"fieldName\":\"" + ct.getFieldName() + "\",");
+		sb.append("\"settings\":\"" + ct.getSettings() + "\"},");
+
+		return sb.toString();
+	}
 
 	private String getAoFormSetJson(FormSet fs)
 	{
@@ -550,7 +588,13 @@ public class Craft extends HttpServlet
             {
     			cConfig.append(getAoFormSetJson(fs));
             }
-    		cConfig.append("{}]}");
+    		cConfig.append("{}],\"customTypes\":[");
+			for (CustomType ct : ao.find(CustomType.class))
+			{
+				cConfig.append(getCustomTypeJson(ct));
+			}
+			cConfig.append("{}]}");
+
     		Version v = ao.create(Version.class);
     		v.setDate(new Date());
     		v.setAuthor(userManager.getRemoteUsername(req));
@@ -681,6 +725,79 @@ public class Craft extends HttpServlet
 	    		return;
     		}
     	}
+    	else if(iwfAction.equals("saveCustomType"))
+    	{
+    		//formset exists.  And, form exists...so, use the get by ID and update the values....
+    		try
+    		{
+	    		JSONObject inType = new JSONObject(inJson);
+
+				CustomType ct;
+
+
+				int ctId = new Integer(inType.getString("customTypeId")).intValue();
+				if(ctId==0)
+				{
+					//formSet must exist by ID and we need it....
+					//OK, now get the object by ID
+
+					ct =  ao.create(CustomType.class);
+				}
+				else
+				{
+					//OK, now get the object by ID
+					ct = ao.get(CustomType.class, ctId);
+				}
+
+	    		ct.setName(inType.getString("name"));
+        		ct.setDescription(inType.getString("description"));
+        		ct.setCustomType(inType.getString("customType"));
+        		ct.setFieldName(inType.getString("fieldName"));
+	    		ct.setSettings(inType.getString("settings"));
+	    		ct.save();
+	    		final PrintWriter w = res.getWriter();
+	    		w.printf("{\"status\":\"OK\",\"result\":\""+ct.getID()+"\"}");
+	    		w.close();
+	    		return;
+
+    		}
+    		catch(JSONException e)
+    		{
+    			//failed json read
+    			plog.error("Failed to save custom type" + e.getMessage());
+	    		final PrintWriter w = res.getWriter();
+	    		w.printf("{\"status\":\"FAIL\",message:\""+e.getMessage()+"\"}");
+	    		w.close();
+	    		return;
+    		}
+    	}
+    	else if(iwfAction.equals("deleteCustomType"))
+    	{
+    		try
+    		{
+	    		JSONObject inForm = new JSONObject(inJson);
+				CustomType ct;
+				int ctId = new Integer(inForm.getString("customTypeId")).intValue();
+
+					//OK, now get the object by ID
+				ct = ao.get(CustomType.class, ctId);
+				ao.delete(ct);
+
+	    		final PrintWriter w = res.getWriter();
+	    		w.printf("{\"status\":\"OK\",\"result\":\""+ctId+"\"}");
+	    		w.close();
+	    		return;
+    		}
+    		catch(JSONException e)
+    		{
+    			//failed json read
+    			plog.error("Failed to delete type config" + e.getMessage());
+	    		final PrintWriter w = res.getWriter();
+	    		w.printf("{\"status\":\"FAIL\",message:\""+e.getMessage()+"\"}");
+	    		w.close();
+	    		return;
+    		}
+    	}
     	else if(iwfAction.equals("deleteFormSet"))
     	{
     		//formset exists.  And, form exists...so, use the get by ID and update the values....
@@ -798,15 +915,19 @@ public class Craft extends HttpServlet
                 {
         			cConfig.append(getAoFormSetJson(fs));
                 }
-        		cConfig.append("{}]}");
+				cConfig.append("{}],\"customTypes\":[");
+				for (CustomType ct : ao.find(CustomType.class))
+				{
+					cConfig.append(getCustomTypeJson(ct));
+				}
+				cConfig.append("{}]}");
+
         		Version v = ao.create(Version.class);
         		v.setDate(new Date());
         		v.setAuthor(userManager.getRemoteUsername(req));
         		v.setConfig(cConfig.toString());
         		v.save();
         		cleanVersions(20);
-
-        		///todo:  add clear function to remove versions > some count...
 
     			//clear current configuration
     			boolean loaded = false;
@@ -823,8 +944,28 @@ public class Craft extends HttpServlet
                     ao.delete(fs);
                 }
 
+                for (CustomType ct : ao.find(CustomType.class))
+				{
+					ao.delete(ct);
+				}
+
+                //ijfConfig ie EITHER an array in which case it is the formSets, or an Object, which has two arrays:
+                //  formSets and customTypes
 	    		JSONObject jo = new JSONObject(inJson);
-	    		JSONArray rs = jo.getJSONArray("ijfConfig");
+
+	    		//tests...if not null, this the formSets..
+	    		JSONArray rs = jo.optJSONArray("ijfConfig");
+	    		JSONArray cts = null;
+	    		if(rs==null)
+	    		{
+					//jo is a level down
+					JSONObject combinedConfig = jo.getJSONObject("ijfConfig");
+					rs = combinedConfig.optJSONArray("formSets");
+					cts = combinedConfig.optJSONArray("customTypes");
+				}
+
+	    		//JSONArray rs = jo.getJSONArray("ijfConfig");
+
 	    		JSONObject jsonFs;
 	    		JSONArray jsonForms;
 	    		JSONObject jsonForm;
@@ -871,6 +1012,24 @@ public class Craft extends HttpServlet
 		    		}
 	    		}
 
+				//handle custom types....
+	    		//custom type configuration
+	    		if(cts!=null)
+	    		{
+					for(int i = 0; i<cts.length();i++)
+	    			{
+						jsonFs = cts.getJSONObject(i);
+						if(!jsonFs.has("name")) break;
+						final CustomType ct  = ao.create(CustomType.class);
+								ct.setName(jsonFs.getString("name"));
+								ct.setDescription(jsonFs.getString("description"));
+								ct.setCustomType(jsonFs.getString("customType"));
+								ct.setFieldName(jsonFs.getString("fieldName"));
+								ct.setSettings(jsonFs.getString("settings"));
+	        		    ct.save();
+					}
+				}
+
 	    		final PrintWriter w = res.getWriter();
 	    		w.printf("{\"status\":\"OK\"}");
 	    		w.close();
@@ -900,7 +1059,13 @@ public class Craft extends HttpServlet
                 {
         			cConfig.append(getAoFormSetJson(fs));
                 }
-        		cConfig.append("{}]}");
+				cConfig.append("{}],\"customTypes\":[");
+				for (CustomType ct : ao.find(CustomType.class))
+				{
+					cConfig.append(getCustomTypeJson(ct));
+				}
+				cConfig.append("{}]}");
+
         		Version v = ao.create(Version.class);
         		v.setDate(new Date());
         		v.setAuthor(userManager.getRemoteUsername(req));
