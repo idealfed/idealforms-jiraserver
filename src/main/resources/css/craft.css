@@ -89,70 +89,83 @@ a.x-simplelink-default:hover {
 }
 
 
-.ijfAttachList{
-    border-top:solid lightblue 1px;
-    border-right:solid lightblue 1px;
-    border-bottom:solid lightblue 1px;
-    border-left:solid lightblue 1px;
-    border-spacing: 0;
-    width:100%;
-}
-.ijfAttachListHead{
-    display: table-row;
-    background:lightblue;
-    font-weight:bold;
-    width:100%;
-}
-.ijfAttachListHeadName{
-    display: table-cell;
-    text-align:center;
-    width:50%;
-}
-.ijfAttachListHeadAuthor{
-    display: table-cell;
-    text-align:center;
-    width:25%;
-}
-.ijfAttachListHeadDate{
-    display: table-cell;
-    text-align:center;
-    width:25%
-}
-.ijfAttachListRow{
-    display: table-row;
-    width:100%;
-}
-.ijfAttachListName{
-    display: table-cell;
-    text-align:left;
-    width:50%;
-}
-.ijfAttachListAuthor{
-    display: table-cell;
-    text-align:left;
-    width:25%;
-}
-.ijfAttachListDate{
-    display: table-cell;
-    text-align:left;
-    width:25%;
-}
-
+/*ATTACHMENT FIELD*/
+	.ijfAttachList{
+		border-top:solid #21527d 1px;
+		border-right:solid #21527d 1px;
+		border-bottom:solid #21527d 1px;
+		border-left:solid #21527d 1px;
+		background: #21527d;
+		border-spacing: 0;
+		width:100%;
+		max-height:200px;
+		overflow-y:auto;
+	}
+	.ijfAttachListHead{
+		display: table-row;
+		color: #fff;
+		background:#21527d;
+		width:100%;
+	}
+	.ijfAttachListHeadName{
+		display: table-cell;
+		text-align:center;
+		width:50%;
+		padding: 5px;
+	}
+	.ijfAttachListHeadAuthor{
+		display: table-cell;
+		text-align:center;
+		width:25%;
+	}
+	.ijfAttachListHeadDate{
+		display: table-cell;
+		text-align:center;
+		width:25%;
+	}
+	.ijfAttachListRow{
+		display: table-row;
+		width:100%;
+		background: #fff;
+	}
+	.ijfAttachListRow:nth-child(odd) {
+		background: #e8e8e8;
+	}
+	.ijfAttachListName{
+		display: table-cell;
+		text-align:left;
+		vertical-align: middle;
+		width:50%;
+	}
+	.ijfAttachListAuthor{
+		display: table-cell;
+		text-align:left;
+		width:25%;
+		padding: 5px;
+	}
+	.ijfAttachListDate{
+		display: table-cell;
+		text-align:left;
+		width:25%;
+		padding: 5px;
+	}
+	
 
 .ijfCommentList{    
-    border-top:solid lightblue 1px;
-    border-right:solid lightblue 1px;
-    border-bottom:solid lightblue 1px;
-    border-left:solid lightblue 1px;
-    border-spacing: 0;
-    width:100%;
-    max-height:200px;
-    overflow-y:auto;
+		border-top:solid #21527d 1px;
+		border-right:solid #21527d 1px;
+		border-bottom:solid #21527d 1px;
+		border-left:solid #21527d 1px;
+		background: #21527d;
+		border-spacing: 0;
+		width:100%;
+		max-height:200px;
+		overflow-y:auto;    
 }
 .ijfCommentListHead{
     display: table-row;
-    background:lightblue;
-    font-weight:bold;
+		color: #fff;
+		background:#21527d;    
     width:100%;
 }
 .ijfCommentListHeadName{

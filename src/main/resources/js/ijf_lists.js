@@ -293,14 +293,7 @@ renderItemList_Borderlayout:function(inContainerId)
 			ijf.lists.deleteForm(ijf.lists.itemId);
             }});
 
-    var aButtons = [];
-    aButtons.push({
-        text:'Custom Types',
-        xtype: 'button',
-        margin: '0 3 0 3',
-        handler: function(){
-            ijf.lists.addEditCustomType();
-        }});
+
 
 
 
@@ -312,8 +305,8 @@ renderItemList_Borderlayout:function(inContainerId)
         border:false,
         frame:false,
         bodyStyle: 'margin-left:250px;background:transparent',
-        items: cButtons,
-        buttons: aButtons
+        items: cButtons
+        //buttons: aButtons
     });
 
 
@@ -352,7 +345,7 @@ renderItemList_Borderlayout:function(inContainerId)
 		            hidden: false,
 		            dataIndex: 'iFormType',
 		            filter: {
-		                type: 'string'
+		                type: 'list'
 		            }
     });
     listColumns.push({
@@ -362,7 +355,7 @@ renderItemList_Borderlayout:function(inContainerId)
             hidden: false,
             dataIndex: 'iProjectName',
             filter: {
-                type: 'string'
+                type: 'list'
             }
     });
         listColumns.push({
@@ -373,7 +366,7 @@ renderItemList_Borderlayout:function(inContainerId)
 	            width:185,
 	            dataIndex: 'iname',
 	            filter: {
-	                type: 'string'
+	                type: 'list'
 	            }
     });
 
@@ -432,7 +425,7 @@ renderItemList_Borderlayout:function(inContainerId)
      var pnl = new Ext.Panel({
 
          width: 1000,
-         height: 500,
+         height: 600,
         //title: 'Search Form',
         id: 'cwfListPanelId',
         //frame: true,
@@ -443,7 +436,7 @@ renderItemList_Borderlayout:function(inContainerId)
             xtype: 'container',
             region: 'south',     // position for region
             frame: false,
-            height: 70,
+            height: 50,
             //layout: 'vbox',
             //split: true,         // enable resizing
             //minSize: 90,         // defaults to 50
@@ -477,6 +470,13 @@ renderItemList_Borderlayout:function(inContainerId)
 					}
 				}
 			},
+			{
+			text:'Custom Types',
+			xtype: 'button',
+			style: 'margin:0 0 0 10px',
+			handler: function(){
+				ijf.lists.addEditCustomType();
+			}},
 			{
 				xtype:'button',
 				style: 'margin:0 0 0 10px',
@@ -567,6 +567,7 @@ renderItemList_Borderlayout:function(inContainerId)
 						handler: function(){
 						   //need the formset ID...
 						   var uploadGrpFunction = function(){
+							   jQuery('#groupUploadFileId').val("");
 							   jQuery('#groupUploadFileId').trigger('click');
 						   };
 						   ijfUtils.modalDialog("Warning","You are about to upload a form group configuration file.  If the same Form Group exists by name, this will overwrite that Form Group, please rename your existing Form Group if you want to preserver it.",uploadGrpFunction);
@@ -1489,7 +1490,7 @@ addEditCustomType:function (inFrmId)
             header: 'Name',
             sortable: true,
             hidden: false,
-            width: 500,
+            width: 400,
             dataIndex: 'iTypeName',
             filter: {
                 type: 'string'
@@ -1506,8 +1507,8 @@ addEditCustomType:function (inFrmId)
 		            }
     });
     listColumns.push({
-            header: 'Instances',
-            width:100,
+            header: 'Field Store',
+            width:200,
             sortable: true,
             hidden: false,
             dataIndex: 'iInstances',
@@ -1558,7 +1559,38 @@ addEditCustomType:function (inFrmId)
         closable: true,
         items: [typeListView],
         buttons:[{
-            text:'Add',
+			text:'Export',
+				handler: function(f,i,n){
+						if(!ijf.lists.dWin.items.items[0].selection) return;
+						var thisId = ijf.lists.dWin.items.items[0].selection.data.iid;
+						var thisT = null;
+						for(var tF in ijf.fw.CustomTypes){
+								if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+								if(ijf.fw.CustomTypes[tF].id==thisId) thisT=ijf.fw.CustomTypes[tF];
+						}
+						if(!thisT) return;
+						ijfUtils.writeCustomType(thisT);
+			}},
+			{
+				html:  "<form enctype='multipart/form-data' id='typeUploadFormId'><input id='typeUploadFileId' type='file' name='file' onchange='ijfUtils.readTypeConfigFile(event);'></form>",
+				frame: false,
+				hidden: true,
+				border: false,
+			    xtype: "panel"},
+			{
+				xtype:'button',
+				text:"Import",
+				margin: '0 200 0 0',
+				handler: function(){
+				   //need the formset ID...
+				   var uploadTypeFunction = function(){
+					   jQuery('#typeUploadFileId').val("");
+					   jQuery('#typeUploadFileId').trigger('click');
+				   };
+				   ijfUtils.modalDialog("Warning","You are about to upload a type configuration file.  If the same Type exists by name, this will overwrite that Type.",uploadTypeFunction);
+				}
+			},
+            {text:'Add',
             handler: function(f,i,n){
 				 ijf.lists.addEditType(0);
 			}},{
@@ -1571,9 +1603,10 @@ addEditCustomType:function (inFrmId)
 			{
             text:'Edit Details',
             handler: function(f,i,n){
+
 				if(!ijf.lists.dWin.items.items[0].selection) return;
 				var thisId = ijf.lists.dWin.items.items[0].selection.data.iid;
-				var thisT = ijf.fw.CustomTypes.reduce(function(inT, ct){if(ct.id==thisId) return ct;},null);
+				var thisT = ijf.fw.CustomTypes.reduce(function(inT, ct){if(ct.id==thisId) inT=ct; return inT;},null);
 				if(!thisT) return;
 				if(thisT.customType=="GRID")
 					ijf.lists.addEditCustomTypeDetails(thisId);
@@ -1598,7 +1631,7 @@ addEditCustomType:function (inFrmId)
 			{
 					var cts = new Array();
 					ijf.fw.CustomTypes.forEach(function(ct){
-						cts.push([ct.id, ct.name, ct.customType, "tbd"]);
+						cts.push([ct.id, ct.name, ct.customType, ct.fieldName]);
 					});
 					ijf.lists.typeStore.removeAll();
 					ijf.lists.typeStore.loadData(cts);
@@ -1625,20 +1658,20 @@ addEditCustomTypeDetails:function (inTypeId)
     var tFields = [];
 
     tFields.push({name: 'columnName', type: 'string'});
-    tFields.push({name: 'columnType', type: 'string'});
     tFields.push({name: 'controlType', type: 'string'});
     tFields.push({name: 'default', type: 'string'});
 	tFields.push({name: 'required', type: 'string'});
 	tFields.push({name: 'order', type: 'integer'});
 	tFields.push({name: 'format', type: 'string'});
 	tFields.push({name: 'regEx', type: 'string'});
+	tFields.push({name: 'regExMess', type: 'string'});
 	tFields.push({name: 'reference', type: 'string'});
 
 
 	//lookups
-    var typeLookup = ["text","date","number","lookup"];
+
     var requiredLookup = ["Yes","No"];
-    var controlLookup = ["textbox","textarea","checkbox","datebox","combobox"];
+    var controlLookup = ["checkboxgroup","combobox","datefield","numberfield","textarea","textfield"];
 
     listColumns.push({
             header: 'Col Name',
@@ -1657,25 +1690,7 @@ addEditCustomTypeDetails:function (inTypeId)
 				}
             }
     });
-    listColumns.push({
-		            header: 'Col Type',
-		            width:120,
-		            sortable: true,
-		            hidden: false,
-		            dataIndex: 'columnType',
-		            filter: {
-		                type: 'string'
-		            },
-		            editor: {
-						field: {
-							xtype: 'combobox',
-							allowBlank: false,
-							forceSelection: true,
-							queryMode: 'local',
-							store:typeLookup
-						}
-            		}
-    });
+
     listColumns.push({
 		            header: 'Cont. Type',
 		            width:120,
@@ -1708,7 +1723,7 @@ addEditCustomTypeDetails:function (inTypeId)
 				completeOnEnter: false,
 				field: {
 					xtype: 'textfield',
-					allowBlank: false
+					allowBlank: true
 				}
             }
     });
@@ -1724,7 +1739,7 @@ addEditCustomTypeDetails:function (inTypeId)
 			            editor: {
 							field: {
 								xtype: 'combobox',
-								allowBlank: false,
+								allowBlank: true,
 								forceSelection: true,
 								queryMode: 'local',
 								store:requiredLookup
@@ -1744,7 +1759,7 @@ addEditCustomTypeDetails:function (inTypeId)
 					completeOnEnter: false,
 					field: {
 						xtype: 'textfield',
-						allowBlank: false
+						allowBlank: true
 					}
 	            }
     });
@@ -1762,7 +1777,7 @@ addEditCustomTypeDetails:function (inTypeId)
 				completeOnEnter: false,
 				field: {
 					xtype: 'textfield',
-					allowBlank: false
+					allowBlank: true
 				}
             }
     });
@@ -1779,7 +1794,24 @@ addEditCustomTypeDetails:function (inTypeId)
 					completeOnEnter: false,
 					field: {
 						xtype: 'textfield',
-						allowBlank: false
+						allowBlank: true
+					}
+	            }
+    });
+        listColumns.push({
+	            header: 'RegEx Mess',
+	            sortable: true,
+	            hidden: false,
+	            width: 120,
+	            dataIndex: 'regExMess',
+	            filter: {
+	                type: 'string'
+	            },
+	            editor: {
+					completeOnEnter: false,
+					field: {
+						xtype: 'textfield',
+						allowBlank: true
 					}
 	            }
     });
@@ -1796,7 +1828,7 @@ addEditCustomTypeDetails:function (inTypeId)
 					completeOnEnter: false,
 					field: {
 						xtype: 'textfield',
-						allowBlank: false
+						allowBlank: true
 					}
 	            }
     });
@@ -1818,6 +1850,7 @@ addEditCustomTypeDetails:function (inTypeId)
 	try
 	{
 		var cts = JSON.parse(thisT.settings);
+		cts = cts.map(function(r){ delete r.id; return r;});
 		ijf.lists.typeSpecStore.loadData(cts);
 	}
 	catch(e)
@@ -1953,8 +1986,8 @@ addEditCustomTypeReference:function (inTypeId)
     ijf.lists.dWin2 = new Ext.Window({
         layout: 'vbox',
         title: "IJF Custom Type Reference Specs",
-        width: 800,
-        height:520,
+        width: 600,
+        height:420,
         closable: true,
         items: [
 			{
@@ -1979,6 +2012,12 @@ addEditCustomTypeReference:function (inTypeId)
                 text:'Save',
                 handler: function(){
 
+					if(!cts)
+					{
+						ijfUtils.modalDialogMessage("Error","Sorry, you must add a value to save.  JSON or String.");
+						return;
+					}
+
 					ijf.lists.thisTypeSpec.settings = JSON.stringify(cts);
 
 					var jOut = {
@@ -1996,6 +2035,10 @@ addEditCustomTypeReference:function (inTypeId)
 					if(isNaN(sStat))
 					{
 						ijfUtils.modalDialogMessage("Save Error","Sorry, something went wrong with the save: " + sStat);
+					}
+					else
+					{
+						ijfUtils.modalDialogMessage("Information","Saved");
 					}
             }},
             {
@@ -2034,7 +2077,7 @@ addEditType:function (inTypeId)
 		thisT.customType = "";
 		thisT.fieldName = "";
 		thisT.id = 0;
-		thisT.settings=[];
+		thisT.settings=JSON.stringify([]);
 	}
 
     var dMes = "Adding a new custom control type, this creates";
@@ -2066,7 +2109,7 @@ addEditType:function (inTypeId)
     ijf.lists.dWin2 = new Ext.Window({
         layout: 'vbox',
         title: "IJF Custom Type Settings",
-        width: 500,
+        width: 525,
         height:350,
         closable: true,
         items: [{
@@ -2172,7 +2215,16 @@ addEditType:function (inTypeId)
 				if(thisCustomType.name=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the name cannot be blank."); return;}
 				if(thisCustomType.description=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the description cannot be blank."); return;}
 				if(thisCustomType.customType=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the type cannot be blank."); return;}
-				if(thisCustomType.fieldName=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the fieldname cannot be blank."); return;}
+
+				//if type ==GRID then
+				if(thisCustomType.customType=="GRID")
+				{
+					if(thisCustomType.fieldName=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the fieldname cannot be blank."); return;}
+				}
+				else
+				{
+					thisCustomType.fieldName="NA";
+				}
 
 		        var jOut = {
 							customTypeId: thisCustomType.id,
@@ -2213,6 +2265,8 @@ addEditType:function (inTypeId)
     });
     ijf.lists.dWin2.show();
 }
+
+
 
 };
 

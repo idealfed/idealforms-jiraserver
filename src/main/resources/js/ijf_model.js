@@ -492,11 +492,32 @@ itemControl.prototype.saveGridToCollect=function(inGridData, inSectionName)
 itemControl.prototype.prepForSave=function(saveQueueBatch)
 {
 
+
+
     //OK, value in the control, is now the value you want to save...
     //need to switch on the type of control, text or grid
 	var tSection = ijfUtils.getFieldDef(ijf.main.itemId,this.field.dataSource);
 
-	//switch on field type to determin how to pull value...
+	//manage custom types first....
+	if(!tSection.jiraMeta)
+	{
+		var thisT = {};
+		var testDs = this.field.dataSource;
+		ijf.fw.CustomTypes.forEach(function(t){if(t.name==testDs) thisT=t;});
+		if(thisT)
+		{
+			//we have a custom type....
+			if(thisT.customType=="GRID")
+			{
+				tSection = {"jiraMeta":{"schema":{"type":"grid"}}};
+				tSection["jiraField"]={};
+				tSection.jiraField["id"] = ijf.jiraFieldsKeyed[thisT.fieldName].id; //jira id of the custom type field store
+			}
+		}
+	}
+
+
+	//switch on field type to determine how to pull value...
 	if(tSection.jiraMeta)
 	{
 		//check for transition change, add schema if necessary
@@ -586,6 +607,12 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 			case 'string':
 				//std text value
 				this.newVal = this.control.items.items[0].getValue();
+				break;
+			case 'grid':
+				//std text value
+				var gridData = this.control.getStore().getData();
+				var dataArray = gridData.items.map(function(r){return r.data;});
+				this.newVal = JSON.stringify(dataArray);
 				break;
 			case 'datetime':
 				var tDate = this.control.items.items[0].getValue();

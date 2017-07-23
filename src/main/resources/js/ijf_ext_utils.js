@@ -18,6 +18,9 @@ renderField:function(inFormKey, item, inField, inContainer)
     try
     {
         switch(inField.controlType) {
+            case 'GRID':
+                ijf.extUtils.renderGridPanel(inFormKey,item,inField,inContainer);
+                break;
             case 'textbox':
                 ijf.extUtils.renderTextbox(inFormKey,item,inField,inContainer);
                 break;
@@ -540,6 +543,11 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
 
+	var goEditHidden = true;
+	if (inField.fieldStyle.indexOf('goedit:true')>-1)
+	{
+		goEditHidden = false;
+    }
 
     var attachments = item.fields.attachment.reduce(function(inArray, a)
 	{
@@ -596,6 +604,7 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 						{
 							xtype:'button',
 							text:"Edit",
+							hidden: goEditHidden,
 							handler: function(){
 							   // render a local version
 							   if(window.onbeforeunload!=null)
@@ -730,6 +739,7 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 								listeners: {
 									click: function(f,n,o){
 										var clickKey = '#'+inFormKey+'_ctr_'+inField.formCell.replace(",","_");
+										jQuery(clickKey).val("");
 										jQuery(clickKey).trigger('click');
 									}
 							    }
@@ -1263,6 +1273,7 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
             id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
             listeners: {
                 click: function(f,n,o){
+					jQuery('#attachmentUploadFileId').val("");
 					jQuery('#attachmentUploadFileId').trigger('click');
                 }
             }
@@ -4431,7 +4442,513 @@ var store = Ext.create('Ext.data.TreeStore', {
     //after render....
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](layout, inFormKey,item, inField, inContainer);
 },
+renderGridPanel:function(inFormKey,item, inField, inContainer)
+{
+	//get type definition
+	var thisT = {};
+    for(var tF in ijf.fw.CustomTypes){
+		if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+  		if(ijf.fw.CustomTypes[tF].name==inField.dataSource) thisT=ijf.fw.CustomTypes[tF];
+	}
 
+	if(!thisT)	throw("Invalid type name: " + inField.dataSource);
+
+    inContainer.title = inField.toolTip;
+
+	var jfFieldMeta = ijf.jiraMetaKeyed[thisT.fieldName];
+	var jfFieldDef = ijf.jiraFieldsKeyed[thisT.fieldName];
+	var jf=item.fields[jfFieldDef.id];
+
+	var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+
+    if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
+
+    var lMaxsize =  Number.MAX_VALUE;
+
+    var lValidator = function(v){return true};
+    var lRegex =  inField.regEx;
+    if((lRegex!=null) && (lRegex!=""))
+    {
+        lValidator = function(v)
+        {
+            var rgx = new RegExp(lRegex);
+            if (!rgx.exec(v)) {
+                return inField.regExMessage;
+            }
+            return true;
+        }
+    }
+    var hideField = ijfUtils.renderIfShowField(data,inField);
+    var hideLabel = false;
+    if (inField.caption=="")
+        var lCaption = inField.dataSource;
+    else if(inField.caption=="none")
+    {
+        var lCaption = "";
+        hideLabel=true;
+    }
+    else
+        var lCaption = inField.caption;
+    if (inField.style.indexOf('hidden:true')>-1)
+    {
+        hideLabel=true;
+        hideField=true;
+    }
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+    if (inField.style.indexOf('enteronce:true')>-1)
+    {
+        if (!!data) rOnly=true;
+    }
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
+	if(rOnly) l_fieldStyle="background:lightgray";
+
+    var ocf =  ijfUtils.getEvent(inField);
+
+
+
+    var collapsible = true;
+    if (l_fieldStyle.indexOf('collapsible:false')>-1)
+    {
+        collapsible=false;
+    }
+    var collapsed = false;
+    if (l_fieldStyle.indexOf('collapsed:true')>-1)
+    {
+        collapsed=true;
+    }
+
+	var l_Height = '300';
+    var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
+    if(l_Height=="")
+    {
+		l_Height='300';
+	}
+	else
+	{
+    	l_Height = l_Height.replace("px","")/1;
+	}
+
+	var l_Width = '600';
+    var l_Width=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"width");
+    if(l_Width=="")
+    {
+		l_Width='600';
+	}
+	else
+	{
+    	l_Width = l_Width.replace("px","")/1;
+	}
+
+
+
+	var colWidths=[];
+	var colHeaders = [];
+	if(inField.tableWidths) colWidths=inField.tableWidths.split(",");
+	if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
+
+    //The grid setup....
+    var listColumns = [];
+    var tFields = [];
+    var lookups = [];
+
+    var gCols = JSON.parse(thisT.settings);
+    //order by order
+    gCols = gCols.sort(function(a,b){return (a.order-b.order);});
+    var cIndex = 0;
+    var lookups = [];
+    gCols.forEach(function(col){
+
+		var lValidator = function(v){return true};
+		if((col.regEx!=null) && (col.regEx!=""))
+		{
+			lValidator = function(v)
+			{
+				var rgx = new RegExp(col.regEx);
+				if (!rgx.exec(v)) {
+					return col.regExMess;
+				}
+				return true;
+			}
+	    }
+
+        var validRenderer = function (val, meta, rec, rowIndex, colIndex, store) {
+                //at this poing you have the column def, if required or regex fails, make pink
+
+                if((col.required=="Yes") && (!val))
+                {
+                    meta.style = "background-color:pink;";
+				}
+				if((col.regEx!=null) && (col.regEx!=""))
+				{
+					var rgxRenderCheck = new RegExp(col.regEx);
+					if (!rgxRenderCheck.exec(val)) {
+						meta.style = "background-color:pink;";
+					}
+				}
+
+			//now manage the value formatting....
+			switch(col.controlType)
+			{
+				case "datefield":
+					if(col.format) return Ext.util.Format.dateRenderer(col.format)(val); //moment(val).format(col.format);
+					return val;
+					break;
+				case "combobox":
+					//if value lookup is two dimensional, lookup value of val...
+					var retVal = val;
+					if(lookups[col.columnName])
+					{
+						var lLookup = lookups[col.columnName];
+						if(lLookup)
+						{
+							if((typeof lLookup[0]) == "object") lLookup.forEach(function(r){if(r[0]==val) retVal=r[1];});
+						}
+					}
+					return retVal;
+					break;
+			    case "numberfield":
+					if(col.format) return Ext.util.Format.numberRenderer(col.format)(val); //moment(val).format(col.format);
+					return val;
+					break;
+				default:
+					return val;
+			}
+        }
+
+		var thisColWidth = 120;
+		if(colWidths[cIndex]) thisColWidth=colWidths[cIndex]/1;
+		var thisColHeader = col.columnName;
+		if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+
+		switch(col.controlType)
+		{
+			case "datefield":
+					tFields.push({name: col.columnName, type: 'date'});
+					listColumns.push({
+							header: thisColHeader,
+							sortable: true,
+							hidden: false,
+							xtype: 'datecolumn',
+							renderer: validRenderer,
+							ijfColumn: col,
+							width: thisColWidth,
+							dataIndex: col.columnName,
+							filter: {
+								type: 'date'
+							},
+							editor: {
+								completeOnEnter: true,
+								field: {
+									xtype: col.controlType,
+									allowBlank: (col.required!="Yes"),
+									validator: lValidator,
+									format:col.format,
+									listeners: {
+										change: function(n,o,f)
+										{
+											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+										}
+									}
+								}
+							}
+			});
+			break;
+			case "numberfield":
+					tFields.push({name: col.columnName, type: 'number'});
+					listColumns.push({
+							header: thisColHeader,
+							sortable: true,
+							hidden: false,
+							xtype: 'numbercolumn',
+							renderer: validRenderer,
+							align: 'end',
+							width: thisColWidth,
+							dataIndex: col.columnName,
+							filter: {
+								type: 'number'
+							},
+							editor: {
+								completeOnEnter: true,
+								field: {
+									xtype: col.controlType,
+									allowBlank: (col.required!="Yes"),
+									validator: lValidator,
+									format:col.format,
+									listeners: {
+										change: function(n,o,f)
+										{
+											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+										}
+									}
+								}
+							}
+			});
+			break;
+			case "combobox":
+					tFields.push({name: col.columnName, type: 'string'});
+					lookups[col.columnName] = ijfUtils.getReferenceDataByName(col.reference);
+					listColumns.push({
+							header: thisColHeader,
+							sortable: true,
+							hidden: false,
+							width: thisColWidth,
+							dataIndex: col.columnName,
+							renderer: validRenderer,
+							filter: {
+								type: 'list'
+							},
+							editor: {
+								completeOnEnter: true,
+								field: {
+									xtype: col.controlType,
+									allowBlank: (col.required!="Yes"),
+									validator: lValidator,
+									forceSelection: true,
+									store: lookups[col.columnName],
+									listeners: {
+										change: function(n,o,f)
+										{
+											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+										},
+										focus: function(){
+											this.validate();
+										}
+									}
+								}
+							}
+			});
+			break;
+			default:
+					tFields.push({name: col.columnName, type: 'string'});
+
+					listColumns.push({
+							header: thisColHeader,
+							sortable: true,
+							hidden: false,
+							width: thisColWidth,
+							dataIndex: col.columnName,
+							renderer: validRenderer,
+							filter: {
+								type: 'string'
+							},
+							editor: {
+								completeOnEnter: true,
+								field: {
+									xtype: col.controlType,
+									allowBlank: (col.required!="Yes"),
+									validator: lValidator,
+									listeners: {
+										change: function(n,o,f)
+										{
+											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+										},
+										focus: function(){
+											this.validate();
+										}
+									}
+								}
+							}
+			});
+		}
+		cIndex++;
+	});
+
+    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(",","_")))
+    {
+        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(",","_"), {
+            extend: 'Ext.data.Model',
+            fields: tFields
+        });
+    }
+
+    var gridStore = new Ext.data.Store({
+        model: inFormKey+'_mdl_'+inField.formCell.replace(",","_")
+    });
+	gridStore.ijfCols = gCols;
+
+    //thisT.settings...
+    if(data)
+    {
+		try
+		{
+			var cts = JSON.parse(data);
+			cts = cts.map(function(r){ delete r.id; return r;});
+			gridStore.loadData(cts);
+		}
+		catch(e)
+		{
+			throw('Failed to parse the grid json');
+		}
+	}
+
+    var gridPanel = new Ext.grid.GridPanel({
+		 title: lCaption,
+		 style: l_Style,
+		 bodyStyle: l_panelStyle,
+		 height: l_Height,
+		 header:{
+				titlePosition: 0,
+				items:[{
+					xtype:'button',
+					text: 'Add Row',
+					scope: this,
+					handler: function(){
+						 //create record...
+
+						var newRecord = {id:Ext.id()};
+						gCols.forEach(function(col){
+							newRecord[col.columnName]=col["default"];
+						});
+						 //gridStore.parentGridPanel.stopEditing();
+						 var position = gridStore.getCount();
+						 gridStore.insert(position, newRecord);
+
+						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+						//gridStore.parentGridPanel.startEditing(position, 1);
+					}
+				}, {
+					xtype:'button',
+					text: 'Delete Row',
+					scope: this,
+					handler: function(){
+						var selection = gridStore.parentGridPanel.getSelection();
+						if (selection) {
+							selection.forEach(function(r){
+								gridStore.remove(r);
+							});
+						}
+						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					}
+				},{
+				xtype:'button',
+				text:"Clear All",
+				scope: this,
+				handler: function(){
+				   //need the formset ID...
+				   var clearGridRows = function(){
+					    gridStore.getData().each(function(r){
+								gridStore.remove(r);
+						});
+						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+				   };
+				   ijfUtils.modalDialog("Warning","You are about to remove all rows, are you sure?",clearGridRows);
+				}
+			}, {
+					xtype:'button',
+					text: 'Download',
+					margin: '0 0 0 20',
+					scope: this,
+					handler: function(){
+						var outStr = "";
+						gridStore.ijfCols
+						gridStore.getData().each(function(r){
+							gridStore.ijfCols.forEach(function(c){
+								if(r.data.hasOwnProperty(c.columnName))
+								{
+									//must cast this correctly
+									switch(c.controlType)
+									{
+										case "datefield":
+											outStr+=Ext.util.Format.dateRenderer(c.format)(r.data[c.columnName]) + ","
+										break;
+										case "numberfield":
+											outStr+=Ext.util.Format.numberRenderer(c.format)(r.data[c.columnName]) + ","
+										break;
+										default:
+											outStr+="\"" + r.data[c.columnName] + "\","
+									}
+								}
+								else
+								{
+									outStr+=",";
+								}
+							});
+							outStr+="\n";
+						});
+						var blob = new Blob([outStr], {type: "text/plain;charset=utf-8"});
+						saveAs(blob,inField.dataSource+".csv");
+					}
+				},{
+				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upGrdFrm_'+inField.formCell.replace(",","_")+"'><input id='"+inFormKey+'_upGrd_'+inField.formCell.replace(",","_")+"' type='file' name='file' onchange='ijfUtils.gridUploadCsvFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(",","_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\");'></form>",
+				frame: false,
+				hidden: true,
+				border: false,
+			    xtype: "panel"},
+			    {
+				xtype:'button',
+				text:"Upload",
+				scope: this,
+				handler: function(){
+				   //need the formset ID...
+				   var jKey = '#'+inFormKey+'_upGrd_'+inField.formCell.replace(",","_");
+				   jQuery(jKey).val("");
+				   jQuery(jKey).trigger('click');
+				}
+			}]
+		},
+        store: gridStore,
+        width:l_Width,
+        plugins: 'gridfilters',
+        id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+        //reserveScrollOffset: true,
+        columns: listColumns,
+        frame: true,
+        collapsible: collapsible,
+        collapsed: collapsed,
+        selModel: 'cellmodel',
+		plugins: {
+		        ptype: 'cellediting',
+		        clicksToEdit: 1
+        }
+    });
+
+	gridStore.parentGridPanel = gridPanel;
+
+	//this is pretty much a repeat of render cell, check required and regex for every value....
+	gridPanel.items.items[0].isValid = function(){
+        var retVal = true;
+		var gridData = gridStore.getData();
+		//look for bad data and return false...
+		gridData.items.forEach(function(r){
+			//r = object of a row of data, keys are the columnNames
+			gCols.forEach(function(col){
+				var rowVal = r.data[col.columnName];
+				//validate...
+					if((col.required=="Yes") && (!rowVal)) retVal= false;
+					if((col.regEx!=null) && (col.regEx!=""))
+					{
+						var rgxRenderCheck = new RegExp(col.regEx);
+						if (!rgxRenderCheck.exec(rowVal)) retVal= false;
+					}
+			});
+		});
+		return retVal;
+	};
+
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](gridPanel,inFormKey,item, inField, inContainer);
+
+    gridPanel.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, gridPanel, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](gridPanel, inFormKey,item, inField, inContainer);
+}
+,
 //charting
 renderPieChart :function(inFormKey,item, inField, inContainer)
 {

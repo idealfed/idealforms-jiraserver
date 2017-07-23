@@ -47,7 +47,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-	 window.g_version = "1.0.35";
+	 window.g_version = "2.0.0";
 
 
     ijfUtils.showProgress();
@@ -629,6 +629,8 @@ function saveBatch(onSuccess,inFields,inForm, item)
 			fields[thisSect.jiraField.id]=thisCnt.newVal;
         }
     }
+
+
     //send the update batchRaw
     var fieldsOk=true;
     var saveRes = "OK";

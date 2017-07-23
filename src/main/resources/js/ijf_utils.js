@@ -398,6 +398,136 @@ renderAdminButtons:function(inContainerId)
         pnl.render(document.getElementById("ijfManage"));
     }
 },
+gridUploadCsvFile: function(event, inGridId, inControlId)
+{
+	var grid = Ext.getCmp(inGridId);
+	if(!grid){ijfUtils.footLog("failed to get to grid with " + inGridId); return;}
+	var input = event.target;
+	var reader = new FileReader();
+	reader.onload = function(){
+	  var text = reader.result;
+	  var rows = ijfUtils.CSVtoArray(text);
+	  //for each row, load the data in the grid...
+	  rows.forEach(function(r){
+		   if((r.length==1) & (r[0]=="")) return;
+		   var newRecord = {id:Ext.id()};
+		   var i = 0;
+			grid.store.ijfCols.forEach(function(col){
+				if(!r[i])
+				{
+					newRecord[col.columnName]=col["default"];
+				}
+				else
+				{
+					newRecord[col.columnName] = r[i];
+				}
+				i++;
+			});
+			//set values by the order....
+			 var position = grid.store.getCount();
+			 grid.store.insert(position, newRecord);
+	  });
+	  ijf.main.controlChanged(inControlId);
+	};
+	reader.readAsText(input.files[0]);
+
+},
+writeCustomType:function(inCustomType)
+{
+	var outStr = ijfUtils.getCustomTypeJson(inCustomType);
+	var blob = new Blob([outStr], {type: "text/plain;charset=utf-8"});
+	saveAs(blob,inCustomType.name +".json");
+},
+getCustomTypeJson:function(inCustomType)
+{
+	var outType = {
+			customTypeId: inCustomType.id,
+			name: inCustomType.name,
+			description: inCustomType.description,
+			customType: inCustomType.customType,
+			fieldName: inCustomType.fieldName,
+			settings: JSON.stringify(inCustomType.settings)};
+	return JSON.stringify(outType);
+},
+readTypeConfigFile:function(event)
+{
+	    var input = event.target;
+	    var reader = new FileReader();
+	    reader.onload = function(){
+	      var text = reader.result;
+	      ijfUtils.writeTypeConfig(reader.result, true);
+	    };
+  		reader.readAsText(input.files[0]);
+},
+writeTypeConfig:function(inConfig, doReset)
+{
+		var outJsonConfig = inConfig.replace(/\%/g,"~pct~");
+
+	try
+	{
+	    var inType = JSON.parse(outJsonConfig);
+	    //look for type by name.  If it is there, update it...else create a new....
+	    if(!inType) { ijfUtils.modalDialogMessage("Error","Sorry, unable a type in the file"); return;}
+
+		var thisT = null;
+		for(var tF in ijf.fw.CustomTypes){
+				if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+				if(ijf.fw.CustomTypes[tF].name==inType.name) thisT=ijf.fw.CustomTypes[tF];
+		}
+
+		if(thisT)
+		{
+			inType.id = thisT.id;
+		}
+		else
+		{
+			inType.id = 0;
+		}
+		//save the type to the server...
+
+			var jOut = {
+						customTypeId: inType.id,
+						name: inType.name,
+						description: inType.description,
+						customType: inType.customType,
+						fieldName: inType.fieldName,
+						settings: inType.settings
+			};
+			var jdata = JSON.stringify(jOut);
+
+			var sStat = ijfUtils.saveJiraFormSync(jdata,"saveCustomType");
+
+			if(isNaN(sStat))
+			{
+				ijfUtils.modalDialogMessage("Save Error","Sorry, something went wrong with the save: " + sStat);
+			}
+			else
+			{
+				//update the custom type with this new one...list will refesh on focus
+				if(!thisT)
+				{
+					inType.id=sStat;
+					inType.settings= JSON.parse(inType.settings)
+					ijf.fw.CustomTypes.push(inType);
+				}
+				else
+				{
+					//update the one in CustomTypes
+					thisT.description= inType.description;
+					thisT.customType= inType.customType;
+					thisT.fieldName= inType.fieldName;
+					thisT.settings= JSON.parse(inType.settings);
+				}
+				ijfUtils.modalDialogMessage("Informatoin","Type has been loaded");
+			}
+
+	}
+	catch(e)
+	{
+		ijfUtils.modalDialogMessage("Error","Sorry, failed to parse the type file. " + e.message);
+	}
+
+},
 writeConfigFile:function(inFormSet)
 {
 	var outStr = ijfUtils.getConfigJson(inFormSet);
@@ -410,8 +540,7 @@ writeConfigFile:function(inFormSet)
 	{
 		saveAs(blob,"ijfFormsConfig.json");
 	}
-}
-,
+},
 readConfigFile:function(event)
 {
 	    var input = event.target;
@@ -1535,7 +1664,74 @@ loadConfig:function(onSuccess, onError)
 			+ ')>',
 		'gi'),
 
+CSVtoArray:function (strData, strDelimiter ){
 
+        // Check to see if the delimiter is defined. If not,
+        // then default to comma.
+        strDelimiter = (strDelimiter || ",");
+        // Create a regular expression to parse the CSV values.
+        var objPattern = new RegExp(
+            (
+                // Delimiters.
+                "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+
+                // Quoted fields.
+                "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+
+                // Standard fields.
+                "([^\"\\" + strDelimiter + "\\r\\n]*))"
+            ),
+            "gi"
+            );
+        // Create an array to hold our data. Give the array
+        // a default empty first row.
+        var arrData = [[]];
+        // Create an array to hold our individual pattern
+        // matching groups.
+        var arrMatches = null;
+        // Keep looping over the regular expression matches
+        // until we can no longer find a match.
+        while (arrMatches = objPattern.exec( strData )){
+            // Get the delimiter that was found.
+            var strMatchedDelimiter = arrMatches[ 1 ];
+
+            // Check to see if the given delimiter has a length
+            // (is not the start of string) and if it matches
+            // field delimiter. If id does not, then we know
+            // that this delimiter is a row delimiter.
+            if (
+                strMatchedDelimiter.length &&
+                strMatchedDelimiter !== strDelimiter
+                ){
+
+                // Since we have reached a new row of data,
+                // add an empty row to our data array.
+                arrData.push( [] );
+            }
+            var strMatchedValue;
+            // Now that we have our delimiter out of the way,
+            // let's check to see which kind of value we
+            // captured (quoted or unquoted).
+            if (arrMatches[ 2 ]){
+                // We found a quoted value. When we capture
+                // this value, unescape any double quotes.
+                strMatchedValue = arrMatches[ 2 ].replace(
+                    new RegExp( "\"\"", "g" ),
+                    "\""
+                    );
+
+            } else {
+
+                // We found a non-quoted value.
+                strMatchedValue = arrMatches[ 3 ];
+            }
+            // Now that we have our value string, let's add
+            // it to the data array.
+            arrData[ arrData.length - 1 ].push( strMatchedValue );
+        }
+        // Return the parsed data.
+        return( arrData );
+},
 	xmlDecode:function(inData)
 	{
 		if(inData==null) return "";
@@ -1663,7 +1859,52 @@ loadConfig:function(onSuccess, onError)
 
 	replaceAll:function(string, find, replace) {
 		return string.replace(new RegExp(escapeRegExp(find), 'g'), replace);
+	},
+
+	/*********************
+	Data Reference
+	**********************/
+
+	getReferenceDataByName:function(refName){
+		var retRef = [];
+
+		var thisT = {};
+		ijf.fw.CustomTypes.forEach(function(t){if(t.name==refName) thisT=t;});
+
+		if(thisT)
+		{
+			//data may be crlf list, crlf list of tab delimited, JSON
+			//try json first...
+			try
+			{
+				retRef = JSON.parse(thisT.settings);
+				//try again, if it parses, return it. else
+				try
+				{
+					retRef =JSON.parse(retRef);
+				}
+				catch(ee)
+				{
+					retRef = retRef.split("\n");
+					//look for CSV....
+					if(retRef[0].indexOf(",")>-1)
+					{
+						retRef = retRef.map(function(r)
+						{
+							return r.split(",").map(function(c){return c.trim();});
+						});
+					};
+				}
+			}
+			catch(e)
+			{
+				//not json split as \n, then \t
+				retRef = thisT.settings.split("\n");
+			}
+		}
+		return retRef;
 	}
+
 
 
 };
