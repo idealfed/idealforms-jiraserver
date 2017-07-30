@@ -20,67 +20,7 @@
       g_configDir = 'IJF_Configuration';
             
       //document on ready here.. init or load and then init...
-   /*
-      ijfLoadCount = 0;
-      function ijfLoaded()
-      {
-          ijfLoadCount++;
-          if(ijfLoadCount==7)
-          {
-          	ijf.main.init(0);
-          }
-      }
-      //load then init..     
-	  jQuery.ajax({
-			url: "https://pilot1.tcg.com/javascripts/test/ijf/ijf_utils.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});
-	  jQuery.ajax({
-			url: "https://pilot1.tcg.com/javascripts/test/ijf/ijf_model.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});		
-	  jQuery.ajax({
-			url: "https://pilot1.tcg.com/javascripts/test/ijf/ijf_main.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});
-	  jQuery.ajax({
-			url: "https://pilot1.tcg.com/javascripts/test/ijf/ijf_framework.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});
-	  jQuery.ajax({
-			url: "https://pilot1.tcg.com/javascripts/test/ijf/ijf_lists.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});				      
-	  jQuery.ajax({
-			url: "https://pilot1.tcg.com/javascripts/test/ijf/ijf_admin.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});				
-	  jQuery.ajax({
-			url: "https://pilot1.tcg.com/javascripts/test/ijf/ijf_ext_utils.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});
-*/
+   
 			
   </script>
 

@@ -13,7 +13,7 @@ IjfUserPool.prototype.getUser = function(inId)
     if(this.users.hasOwnProperty(inId)) return this.users[inId];
     var uData = jQuery.ajax({
         type: "GET",
-        url: g_root + '/rest/api/2/user?key=' + inId,
+        url: g_root + '/rest/api/2/user?key=' + inId + '&expand=groups,applicationRoles',
         async: false
     }).responseText;
 

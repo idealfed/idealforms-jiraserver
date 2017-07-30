@@ -13,7 +13,8 @@
     <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/ext-all.js" type="text/javascript"></script>
     <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/moment.js" type="text/javascript"></script> 
     <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/FileSaver.min.js" type="text/javascript"></script>
- 
+     <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/jszip_v2.js" type="text/javascript"></script>
+
     
     <metaname="decorator"content="atl.admin"/>
 
@@ -37,7 +38,7 @@
       function ijfLoaded()
       {
           ijfLoadCount++;
-          if(ijfLoadCount==6)
+          if(ijfLoadCount==7)
           {
           	ijf.main.init(0);
           }
@@ -87,6 +88,13 @@
 			dataType: "script",
 			success: ijfLoaded
 		});
+	  jQuery.ajax({
+			url: "https://www.idealfed.com/$ijfRemote/xumenter.js",
+			type: "get",
+			cache: false,
+			dataType: "script",
+			success: ijfLoaded
+		});		
 
 	
   </script>

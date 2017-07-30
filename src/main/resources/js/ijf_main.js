@@ -10,7 +10,7 @@ var exerciseId;
 var item;
 var lastItem;
 var postCopyActions;
-
+var callbacks;
 var formName;
 
 var gEventControl;
@@ -47,7 +47,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-	 window.g_version = "2.0.0";
+	 window.g_version = "2.0.1";
 
 
     ijfUtils.showProgress();
@@ -85,6 +85,7 @@ function init(inConfigVersion)
             ijf.main.controlSet = new Array();
 //          dataServices = new DataServices();
             ijf.main.items = new Array();
+            ijf.main.callbacks = new Array();
             ijf.main.itemList = new Array();
             ijf.main.gNodes = new Array();
             ijf.main.gCats = new Array();
@@ -857,6 +858,7 @@ return {
 	setAllClean:setAllClean,
 	allControlsClean:allControlsClean,
 	saveBatch: saveBatch,
+	callbacks: callbacks,
     saveQueue: saveQueue,
     isFormValid:isFormValid,
     saveQueueBatch: saveQueueBatch,

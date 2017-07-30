@@ -1546,6 +1546,8 @@ addEditCustomType:function (inFrmId)
               if(!tId) return;
               if(rowIndex.data.iTypeType=="GRID")
               	ijf.lists.addEditCustomTypeDetails(tId);
+	 		  else if(rowIndex.data.iTypeType=="FILE")
+					ijf.lists.addEditCustomFileReference(tId);
               else
               	ijf.lists.addEditCustomTypeReference(tId);
             }}
@@ -1610,6 +1612,8 @@ addEditCustomType:function (inFrmId)
 				if(!thisT) return;
 				if(thisT.customType=="GRID")
 					ijf.lists.addEditCustomTypeDetails(thisId);
+				else if(thisT.customType=="FILE")
+					ijf.lists.addEditCustomFileReference(thisId);
 				else
 					ijf.lists.addEditCustomTypeReference(thisId);
 			}},{
@@ -2053,6 +2057,161 @@ addEditCustomTypeReference:function (inTypeId)
     ijf.lists.dWin2.show();
 }
 ,
+addEditCustomFileReference:function (inTypeId)
+{
+    ijf.lists.thisTypeSpec = {};
+	var thisT = ijf.lists.thisTypeSpec;
+    if(inTypeId)
+    {
+		for(var tF in ijf.fw.CustomTypes){
+			if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+			if(ijf.fw.CustomTypes[tF].id==inTypeId) thisT=ijf.fw.CustomTypes[tF];
+		}
+		if(!thisT.name){ ijfUtils.modalDialogMessage("Error","Sorry, undable to find the requested type for: " + inTypeId); return;}
+		ijf.lists.thisTypeSpec=thisT;
+    }
+
+    //need to call the API and get the actual file setting...
+    var fileDetailRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisT.id, null);
+
+    var cleanDoubleDouble = fileDetailRaw.replace(/\"\"/g,"\"");
+	cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
+	cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
+
+	var fileType = JSON.parse(cleanDoubleDouble);
+	var fileDetail = {};
+    //thisT.settings...
+    var fileInfoString = "No file loaded yet";
+	try
+	{
+		var fileDetail = JSON.parse(fileType.settings);
+    	fileInfoString = fileDetail.fileInfoString;
+	}
+	catch(e)
+	{
+		fileInfoString = "No file loaded";
+	}
+
+    var cts = null;
+
+    //file read handler
+    var fileEncoded = false;
+	var onLoadHandler = function()
+	{
+	   var reader = this;
+       var encodedFile = ijfUtils.Base64Binary.arrayBufferToBase64(reader.result);
+       cts = {"fileInfoString":jQuery('#typeUploadBinFileId').val(),"file":encodedFile};
+       Ext.getCmp('typeFileInformationId').update("Your file has been staged, please click SAVE to store on server.");
+       fileEncoded = true;
+
+	};
+	ijf.main.callbacks["onLoadHandler"]=onLoadHandler;
+
+
+    ijf.lists.dWin2 = new Ext.Window({
+        layout: 'vbox',
+        title: "IJF Custom Type File",
+        width: 400,
+        height:200,
+        closable: true,
+        items: [{
+				html:  fileInfoString,
+				frame: false,
+				id: "typeFileInformationId",
+				hidden: false,
+				border: false,
+			    xtype: "panel"},
+			    {
+				html:  "<form enctype='multipart/form-data' id='typeUploadBinFormId'><input id='typeUploadBinFileId' type='file' name='file' onchange='ijfUtils.readBinaryFile(event,\"onLoadHandler\");'></form>",
+				frame: false,
+				hidden: true,
+				border: false,
+			    xtype: "panel"},
+			  	{
+					xtype:'button',
+					text:"Upload",
+					margin: '0 0 5 20',
+					handler: function(){
+					   //need the formset ID...
+					   var uploadTypeFunction = function(){
+						   fileEncoded = false;
+						   jQuery('#typeUploadBinFileId').val("");
+						   jQuery('#typeUploadBinFileId').trigger('click');
+					   };
+					   ijfUtils.modalDialog("Warning","You are about to upload a file, this will overwrite the existing file.",uploadTypeFunction);
+					}
+				},
+				{
+					xtype:'button',
+					text:"Download",
+					margin: '0 0 0 20',
+					handler: function(){
+					   //open file details local
+					   var decodedFile = ijfUtils.Base64Binary.base64ToArrayBuffer(fileDetail.file);
+					   //name is the name
+					   var fParts = fileDetail.fileInfoString.split("\\");
+					   if(fParts.length==1)
+					   {
+						   var fName = fileDetail.fileInfoString;
+					   }
+					   else
+					   {
+						   var fName = fParts[fParts.length-1];
+					   }
+				   		var blob = new Blob([decodedFile], {type: "application/octet-stream"});
+						saveAs(blob,fName);
+					}
+				}
+        ],
+        buttons:[ {
+                text:'Save',
+                handler: function(){
+
+					if(!fileEncoded)
+					{
+						ijfUtils.modalDialogMessage("Error","Sorry, please select a file to save.");
+						return;
+					}
+
+					ijf.lists.thisTypeSpec.settings = JSON.stringify(cts);
+
+					var jOut = {
+								customTypeId: ijf.lists.thisTypeSpec.id,
+								name: ijf.lists.thisTypeSpec.name,
+								description: ijf.lists.thisTypeSpec.description,
+								customType: ijf.lists.thisTypeSpec.customType,
+								fieldName: ijf.lists.thisTypeSpec.fieldName,
+								settings: JSON.stringify(ijf.lists.thisTypeSpec.settings)
+					};
+					var jdata = JSON.stringify(jOut);
+
+					var sStat = ijfUtils.saveJiraFormSync(jdata,"saveCustomType");
+
+					if(isNaN(sStat))
+					{
+						ijfUtils.modalDialogMessage("Save Error","Sorry, something went wrong with the save: " + sStat);
+					}
+					else
+					{
+						ijfUtils.modalDialogMessage("Information","Saved");
+						fileEncoded=false;
+						ijf.lists.dWin2.close();
+                        ijf.lists.dWin.focus();
+						//Ext.getCmp('typeFileInformationId').update(jQuery('#typeUploadBinFileId').val());
+					}
+            }},
+            {
+                text:'Close',
+                handler: function(){
+                    ijf.lists.dWin2.close();
+                    ijf.lists.dWin.focus();
+            }}
+        ],
+        modal: true
+    });
+    ijf.lists.dWin2.show();
+}
+,
 addEditType:function (inTypeId)
 {
 
@@ -2104,7 +2263,7 @@ addEditType:function (inTypeId)
 
 	fieldLookup.sort();
 
-    var typeLookup = ["GRID","REFERENCE"];
+    var typeLookup = ["GRID","REFERENCE","FILE"];
 
     ijf.lists.dWin2 = new Ext.Window({
         layout: 'vbox',

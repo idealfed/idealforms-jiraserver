@@ -48,11 +48,17 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'radio':
                 ijf.extUtils.renderRadiogroup (inFormKey,item,inField,inContainer);
                 break;
+            case 'workflowbuttons':
+                ijf.extUtils.renderWorkflowButtons (inFormKey,item,inField,inContainer);
+                break;
             case 'checkbox':
                 ijf.extUtils.renderCheckbox (inFormKey,item,inField,inContainer);
                 break;
             case 'multiselect':
                 ijf.extUtils.renderMultiselect (inFormKey,item,inField,inContainer);
+                break;
+            case 'reportbutton':
+                ijf.extUtils.renderXumenterbutton(inFormKey,item,inField,inContainer);
                 break;
             case 'button':
                 ijf.extUtils.renderBlankbutton(inFormKey,item,inField,inContainer);
@@ -423,7 +429,7 @@ renderCommentList:function(inFormKey,item, inField, inContainer)
 		outHtml="<div class=ijfCommentList>";
 			outHtml += "<div  class=ijfCommentListHead><div class=ijfCommentListHeadName>Comment</div><div class=ijfCommentListHeadAuthor>Author</div><div class=ijfCommentListHeadDate>Date</div></div>";
 		outHtml = sortedCmnts.reduce(function(outHtml,a){
-			outHtml += "<div class=ijfCommentListRow><div  class=ijfCommentListName>" + a.body.replace(/\n/g,"<br>") + "</div><div class=ijfCommentListAuthor>" + a.author.displayName + "</div><div class=ijfCommentListDate>" + moment(a.created).format('lll') + "</div></div>";
+			outHtml += "<div class=ijfCommentListRow><div  class=ijfCommentListName>" + a.body.replace(/\n/g,"<br>") + "</div><div class=ijfCommentListAuthor>" + a.author.displayName + "</div><div class=ijfCommentListDate>" + moment(a.created).format('ll') + "<br>" + moment(a.created).format('LT') +"</div></div>";
 			return outHtml;
 		},outHtml);
 		outHtml+="</div>";
@@ -433,6 +439,17 @@ renderCommentList:function(inFormKey,item, inField, inContainer)
     //rendeIf logic
     var hideField = ijfUtils.renderIfShowField("",inField);
 
+    //height:
+	var l_Height=ijfUtils.getNameValueFromStyleString(l_panelStyle,"height");
+	if(l_Height=="")
+	{
+		l_Height=300;
+	}
+	else
+	{
+		l_Height = l_Height.replace("px","").replace("%","")/1;
+	}
+
     var pnl = new Ext.FormPanel({
         labelAlign: 'left',
         border:false,
@@ -440,6 +457,7 @@ renderCommentList:function(inFormKey,item, inField, inContainer)
         bodyStyle: l_Style,
         items: {
             html: outHtml,
+            height:l_Height,
             frame: false,
             border: false,
             bodyStyle:  l_panelStyle,
@@ -3008,6 +3026,102 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
     //after render....
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
+,renderWorkflowButtons:function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+
+    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+	var jf=item.fields[jfFieldDef.id];
+    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+
+	//if status, the transitions are the field meta...
+	if(jfFieldDef.schema.type=='status')
+	{
+		//cache this?
+		if(!item.transitions)
+		{
+			item.transitions= ijfUtils.jiraApiSync('GET','/rest/api/2/issue/'+item.key+'/transitions', null);
+		}
+		var jfFieldMeta = item.transitions;
+	}
+	else
+	{
+		var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+	}
+
+    var lAllowBlank = true;
+
+    var hideLabel = false;
+    var lCaption = "";
+    var rOnly = false;
+
+	var ocf =  ijfUtils.getEvent(inField);
+
+	var l_labelStyle = inField.labelStyle;
+	var l_panelStyle = inField.panelStyle;
+	var l_Style = inField.style;
+	var l_fieldStyle = inField.fieldStyle;
+
+
+    //if(!l_labelStyle) l_labelStyle="background:transparent";
+    //if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    //if(!l_fieldStyle) l_fieldStyle="background:white";
+
+
+     var cColumns = ijfUtils.getNameValueFromStyleString(l_fieldStyle,'columns');
+     if(!cColumns) cColumns = 2;
+
+     var ocf =  ijfUtils.getEvent(inField);
+
+	var workflowButtonsOptions= jfFieldMeta.transitions.map(function(e)
+	{
+		return {
+			xtype: "button",
+			text: e.name,
+			margin: '0 4px 0 0',
+			statusId: e.id,
+			style: l_fieldStyle,
+			handler: function(){
+				   //verify that form is clean, if so,
+				   //change to the new status and save....using a callback to on saveWithCallback
+					if(!ocf(this)) return;
+					if(!ijf.main.allControlsClean())
+					{
+					   ijfUtils.modalDialogMessage("Error", "The form has been modified, please save the form before changing the status.");
+					   return;
+					}
+
+					var onSuccessSave = function()
+					{
+						if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
+						ijf.currentItem=ijfUtils.getJiraIssueSync(item.key);
+						ijf.main.resetForm();
+					};
+
+					var fields = {"status":{"id":this.statusId}};
+				    ijf.main.saveBatch(onSuccessSave,fields, inField.form, item);
+			}
+		};
+	});
+
+    var hideField = ijfUtils.renderIfShowField(data,inField);
+
+    var simple = new Ext.FormPanel({
+        hidden: hideField,
+        border:false,
+        bodyStyle: l_Style,
+        items: workflowButtonsOptions
+    });
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple, inFormKey,item, inField, inContainer);
+    simple.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
+}
 ,
 renderCheckbox:function(inFormKey,item, inField, inContainer)
 {
@@ -3248,6 +3362,135 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
                 handler: function(){
 					ijf.main.gEventControl=this.up().jField;
                     ocf();
+                }
+            }
+        });
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple, item, inField, inContainer);
+
+	simple.render(inContainer);
+	var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
+}
+,
+ renderXumenterbutton:function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+
+    var hideField = ijfUtils.renderIfShowField(null,inField);
+
+    var lCaption = inField.caption;
+
+    if (inField.style.indexOf('hidden:true')>-1)
+    {
+        hideField=true;
+    }
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+
+    //if(!l_labelStyle) l_labelStyle="background:transparent";
+    //if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    //if(!l_fieldStyle) l_fieldStyle="background:white";
+
+    var ocf =  ijfUtils.getEvent(inField);
+
+    var xType = "button";
+    if(l_labelStyle=="link") xType="simplelink";
+
+        var simple = new Ext.FormPanel({
+            border:false,
+            hidden:hideField,
+            bodyStyle: l_Style,
+            jField: inField,
+            items: {
+                xtype: xType,
+                text: lCaption,
+                style: l_panelStyle,
+                handler: function(){
+					ijf.main.gEventControl=this.up().jField;
+
+					//get custom type, then load file detail, generate output, download
+					var thisT = {};
+					for(var tF in ijf.fw.CustomTypes){
+						if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+						if(ijf.fw.CustomTypes[tF].name==inField.dataSource) thisT=ijf.fw.CustomTypes[tF];
+					}
+					if(thisT.customType!="FILE")
+					{
+						ijfUtils.modalDialogMessage("Error","Unable to get report file from types");
+						return;
+					}
+
+					var fileDetailRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisT.id, null);
+
+					var cleanDoubleDouble = fileDetailRaw.replace(/\"\"/g,"\"");
+					cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
+					cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
+
+					var fileType = JSON.parse(cleanDoubleDouble);
+					var fileDetail = {};
+					//thisT.settings...
+					var fileInfoString = "No file loaded yet";
+					try
+					{
+						var fileDetail = JSON.parse(fileType.settings);
+						fileInfoString = fileDetail.fileInfoString;
+					}
+					catch(e)
+					{
+						ijfUtils.modalDialogMessage("Error","Unable to get parse file from type");
+						return;
+					}
+					var decodedFile = ijfUtils.Base64Binary.base64ToArrayBuffer(fileDetail.file);
+					//prep data
+					var itemData={};
+					Object.keys(ijf.jiraMeta.fields).forEach(function(k)
+					{
+						if(ijf.currentItem.fields.hasOwnProperty(k))
+						{
+							var f = ijf.currentItem.fields[k];
+							var v = ijfUtils.handleJiraFieldType(ijf.jiraMeta.fields[k],f,true,true);
+							itemData[ijf.jiraMeta.fields[k].name]=v;
+						}
+					});
+
+					//add ocf hook to alter data
+					ocf(itemData);
+
+					//Process the file:
+					var zip = new JSZip(decodedFile);
+					var doc=new Docxtemplater();
+					doc.includeTags=false;
+					doc.loadZip(zip);
+					doc.setData(itemData);
+					doc.render(); //apply them (replace all occurences of {first_name} by Hipp, ...)
+					//mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+					out=doc.getZip().generate({
+						type:"blob",
+						mimeType: "application/octet-stream",
+					});
+
+				   //name is the name
+				   var fParts = fileDetail.fileInfoString.split("\\");
+				   if(fParts.length==1)
+				   {
+					   var fName = fileDetail.fileInfoString;
+				   }
+				   else
+				   {
+					   var fName = fParts[fParts.length-1];
+				   }
+					//var blob = new Blob([decodedFile], {type: "application/octet-stream"});
+					saveAs(out,fName);
+
                 }
             }
         });
@@ -4866,7 +5109,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 											outStr+=Ext.util.Format.dateRenderer(c.format)(r.data[c.columnName]) + ","
 										break;
 										case "numberfield":
-											outStr+=Ext.util.Format.numberRenderer(c.format)(r.data[c.columnName]) + ","
+											outStr+=r.data[c.columnName] + ","
 										break;
 										default:
 											outStr+="\"" + r.data[c.columnName] + "\","

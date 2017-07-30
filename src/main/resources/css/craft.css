@@ -150,16 +150,15 @@ a.x-simplelink-default:hover {
 		padding: 5px;
 	}
 	
-
 .ijfCommentList{    
 		border-top:solid #21527d 1px;
 		border-right:solid #21527d 1px;
 		border-bottom:solid #21527d 1px;
 		border-left:solid #21527d 1px;
 		background: #21527d;
-		border-spacing: 0;
+		border-spacing: 1;
 		width:100%;
-		max-height:200px;
+		max-height:100%;
 		overflow-y:auto;    
 }
 .ijfCommentListHead{
@@ -184,23 +183,28 @@ a.x-simplelink-default:hover {
     width:15%
 }
 .ijfCommentListRow{
+    background: #fff;
     display: table-row;
     width:100%;
+}
+.ijfCommentListRow:nth-child(odd) {
+    background: #e0e0e0;
 }
 .ijfCommentListName{
     display: table-cell;
     text-align:left;
+   padding: 5px 5px 5px 5px;
     width:70%;
 }
 .ijfCommentListAuthor{
     display: table-cell;
     text-align:left;
+   padding: 5px 5px 5px 5px;
     width:15%;
 }
 .ijfCommentListDate{
     display: table-cell;
     text-align:left;
-    width:15%;
+   padding: 5px 5px 5px 5px;
+    width:150px;
 }
-
-

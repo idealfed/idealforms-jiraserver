@@ -100,7 +100,7 @@ public class Craft extends HttpServlet
 
 //section to comment or uncomment license
 
-/*
+
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -122,7 +122,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-*/
+
 
 		String contextPath = request.getRequestURI();
 		contextPath = contextPath.replace("/plugins/servlet/iforms","");
@@ -160,7 +160,7 @@ public class Craft extends HttpServlet
 //comment for unlicensed running
 
         //determine if Admin call or a Craft call, either way, require Administrator....
-/*
+
         if(iwfAction.equals("noAction"))
         {
 			if ((craftFlag.equals("true")) || (formId.equals("")))
@@ -181,7 +181,7 @@ public class Craft extends HttpServlet
 				}
 			}
 	    }
-*/
+
 
 
 
@@ -307,7 +307,27 @@ public class Craft extends HttpServlet
         	w.printf(v.getConfig());
     		w.close();
     		return;
+    	}
+    	else if(iwfAction.equals("getCustomType"))
+    	{
+        	String customTypeId = request.getParameter("customTypeId");
+			int ctId = new Integer(customTypeId).intValue();
+				//formSet must exist by ID and we need it....
+				//OK, now get the object by ID
+			CustomType ct = ao.get(CustomType.class, ctId);
 
+			StringBuilder sb = new StringBuilder();
+			sb.append("{\"id\":\"" + ct.getID() + "\",");
+			sb.append("\"name\":\"" + ct.getName() + "\",");
+			sb.append("\"description\":\"" + ct.getDescription() + "\",");
+			sb.append("\"customType\":\"" + ct.getCustomType() + "\",");
+			sb.append("\"fieldName\":\"" + ct.getFieldName() + "\",");
+			sb.append("\"settings\":\"" + ct.getSettings() + "\"}");
+
+        	final PrintWriter w = response.getWriter();
+        	w.printf(sb.toString());
+    		w.close();
+    		return;
     	}
     	else if(iwfAction.equals("clearConfig"))
     	{
@@ -424,7 +444,16 @@ public class Craft extends HttpServlet
 		sb.append("\"description\":\"" + ct.getDescription() + "\",");
 		sb.append("\"customType\":\"" + ct.getCustomType() + "\",");
 		sb.append("\"fieldName\":\"" + ct.getFieldName() + "\",");
-		sb.append("\"settings\":\"" + ct.getSettings() + "\"},");
+
+		String cType = ct.getCustomType();
+		if(cType.equals("FILE"))
+		{
+					sb.append("\"settings\":\"\"[]\"\"},");
+		}
+		else
+		{
+					sb.append("\"settings\":\"" + ct.getSettings() + "\"},");
+		}
 
 		return sb.toString();
 	}

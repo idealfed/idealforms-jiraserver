@@ -9,7 +9,7 @@
     <param name="plugin-logo">images/pluginLogo.png</param>
     <param name="plugin-summary">Ideal Forms for JIRA creates and serves simplified customized user interfaces that help many use cases.</param>
     <param name="plugin-tagline">Custom forms for simplified access, for mobile access and for process automation.</param>    
-    <param name="atlassian-licensing-enabled">false</param>     
+    <param name="atlassian-licensing-enabled">true</param>     
      <screenshots>
             <screenshot image="images/admin.png"/>
             <screenshot image="images/list.png"/>
@@ -33,7 +33,9 @@
     <resource type="download" name="FileSaver.min.js" location="/js/FileSaver.min.js"/>
     <resource type="download" name="moment.js" location="/js/moment.js"/>
     <resource type="download" name="charts.js" location="/js/charts.js"/>    
- 
+    <resource type="download" name="jszip_v2.js" location="/js/jszip_v2.js"/>    
+
+    <resource type="download" name="xumenter.js" location="/js/xumenter.js"/>     
     <resource type="download" name="craft.js" location="/js/craft.js"/>
     <resource type="download" name="ijf_utils.js" location="/js/ijf_utils.js"/>
     <resource type="download" name="ijf_model.js" location="/js/ijf_model.js"/>

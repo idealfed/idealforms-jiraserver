@@ -449,6 +449,14 @@ getCustomTypeJson:function(inCustomType)
 			settings: JSON.stringify(inCustomType.settings)};
 	return JSON.stringify(outType);
 },
+readBinaryFile:function(event, onLoadHandler)
+{
+	var input = event.target;
+	var reader = new FileReader();
+	if(ijf.main.callbacks.hasOwnProperty(onLoadHandler))
+	reader.onload = ijf.main.callbacks[onLoadHandler];
+	reader.readAsArrayBuffer(input.files[0]);
+},
 readTypeConfigFile:function(event)
 {
 	    var input = event.target;
@@ -1186,7 +1194,7 @@ loadConfig:function(onSuccess, onError)
 
 	getEvent:function(inField)
 	{
-		var ocf = function(){};
+		var ocf = function(){return true};
 		var l_Event = "";
 		try
 		{
@@ -1221,7 +1229,7 @@ loadConfig:function(onSuccess, onError)
 		}
 		catch(e)
 		{
-			ocf = function(){};
+			ocf = function(){return true};
 			ijfUtils.footLog("error setting up event " + e.message);
 			return ocf;
 		}
@@ -1903,7 +1911,29 @@ CSVtoArray:function (strData, strDelimiter ){
 			}
 		}
 		return retRef;
+	},
+Base64Binary: {
+
+	arrayBufferToBase64:function( buffer ) {
+		var binary = '';
+		var bytes = new Uint8Array( buffer );
+		var len = bytes.byteLength;
+		for (var i = 0; i < len; i++) {
+			binary += String.fromCharCode( bytes[ i ] );
+		}
+		return window.btoa( binary );
+	},
+	base64ToArrayBuffer:function(base64) {
+		var binary_string =  window.atob(base64);
+		var len = binary_string.length;
+		var bytes = new Uint8Array( len );
+		for (var i = 0; i < len; i++)        {
+			bytes[i] = binary_string.charCodeAt(i);
+		}
+		return bytes.buffer;
 	}
+
+}
 
 
 
