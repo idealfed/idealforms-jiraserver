@@ -57,9 +57,11 @@ function IjfUser(inId,inData)
 		this.email = this.inObj.emailAddress;
 		this.lastName = this.inObj.name;
 		this.firstName = this.inObj.name;
-		this.groups = this.inObj.applicationRoles;
-		this.displayName = this.inObj.displayName;
+		this.groups = null;
 		this.groupList = null;
+		if(this.inObj.groups)
+			if(this.inObj.groups.items) {this.groups = this.inObj.groups.items; this.groupList = this.groups.map(function(g){return g.name});};
+		this.displayName = this.inObj.displayName;
 		this.maxGroups = null;
 		this.exerciseRoles = null;
 		this.collectUser=null;
@@ -601,8 +603,10 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 			  	  }
 				break;
 			case 'comments-page':
-			 	var tv = {"body":this.control.items.items[0].getValue()};
- 				this.newVal = tv;
+			    var cmt = this.control.items.items[0].getValue();
+			    var sc = ijfUtils.sanitize(cmt);
+			 	var tv = {"body":sc};
+ 				this.newVal =  tv;
 				break;
 			case 'string':
 				//std text value
@@ -612,7 +616,10 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				//std text value
 				var gridData = this.control.getStore().getData();
 				var dataArray = gridData.items.map(function(r){return r.data;});
-				this.newVal = JSON.stringify(dataArray);
+				//sanitize grid
+				var rawGrid = JSON.stringify(dataArray);
+				rawGrid = ijfUtils.sanitize(rawGrid);
+				this.newVal = rawGrid;
 				break;
 			case 'datetime':
 				var tDate = this.control.items.items[0].getValue();

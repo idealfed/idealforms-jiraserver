@@ -376,6 +376,71 @@ addEditForm:function (sRow)
 			//hidden: hideField,
 			margin: '5 0 0 0',
 			bodyStyle: "border-top:none",
+			header:{
+						titlePosition: 0,
+						items:[{
+							xtype:'button',
+							hidden: false,
+							text:"Form Permissions",
+							handler: function(){
+
+								//list of workflow status
+								//don't know how to handle, not in the API
+								var grps = ijfUtils.jiraApiSync("GET","/rest/api/2/groups/picker",null);
+
+					   			var headStyle =  " style='background:lightgray;border-bottom:solid blue 2px' ";
+								var htmlOut = "hi";
+								var fieldRefWin = new Ext.Window({
+								layout: 'vbox',
+								title: "Form Security: " + thisForm.name,
+								width: 750,
+								height:500,
+								closable: true,
+								items: [
+									{
+									xtype: "checkboxfield",
+									boxLabel: "Form Security Enabled",
+									value : false,
+									name: "secEnabled",
+									margin: '0 0 0 10',
+									inputValue: 1},
+									{
+										layout: 'hbox',
+										border: false,
+										frame: false,
+										xtype: "panel",
+										items: [{
+												xtype: 'textfield',
+												labelAlign: 'left',
+												fieldLabel: 'Workflow State',
+												labelWidth: 100,
+												labelStyle: "color:darkblue",
+												margin: '0 0 0 10',
+												width: 300,
+												value: "",
+												listeners: {
+														change: function(f,n,o){
+																var tbd = n;
+															}
+														}
+							            		},
+							            		{
+														xtype: 'button',
+														margin: '0 0 0 10',
+														text:'Add',
+														handler: function(){
+															fieldRefWin.close();
+                								}}
+						            		]
+						            },
+
+								],
+								modal: true
+								});
+								fieldRefWin.show();
+							}
+						}]
+			},
 			items: [
 			{
 				xtype: 'textfield',
@@ -744,13 +809,14 @@ addEditForm:function (sRow)
 					xtype: 'textfield',
 					labelAlign: 'left',
 					labelWidth: 120,
-					fieldLabel: "tbd",
+					fieldLabel: "Before Load",
+				labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"beforeload\",null)>",
 					width: 850,
-					value: thisForm.settings["batchSave"],
-					id: "adminFormSettings_batchSaveId",
+					value: thisForm.settings["beforeLoad"],
+					id: "adminFormSettings_beforeLoadId",
 					listeners: {
 						change: function(f, n, o){
-							ijf.admin.cwfAdmin_form.settings["batchSave"] = n;
+							ijf.admin.cwfAdmin_form.settings["beforeLoad"] = n;
 							f.addCls("cwf-dirty");
 						}}
 				}]

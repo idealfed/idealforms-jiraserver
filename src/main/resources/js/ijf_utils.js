@@ -309,6 +309,41 @@ loadIssueTypeDetails:function(projectKey)
 	}
 },
 ///////////END JIRA UTILS
+getPermissionObj:function(inPerms,inItem,inUser)
+{
+	var retObj = {"canEdit":true,"canSee":true};
+	if(inItem)
+	{
+		if(inPerms)
+		{
+			var cStatus = inItem.fields.status.name;
+			var uGroups = inUser.groupList;
+			if(!uGroups) uGroups=[];
+			retObj.canSee = false;
+			retObj.canEdit = false;
+			//Do edit and view in order
+			if(inPerms.hasOwnProperty(cStatus))
+			{
+				var perms = inPerms[cStatus];
+				if(uGroups.reduce(function(inVal,g){if(perms.edit.indexOf(g)>-1) return true; return inVal;	},false))
+				{
+					retObj.canEdit=true;
+				}
+			}
+ 			//now VIEW
+			if(inPerms.hasOwnProperty(cStatus))
+			{
+				var perms = inPerms[cStatus];
+				if(uGroups.reduce(function(inVal,g){if(perms.view.indexOf(g)>-1) return true; return inVal;},false))
+				{
+					retObj.canSee = true;
+				}
+			}
+		}
+	}
+	if(retObj.canEdit) retObj.canSee=true;
+	return retObj;
+},
 applyStyle:function(element, style){
     Object.keys(style).forEach(function(key){
         element.style[key] = style[key];
@@ -1210,13 +1245,9 @@ loadConfig:function(onSuccess, onError)
 					{
 						//var anonFunct = evxxxal("(function(){ " + l_Event + "})");
 						//var outVal = anonFunct();
-
+						ijfUtils.footLog("Executing field event: " + l_Event);
 						var outVal = ijf.snippets[l_Event](f,n,o);
-
-						if(!outVal) ijfUtils.footLog("field event returned false");
-						else
-							ijfUtils.footLog("field event returned true");
-
+						return outVal;
 					}
 					catch(e)
 					{

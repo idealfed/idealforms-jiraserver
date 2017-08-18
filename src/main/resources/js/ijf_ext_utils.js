@@ -169,6 +169,11 @@ renderField:function(inFormKey, item, inField, inContainer)
     var l_Style = inField.style;
     var l_fieldStyle = inField.fieldStyle;
 
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
     var iframeHTML = "<iframe src=\"" + iframeSrc + "\" " + seamless + onload + "style=\"" + l_fieldStyle + "\"></iframe>";
     var pHeight =ijfUtils.getNameValueFromStyleString(inField.fieldStyle,"height");
     var simple = new Ext.Panel({
@@ -218,7 +223,10 @@ renderField:function(inFormKey, item, inField, inContainer)
         var tPt = panelTitle.split(";");
         panelTitle= ijfUtils.replaceKeyValues(tPt[0],item);
     }
-
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
     if(collapsible)
     {
 		var l_labelStyle = inField.labelStyle;
@@ -439,6 +447,11 @@ renderCommentList:function(inFormKey,item, inField, inContainer)
     //rendeIf logic
     var hideField = ijfUtils.renderIfShowField("",inField);
 
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
     //height:
 	var l_Height=ijfUtils.getNameValueFromStyleString(l_panelStyle,"height");
 	if(l_Height=="")
@@ -527,6 +540,11 @@ renderAttchmentList:function(inFormKey,item, inField, inContainer)
     //rendeIf logic
     var hideField = ijfUtils.renderIfShowField("",inField);
 
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
     var pnl = new Ext.FormPanel({
         labelAlign: 'left',
         border:false,
@@ -603,6 +621,11 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
     if(!l_Style) l_Style = l_panelStyle;
     //rendeIf logic
     var hideField = ijfUtils.renderIfShowField("",inField);
+
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
 
 	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_ctr_'+inField.formCell.replace(",","_")+"' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+inField.dataSource+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+inField.dataSource+"');}\"></form>";
 
@@ -814,6 +837,11 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     //rendeIf logic
     var hideField = ijfUtils.renderIfShowField("",inField);
 
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
     var pnl = new Ext.FormPanel({
         labelAlign: 'left',
         border:false,
@@ -846,6 +874,12 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     }
     //rendeIf logic
     var hideField = ijfUtils.renderIfShowField("",inField);
+
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
     var l_save="Save";
     var l_reload="Reload";
     var l_done ="Done";
@@ -864,6 +898,7 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 			text:l_save,
 			margin: '0 4 0 0',
 			xtype:'button',
+			hidden: (!perms.canEdit),
 			style: inField.fieldStyle,
 			handler: function(){
 				if(inField.dataReference)
@@ -987,6 +1022,13 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
     }
     //rendeIf logic
     var hideField = ijfUtils.renderIfShowField("",inField);
+
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
+
     var l_save="Save";
     var l_reload="Save/Done";
     var l_done ="Done";
@@ -1004,6 +1046,7 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 			text:l_save,
 			margin: '0 4 0 0',
 			xtype:'button',
+			hidden: (!perms.canEdit),
 			inField: inField,
 			handler: function(){
 
@@ -1142,6 +1185,11 @@ renderNavigateToForm:function(inFormKey,item, inField, inContainer)
 
     var hideField = ijfUtils.renderIfShowField("",inField);
 
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
     var hFunction = function(){
         //need to get the id of the form...iterate from fw.
         var targetForm = ijfUtils.replaceKeyValues(inField.dataSource,item);
@@ -1239,6 +1287,12 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
         }
     }
     var hideField = ijfUtils.renderIfShowField(data,inField);
+
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
     var hideLabel = false;
     if (inField.caption=="")
         var lCaption = inField.dataSource;
@@ -1393,6 +1447,17 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
         if (!!data) rOnly=true;
     }
 
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+    console.log(JSON.stringify(perms));
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
+
+
+
+
     var l_labelStyle = inField.labelStyle;
     var l_panelStyle = inField.panelStyle;
     var l_Style = inField.style;
@@ -1403,7 +1468,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
-	if(rOnly) l_fieldStyle="background:lightgray";
+	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
     var ocf =  ijfUtils.getEvent(inField);
 
@@ -1654,12 +1719,18 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 	    var l_Style = inField.style;
 	    var l_fieldStyle = inField.fieldStyle;
 
-
 	    if(!l_labelStyle) l_labelStyle="background:transparent";
 	    if(!l_panelStyle) l_panelStyle="background:transparent";
 	    if(!l_Style) l_Style="background:transparent";
 	    if(!l_fieldStyle) l_fieldStyle="background:white";
-		if(rOnly) l_fieldStyle="background:lightgray";
+
+
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+		if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
     var ocf =  ijfUtils.getEvent(inField);
     var simple = new Ext.FormPanel({
@@ -1825,8 +1896,14 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
-	if(rOnly) l_fieldStyle="background:lightgray";
 
+
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
     var simple = new Ext.FormPanel({
         hidden: hideField,
@@ -2029,8 +2106,14 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
-	if(rOnly) l_fieldStyle="background:lightgray";
 
+
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
     var simple = new Ext.FormPanel({
         hidden: hideField,
@@ -2197,7 +2280,14 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
-	if(rOnly) l_fieldStyle="background:lightgray";
+
+
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
     var simple = new Ext.FormPanel({
         hidden: hideField,
@@ -2355,7 +2445,14 @@ renderUserMultiselect:function(inFormKey,item, inField, inContainer)
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
-	if(rOnly) l_fieldStyle="background:lightgray";
+
+
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
     var simple = new Ext.FormPanel({
         hidden: hideField,
@@ -2511,7 +2608,12 @@ renderGroupPicker:function(inFormKey,item, inField, inContainer)
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
-	if(rOnly) l_fieldStyle="background:lightgray";
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
     var simple = new Ext.FormPanel({
         hidden: hideField,
@@ -2667,7 +2769,12 @@ renderGroupMultiselect:function(inFormKey,item, inField, inContainer)
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
-	if(rOnly) l_fieldStyle="background:lightgray";
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
     var simple = new Ext.FormPanel({
         hidden: hideField,
@@ -2818,7 +2925,12 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
-	if(rOnly) l_fieldStyle="background:lightgray";
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
 
     var simple = new Ext.FormPanel({
@@ -2929,7 +3041,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 	if(!l_panelStyle) l_panelStyle="background:transparent";
 	if(!l_Style) l_Style="background:transparent";
 	if(!l_fieldStyle) l_fieldStyle="background:transparent; margin: 0 10 0 0";
-	if(rOnly) l_fieldStyle="background:lightgray";
+
 
 
      var cColumns = ijfUtils.getNameValueFromStyleString(l_fieldStyle,'columns');
@@ -2989,7 +3101,12 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
     var ocf =  ijfUtils.getEvent(inField);
     var hideField = ijfUtils.renderIfShowField(data,inField);
 
-
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
     var simple = new Ext.FormPanel({
         hidden: hideField,
@@ -3063,6 +3180,9 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 	var l_Style = inField.style;
 	var l_fieldStyle = inField.fieldStyle;
 
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	//end permissions
 
     //if(!l_labelStyle) l_labelStyle="background:transparent";
     //if(!l_panelStyle) l_panelStyle="background:transparent";
@@ -3082,6 +3202,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 			text: e.name,
 			margin: '0 4px 0 0',
 			statusId: e.id,
+			hidden: (!perms.canEdit),
 			style: l_fieldStyle,
 			handler: function(){
 				   //verify that form is clean, if so,
@@ -3186,8 +3307,6 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
   	if(!l_panelStyle) l_panelStyle="background:transparent";
   	if(!l_Style) l_Style="background:transparent";
   	if(!l_fieldStyle) l_fieldStyle="background:transparent; margin: 0 10 0 0";
-  	if(rOnly) l_fieldStyle="background:lightgray";
-
 
       var cColumns = ijfUtils.getNameValueFromStyleString(l_fieldStyle,'columns');
       if(!cColumns) cColumns = 2;
@@ -3213,7 +3332,12 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
       var ocf =  ijfUtils.getEvent(inField);
       var hideField = ijfUtils.renderIfShowField(data,inField);
 
-
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
       var simple = new Ext.FormPanel({
           hidden: hideField,
@@ -3285,6 +3409,11 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
     var l_fieldStyle = inField.fieldStyle;
 
 
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
     //if(!l_labelStyle) l_labelStyle="background:transparent";
     //if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
@@ -3347,6 +3476,11 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 
     var ocf =  ijfUtils.getEvent(inField);
 
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
     var xType = "button";
     if(l_labelStyle=="link") xType="simplelink";
 
@@ -3401,6 +3535,11 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
     //if(!l_fieldStyle) l_fieldStyle="background:white";
 
     var ocf =  ijfUtils.getEvent(inField);
+
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
 
     var xType = "button";
     if(l_labelStyle=="link") xType="simplelink";
@@ -3669,7 +3808,15 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 	    if(!l_panelStyle) l_panelStyle="background:transparent";
 	    if(!l_Style) l_Style="background:transparent";
 	    if(!l_fieldStyle) l_fieldStyle="background:white";
-		if(rOnly) l_fieldStyle="background:lightgray";
+
+
+		//permissions check....has to exist...
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if((!rOnly) && (!perms.canEdit)) rOnly=true;
+		if((!hideField) && (!perms.canSee))	hideField=true;
+		//end permissions
+
+		if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
 
 		var collapsible = false;
@@ -3746,131 +3893,6 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
     ijf.main.controlSet[thisControl.id]=thisControl;
     //after render....
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
-}
-,
- renderComments:function(inFormKey,item, inField, inContainer)
-{
-    inContainer.title = inField.toolTip;
-    var origDatasource = inField.dataSource;
-    var mappedField=null;
-    if(gSubformParams)
-    {
-        if(gSubformParams.hasOwnProperty(inField.dataSource))
-        {
-            inField.dataSource=gSubformParams[inField.dataSource];
-            mappedField = inField.dataSource;
-        }
-    }
-    if (inField.caption=="")
-        var lCaption = inField.dataSource;
-    else if(inField.caption=="none")
-    {
-        var lCaption = "";
-    }
-    else
-        var lCaption = inField.caption;
-    var hideField = ijfUtils.renderIfShowField("",inField);
-    var lWidth = 'auto';
-    if (inField.width!="")
-    {
-        lWidth= inField.width/1;
-    }
-    var rOnly = false;
-    if (inField.fieldStyle.indexOf('readonly:true')>-1)
-    {
-        rOnly=true;
-    }
-    var l_labelStyle = mwfUtils_getStyle(inField.labelStyle);
-    var l_panelStyle = mwfUtils_getStyle(inField.panelStyle);
-    var l_Style = mwfUtils_getStyle(inField.style);
-    var cData = item.getSectionTableObjData(inField.dataSource);
-    if(cData)
-    {
-        cData.reverse();
-    }
-    else
-    {
-        cData = [];
-    }
-    var cHtml = "<u>Comment Log</u><br>" +
-        "<table>";
-    var moreComments = "<table>";
-    var cCount = 0;
-    for(var ll in cData)
-    {
-        if(!cData.hasOwnProperty(ll)) continue;
-        if(cData[ll].datetime==null) continue;
-        if(cCount<3)
-        {
-            cHtml+= "<tr>" +
-                "<td colspan=2 style='font-style: italic'>On "+ cData[ll].datetime +", "+ cData[ll].author +" commented:</td></tr>" +
-                "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td></td><td>"+ mwfUtil_removeTags(cData[ll].comment) +"<br></td></tr>" +
-                "<tr><td colspan=2>&nbsp;</td></tr></tr>";
-        }
-        else
-        {
-            moreComments += "<tr>" +
-                "<td colspan=2 style='font-style: italic'>On "+ cData[ll].datetime +", "+ cData[ll].author +" commented:</td></tr>" +
-                "<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td></td><td>"+ mwfUtil_removeTags(cData[ll].comment) +"<br></td></tr>" +
-                "<tr><td colspan=2>&nbsp;</td></tr></tr>";
-        }
-        cCount++;
-    }
-    cHtml+="</table>"
-    moreComments+="</table>"
-    var litems =[];
-    litems.push({
-        xtype: 'textarea',
-        labelAlign: 'left',
-        labelStyle: l_labelStyle,
-        style: l_Style,
-        fieldLabel: lCaption,
-        readOnly: rOnly,
-        //name: "field_"+inField.formCell,
-        value: "",
-        allowBlank:true,
-        width:lWidth,
-        hideLabel:false,
-        id: inFormKey+'mwfControl_'+inField.formCell.replace(",","_"),
-        listeners: {
-            change: function(){
-                controlChanged(inFormKey+'mwfControl_'+inField.formCell);
-            }
-        }});
-    litems.push({
-        html: cHtml,
-        frame: false,
-        bodyStyle: l_panelStyle,
-        border: false,
-        xtype: "panel"});
-    litems.push({
-        title: "more comments...",
-        html: moreComments,
-        frame: false,
-        collapsible: true,
-        bodyStyle: l_panelStyle,
-        collapsed: true,
-        border: false,
-        xtype: "panel"});
-    var simple = new Ext.FormPanel({
-        labelAlign: 'left',
-        hidden: hideField,
-        border:false,
-        defaultType: 'textarea',
-        bodyStyle: l_panelStyle,
-        items: litems
-    });
-    inField.dataSource = origDatasource;
-    //before render....
-    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple,inFormKey,item, inField, inContainer);
-    simple.render(inContainer);
-    var thisControl = new itemControl(inFormKey+'mwfControl_'+inField.formCell, inField, item, simple, inContainer);
-    thisControl.mappedSectionName =  mappedField;
-    controlSet[thisControl.id]=thisControl;
-    ijf.main.controlSet[thisControl.id]=thisControl;
-    //after render....
-    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
-
 }
 ,
 renderItemList:function(inFormKey,item, inField, inContainer)
@@ -4761,6 +4783,10 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 
     var ocf =  ijfUtils.getEvent(inField);
 
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
 
 
     var collapsible = true;
@@ -5041,6 +5067,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
     var gridPanel = new Ext.grid.GridPanel({
 		 title: lCaption,
 		 style: l_Style,
+		 hidden: hideField,
 		 bodyStyle: l_panelStyle,
 		 height: l_Height,
 		 header:{

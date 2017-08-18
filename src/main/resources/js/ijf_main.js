@@ -323,6 +323,23 @@ function renderForm(inContainerId, inFormId, isNested, item)
         return;
 	}
 
+	//look for a before load function and run
+    if(thisForm.settings.hasOwnProperty("beforeLoad"))
+    {
+        var beforeLoadFunction=thisForm.settings["beforeLoad"];
+        if(beforeLoadFunction)
+        {
+            ijfUtils.onLoadHandler(beforeLoadFunction);
+        }
+    }
+
+	//permissions
+	thisForm.permissions = null;
+	if(thisForm.settings.hasOwnProperty("permissions"))
+    {
+		thisForm.permissions = JSON.parse(thisForm.settings["permissions"]);
+    }
+
 	//based on the form, it should get edit or add meta...
 
 	//look to see if form is add or edit? based on form type, load meta if necessary
@@ -429,7 +446,7 @@ function renderForm(inContainerId, inFormId, isNested, item)
     }
     catch(e)
     {
-        ijfUtils.footLog("Error in columnspans settings")
+        ijfUtils.footLog("Error in columnspans settings");
         colSpans={};
     }
 
