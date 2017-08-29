@@ -316,24 +316,25 @@ getPermissionObj:function(inPerms,inItem,inUser)
 	{
 		if(inPerms)
 		{
+			if(!inPerms.enabled) return retObj;
 			var cStatus = inItem.fields.status.name;
 			var uGroups = inUser.groupList;
 			if(!uGroups) uGroups=[];
 			retObj.canSee = false;
 			retObj.canEdit = false;
 			//Do edit and view in order
-			if(inPerms.hasOwnProperty(cStatus))
+			if(inPerms.states.hasOwnProperty(cStatus))
 			{
-				var perms = inPerms[cStatus];
+				var perms = inPerms.states[cStatus];
 				if(uGroups.reduce(function(inVal,g){if(perms.edit.indexOf(g)>-1) return true; return inVal;	},false))
 				{
 					retObj.canEdit=true;
 				}
 			}
  			//now VIEW
-			if(inPerms.hasOwnProperty(cStatus))
+			if(inPerms.states.hasOwnProperty(cStatus))
 			{
-				var perms = inPerms[cStatus];
+				var perms = inPerms.states[cStatus];
 				if(uGroups.reduce(function(inVal,g){if(perms.view.indexOf(g)>-1) return true; return inVal;},false))
 				{
 					retObj.canSee = true;

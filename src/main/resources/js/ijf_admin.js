@@ -362,6 +362,84 @@ addEditForm:function (sRow)
 
 	     var fileLoad = "<form enctype='multipart/form-data' id='adminattachmentUploadFormId'><input id='adminattachmentUploadFileId' type='file' name='file' onChange='ijf.admin.readConfigFormFile(event)';></form>";
 
+	//Prep for permissions
+		if(!thisForm.settings.permissions)
+		{
+			thisForm.permissions =
+				{"enabled":false,
+				 "states":{}
+				};
+		}
+		else
+		{
+			thisForm.permissions=JSON.parse(thisForm.settings.permissions);
+		}
+
+		var tempAllGroups = ijfUtils.jiraApiSync("GET","/rest/api/2/groups/picker?maxResults=1000",null);
+		var allGroupNames = tempAllGroups.groups.map(function(g){return {"role":g.name};});
+
+		var loadPermissions = function()
+		{
+		};
+
+		var updateTables = function(inState)
+		{
+
+			if(!inState)
+			{
+				editAvailStore.loadData([]);
+				editAssStore.loadData([]);
+				viewAvailStore.loadData([]);
+				viewAssStore.loadData([]);
+				wfsNameStore.loadData(Object.keys(thisForm.permissions.states).map(function(s){return {"state":s};}));
+				return;
+			}
+
+			if(!thisForm.permissions.states.hasOwnProperty(inState)) return;
+			wfsNameStore.loadData(Object.keys(thisForm.permissions.states).map(function(s){return {"state":s};}));
+
+			var cState = thisForm.permissions.states[inState];
+			var tmpArr = allGroupNames.slice(0);
+			editAssStore.loadData(cState.edit.map(function(g){
+					tmpArr = tmpArr.reduce(function(inArr,i){if(i.role==g) return inArr;inArr.push(i);	return inArr;},[]);
+					return {"role":g};
+					})
+			);
+			editAvailStore.loadData(tmpArr);
+
+			tmpArr = allGroupNames.slice(0);
+			viewAssStore.loadData(cState.view.map(function(g){
+					tmpArr = tmpArr.reduce(function(inArr,i){if(i.role==g) return inArr;inArr.push(i);	return inArr;},[]);
+					return {"role":g};
+					})
+			);
+			viewAvailStore.loadData(tmpArr);
+		};
+
+	    var cPermState ="";
+		var wfsNameStore = new Ext.data.Store({
+			fields: ['state']
+		});
+
+		wfsNameStore.loadData(Object.keys(thisForm.permissions.states).map(function(s){
+			return {"state":s};
+		}));
+
+		var editAvailStore = new Ext.data.Store({
+			fields: ['role']
+		});
+		var editAssStore = new Ext.data.Store({
+			fields: ['role']
+		});
+		var viewAvailStore = new Ext.data.Store({
+			fields: ['role']
+		});
+		var viewAssStore = new Ext.data.Store({
+			fields: ['role']
+		});
+		var newStateName="";
+
+
 		if(ijf.admin.cwfAdmin_form.formType) formType =ijf.admin.cwfAdmin_form.formType;
 		var cntPanel = new Ext.FormPanel({
 			labelAlign: 'left',
@@ -393,14 +471,28 @@ addEditForm:function (sRow)
 								var fieldRefWin = new Ext.Window({
 								layout: 'vbox',
 								title: "Form Security: " + thisForm.name,
-								width: 750,
-								height:500,
+								width: 1100,
+								height:570,
+								listeners: {
+									show: loadPermissions,
+									close: function()
+									{
+										cPermState=null;
+										updateTables(cPermState);
+									}
+								},
 								closable: true,
 								items: [
 									{
 									xtype: "checkboxfield",
 									boxLabel: "Form Security Enabled",
-									value : false,
+									value : thisForm.permissions.enabled,
+									listeners: {
+										change: function(f,n,o)
+										{
+											thisForm.permissions.enabled=n;
+										}
+								    },
 									name: "secEnabled",
 									margin: '0 0 0 10',
 									inputValue: 1},
@@ -419,20 +511,220 @@ addEditForm:function (sRow)
 												width: 300,
 												value: "",
 												listeners: {
-														change: function(f,n,o){
-																var tbd = n;
-															}
+													change: function(f,n,o){
+															newStateName = n;
 														}
+													}
 							            		},
 							            		{
-														xtype: 'button',
-														margin: '0 0 0 10',
-														text:'Add',
-														handler: function(){
-															fieldRefWin.close();
+													xtype: 'button',
+													margin: '0 0 0 10',
+													text:'Add',
+													handler: function(){
+														if(newStateName)
+														{
+															//make sure unique...
+															if(thisForm.permissions.states.hasOwnProperty(newStateName))
+															{
+																ijfUtils.modalDialogMessage("Information","Please enter a name that does not exist.");
+															}
+															else
+															{
+																thisForm.permissions.states[newStateName]={"view":[],"edit":[]};
+																cPermState=newStateName;
+																updateTables(cPermState);
+															}
+														}
                 								}}
 						            		]
 						            },
+						            {
+										xtype: "panel",
+										html: "<hr>",
+										width: "100%"
+										},
+									{
+										xtype: "panel",
+										layout: "hbox",
+										width: "100%",
+										items:[
+											{
+												xtype: "panel",
+												layout: "vbox",
+												width: 260,
+												items:
+													[
+														{	xtype: "gridpanel",
+															store: wfsNameStore,
+															style: "border: solid black 2px",
+															height:400,
+															margin: "0 20px 20px 20px",
+															width: 230,
+															id: "stateTableId",
+															columns: [{
+																		header: 'Workflow State',
+																		width:"100%",
+																		hidden: false,
+																		dataIndex: "state"
+																	}],
+															listeners: {
+																select:function(view, record, eops) {
+																	cPermState = record.data.state;
+																	updateTables(cPermState);
+																}
+															}
+														},
+														{
+															xtype:'button',
+															hidden: false,
+															text:"Delete",
+															handler: function(){
+																if(cPermState)
+																{
+																	delete ijf.admin.cwfAdmin_form.permissions.states[cPermState];
+																	cPermState="";
+																	updateTables(null);
+																}
+
+															}
+														}
+													]
+											},
+											{
+												xtype: "panel",
+												layout: "vbox",
+												width: 750,
+												items:[
+													{
+														xtype: "panel",
+														width: "100%",
+														layout: "hbox",
+														items:[{
+															xtype: "panel",
+															html: "Can Edit: ",
+															bodyStyle: "width:70px;font-weight:bold",
+															margin: "0 20px 0 20px",
+															},
+															{	xtype: "gridpanel",
+																	store: editAvailStore,
+																	style: "border: solid black 2px",
+																	height:200,
+																	margin: "0 20px 20px 20px",
+																	width:300,
+																	id: "permTableEditAvailRolesId",
+																	columns: [{
+																				header: 'Available Role',
+																				width:"100%",
+																				hidden: false,
+																				dataIndex: "role"
+																			}],
+																	listeners: {
+																		rowdblclick:function(view, record, eops) {
+																			//remove this, add partner
+																			if(!record.data.role) return;
+																			if(!cPermState) return;
+																			var newRole=record.data.role;
+																			ijf.admin.cwfAdmin_form.permissions.states[cPermState].edit.push(newRole);
+																			updateTables(cPermState);
+																		}
+																	}
+																},
+																{	xtype: "gridpanel",
+																	store: editAssStore,
+																	style: "border: solid black 2px",
+																	height:200,
+																	width:300,
+																	id: "permTableEditAssRolesId",
+																	columns: [{
+																				header: 'Assigned Role',
+																				width:"100%",
+																				hidden: false,
+																				dataIndex: "role"
+																			}],
+																	listeners: {
+																		rowdblclick:function(view, record, eops) {
+																			//remove this, add partner
+																			if(!record.data.role) return;
+																			if(!cPermState) return;
+																			var newRole=record.data.role;
+																			ijf.admin.cwfAdmin_form.permissions.states[cPermState].edit=ijf.admin.cwfAdmin_form.permissions.states[cPermState].edit.filter(function(item){
+																				return item !== newRole;
+																			});
+																			updateTables(cPermState);
+																		}
+																	}
+																}
+
+														]
+													},
+													{
+																xtype: "panel",
+																width: "100%",
+																layout: "hbox",
+																items:[{
+																	xtype: "panel",
+																	html: "Can View: ",
+																	bodyStyle: "width:80px;font-weight:bold",
+																	margin: "0 20px 0 20px",
+																	},
+																	{	xtype: "gridpanel",
+																			store: viewAvailStore,
+																			style: "border: solid black 2px",
+																			height:200,
+																			margin: "0 20px 0 20px",
+																			width:300,
+																			id: "permTableViewAvailRolesId",
+																			columns: [{
+																						header: 'Available Role',
+																						width:"100%",
+																						hidden: false,
+																						dataIndex: "role"
+																					}],
+																			listeners: {
+																				rowdblclick:function(view, record, eops) {
+																					//remove this, add partner
+																					if(!record.data.role) return;
+																					if(!cPermState) return;
+																					var newRole=record.data.role;
+																					ijf.admin.cwfAdmin_form.permissions.states[cPermState].view.push(newRole);
+																					updateTables(cPermState);
+																				}
+																			}
+																		},
+																		{	xtype: "gridpanel",
+																			store: viewAssStore,
+																			style: "border: solid black 2px",
+																			height:200,
+																			width:300,
+																			id: "permTableViewAssRolesId",
+																			columns: [{
+																						header: 'Assigned Role',
+																						width:"100%",
+																						hidden: false,
+																						dataIndex: "role"
+																					}],
+																			listeners: {
+																				rowdblclick:function(view, record, eops) {
+																					//remove this, add partner
+																					if(!record.data.role) return;
+																					if(!cPermState) return;
+																					var newRole=record.data.role;
+																					ijf.admin.cwfAdmin_form.permissions.states[cPermState].view=ijf.admin.cwfAdmin_form.permissions.states[cPermState].edit.filter(function(item){
+																						return item !== newRole;
+																					});
+																					updateTables(cPermState);
+																				}
+																			}
+																		}
+
+																]
+														}
+												]
+											},
+										]
+									},
+
+
 
 								],
 								modal: true
@@ -2286,6 +2578,12 @@ addEditForm:function (sRow)
 			if(!ijf.admin.cwfAdmin_form.settings.hasOwnProperty(j)) continue;
 			settingsOut.push({name:j,value:ijf.admin.cwfAdmin_form.settings[j],comment:""});
 		};
+
+		if(ijf.admin.cwfAdmin_form.permissions)
+		{
+			settingsOut.push({name:"permissions",value:JSON.stringify(ijf.admin.cwfAdmin_form.permissions),comment:""});
+		}
+
 		//add the businessRules to retain....
 		/*
 		for (var i in ijf.admin.cwfAdmin_form.businessRules)

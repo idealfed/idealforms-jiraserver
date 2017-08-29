@@ -332,13 +332,28 @@ function renderForm(inContainerId, inFormId, isNested, item)
             ijfUtils.onLoadHandler(beforeLoadFunction);
         }
     }
-
 	//permissions
 	thisForm.permissions = null;
 	if(thisForm.settings.hasOwnProperty("permissions"))
     {
 		thisForm.permissions = JSON.parse(thisForm.settings["permissions"]);
+		if(!thisForm.permissions.hasOwnProperty("enabled"))
+		{
+			//reformat
+			var tmpP = thisForm.permissions;
+			thisForm.permissions =
+							{"enabled":true,
+							 "states":tmpP
+				};
+		}
     }
+    else
+    {
+		thisForm.permissions =
+				{"enabled":false,
+				 "states":{}
+				};
+	}
 
 	//based on the form, it should get edit or add meta...
 
