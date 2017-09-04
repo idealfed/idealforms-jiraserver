@@ -7,6 +7,8 @@ paul.malone@idealfed.com
 This repository contains an Atlassian JIRA plugin that implements EXTJS 6 GPL for use within the JIRA system.
 
 
+Please see the ideal forms site for details:  http://wwww.idealforms.com
+
 
 The plugin runs as a servlet on the JIRA Tomcat instance and the plugin uses the JIRA API for its interaction.
 
@@ -25,7 +27,7 @@ GoEdit - this allows you to use click to edit on attachments
 Go Edit works with Ideal Forms in that the "managed attachment" control includes an edit option.
 
 
-I continue to work on documentation for the plugin.  Please feel free to contact me with questions.
+We continue to work on documentation for the plugin.  Please feel free to contact Ideal Federal LLC with questions.
 
 
 
@@ -34,6 +36,9 @@ I continue to work on documentation for the plugin.  Please feel free to contact
 To use please install from the Atlassian Marketplace from within your JIRA system.
 
 To compile and alter or branch:  You need to set up an Atlassian development environment with the Atlassian SDK.  This is not hard and once done you should be able to:  "atlas-package" this project.
+
+(Self compiled and installed implementations are not supported by Ideal Federal LLC.)
+
 
 
 
