@@ -4012,7 +4012,10 @@ renderItemList:function(inFormKey,item, inField, inContainer)
    else
    {
 	    var translateFields = ijfUtils.translateJiraFieldsToIds(inField.dataReference);
+
 		var tSearch = "jql="+inField.dataSource+"&fields="+translateFields;
+
+		tSearch = ijfUtils.replaceKeyValues(tSearch,item);
 
 		var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
 		//bail if dataItems not

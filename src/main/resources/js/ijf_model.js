@@ -608,6 +608,9 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 			 	var tv = {"body":sc};
  				this.newVal =  tv;
 				break;
+			case 'number':
+				this.newVal = this.control.items.items[0].getValue()/1;
+				break;
 			case 'string':
 				//std text value
 				this.newVal = this.control.items.items[0].getValue();

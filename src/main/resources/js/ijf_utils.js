@@ -1527,6 +1527,9 @@ loadConfig:function(onSuccess, onError)
 
 		switch(inType.schema.type)
 		{
+			case "number":
+			    return inField;
+			    break;
 			case "string":
 			    if(noSanitize)
 			    {
