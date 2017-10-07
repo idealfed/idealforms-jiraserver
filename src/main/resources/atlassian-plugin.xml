@@ -3,7 +3,7 @@
 <!--atlassian-plugin key="${project.groupId}.${project.artifactId}" name="${project.name}" plugins-version="2"-->
 
 
-<atlassian-plugin key="com.idealfed.poc.idealforms.free" name="${project.name}" plugins-version="2">
+<atlassian-plugin key="com.idealfed.poc.idealforms" name="${project.name}" plugins-version="2">
   <plugin-info>
     <description>${project.description}</description>
     <version>${project.version}</version>
@@ -12,7 +12,7 @@
     <param name="plugin-logo">images/pluginLogo.png</param>
     <param name="plugin-summary">Ideal Forms for JIRA creates and serves simplified customized user interfaces that help many use cases.</param>
     <param name="plugin-tagline">Custom forms for simplified access, for mobile access and for process automation.</param>    
-    <param name="atlassian-licensing-enabled">false</param>     
+    <param name="atlassian-licensing-enabled">true</param>     
      <screenshots>
             <screenshot image="images/admin.png"/>
             <screenshot image="images/list.png"/>

@@ -32,6 +32,12 @@ helpLink:function(inLabel, inCaller)
 	{
 
 		//field styles
+		case "reportbutton":
+		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-31#" + inLabel);
+		break;
+		case "GRID":
+		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-30#" + inLabel);
+		break;
 		case "itemtree":
 		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-29#" + inLabel);
 		break;

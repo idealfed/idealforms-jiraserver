@@ -1,5 +1,9 @@
-var ijf = ijf || {};
+/*
+   Set g_version for this version of the JS
+*/
+window.g_version = "2.0.9";
 
+var ijf = ijf || {};
 ijf.main = (function(){
 
 var items;
@@ -43,12 +47,6 @@ var gSaveIncludesFile = false;
 
 function init(inConfigVersion)
 {
-
-	/*
-	   Set g_version for this version of the JS
-	*/
-	 window.g_version = "2.0.1";
-
 
     ijfUtils.showProgress();
 
