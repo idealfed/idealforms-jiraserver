@@ -1814,43 +1814,6 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
     //manage cases for the lookups
     //case one, simple collect constraint
     //case two reference lookup
-    switch (inField.dataReference)
-    {
-        case "ijfReference":
-            var ref = JSON.parse(inField.referenceFilter);
-            //value only for now...
-            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
-            var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
-            break;
-        default:
-
-			switch(jfFieldDef.schema.type)
-			{
-				case "priority":
-					var lookup = jfFieldMeta.allowedValues.map(function(e)
-					{
-							return [e.id,e.name];
-					});
-					break;
-				case "status":
-					var lookup = jfFieldMeta.transitions.map(function(e)
-					{
-							return [e.id,e.name];
-					});
-					lookup.push([data,item.fields.status.name]);
-					break;
-				case "option":
-					var lookup = jfFieldMeta.allowedValues.map(function(e)
-					{
-							return [e.id,e.value];
-					});
-					break;
-				default:
-					var lookup = [];
-					ijfUtils.footLog("No options found for schema: " + jfFieldDef.schema.type);
-			}
-     		break;
-    }
 
     var hideField = ijfUtils.renderIfShowField(data,inField);
     var hideLabel = false;
@@ -1905,11 +1868,131 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 	//end permissions
 	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
-    var simple = new Ext.FormPanel({
-        hidden: hideField,
-        border:false,
-        bodyStyle: l_Style,
-        items:[{xtype: 'combobox',
+
+    //two forms:  JIRA references or IJF references
+    var combo = {};
+    var lookup = [];
+	switch (inField.dataReference)
+	{
+		case "ijfReference":
+
+		   //The lookup may be simple 1D array or part of a complex cascade.  The syntax of co.reference tells
+			var cLookupDef = {"index":"0"};
+			var cListener = {
+								afterrender: function(f)
+								{
+									this.validate();
+								},
+								change: function(f,n,o){
+									ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+									ocf(f,n,o);
+								}
+							};
+			if(ijf.fw.CustomTypes.find(function(t){return (t.name==inField.referenceFilter);}))
+			{
+				lookup = ijfUtils.getReferenceDataByName(inField.referenceFilter,"0");
+			}
+			else
+			{
+				//complex cascade...
+				try
+				{
+					cLookupDef = JSON.parse(inField.referenceFilter);
+					lookup = ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index);
+
+					//establish a listener for this combo if necessary
+					if(cLookupDef.parents)
+					{
+						var parentIds = cLookupDef.parents;
+						var cFilters = parentIds.reduce(function(inFilter,p){
+								inFilter.push({"property":p.dataIndex.toString(), "value":"tbd", "fieldName":p.fieldName});
+								return inFilter;
+							},[]);
+						cListener["beforeQuery"] = function(query) {
+									cFilters.forEach(function(f){
+										//for each filter param, we need to get the correct value...
+										var cValue = 'novaluetofilterwith';
+
+										var ctl = ijfUtils.getControlByDataSource(f.fieldName);
+										if(ctl) cValue = ctl.control.items.items[0].getValue();
+										f.value=cValue;
+									});
+									this.store.clearFilter();
+									this.store.filter(cFilters);
+								};
+					}
+					//for each child, you need to clear it's value
+					if(cLookupDef.children)
+					{
+						var childFields = cLookupDef.children;
+						cListener["change"]= function(n,o,f)
+						{
+								childFields.forEach(function(f){
+									var ctl = ijfUtils.getControlByDataSource(f);
+									if(ctl) cValue = ctl.control.items.items[0].setValue(null);
+								});
+								ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+						};
+					}
+				}
+				catch(le)
+				{
+					ijfUtils.footLog("failed to handle complex lookup: " + le.message);
+					lookups[col.columnName] = [];
+				}
+			}
+
+			combo = {xtype: 'combobox',
+					store: lookup,
+					labelAlign: 'left',
+					labelStyle: l_labelStyle,
+					style: l_panelStyle,
+					fieldStyle: l_fieldStyle,
+					fieldLabel: lCaption,
+					hideLabel: hideLabel,
+					allowBlank: lAllowBlank,
+					readOnly: rOnly,
+					value: data,
+					displayField: cLookupDef.index,
+					valueField: cLookupDef.index,
+					forceSelection: limitList,
+					triggerAction: 'all',
+					emptyText:'Please select...',
+					selectOnFocus:true,
+					id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+					listeners: cListener
+					};
+
+			break;
+		default:
+
+			switch(jfFieldDef.schema.type)
+			{
+				case "priority":
+					var lookup = jfFieldMeta.allowedValues.map(function(e)
+					{
+							return [e.id,e.name];
+					});
+					break;
+				case "status":
+					var lookup = jfFieldMeta.transitions.map(function(e)
+					{
+							return [e.id,e.name];
+					});
+					lookup.push([data,item.fields.status.name]);
+					break;
+				case "option":
+					var lookup = jfFieldMeta.allowedValues.map(function(e)
+					{
+							return [e.id,e.value];
+					});
+					break;
+				default:
+					var lookup = [];
+					ijfUtils.footLog("No options found for schema: " + jfFieldDef.schema.type);
+			}
+
+			combo = {xtype: 'combobox',
             store: lookup,
 			labelAlign: 'left',
 			labelStyle: l_labelStyle,
@@ -1934,7 +2017,17 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
 					ocf(f,n,o);
 				}
-			}}]
+			}};
+			break;
+    }
+
+
+
+    var simple = new Ext.FormPanel({
+        hidden: hideField,
+        border:false,
+        bodyStyle: l_Style,
+        items:[combo]
     });
     //before render....
     if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple, inFormKey,item, inField, inContainer);
@@ -4972,7 +5065,72 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 			break;
 			case "combobox":
 					tFields.push({name: col.columnName, type: 'string'});
-					lookups[col.columnName] = ijfUtils.getReferenceDataByName(col.reference);
+					//The lookup may be simple 1D array or part of a complex cascade.  The syntax of co.reference tells
+					var cLookupDef = {"index":"0"};
+					var cListener = {
+										change: function(n,o,f)
+										{
+											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+										},
+										focus: function(){
+											this.validate();
+										}
+									};
+					if(ijf.fw.CustomTypes.find(function(t){return (t.name==col.reference);}))
+					{
+						lookups[col.columnName] = ijfUtils.getReferenceDataByName(col.reference,"0");
+					}
+					else
+					{
+						//complex cascade...
+						try
+						{
+							cLookupDef = JSON.parse(col.reference);
+							lookups[col.columnName] = ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index);
+
+							//establish a listener for this combo if necessary
+							if(cLookupDef.parents)
+							{
+								var parentIds = cLookupDef.parents;
+								var cFilters = parentIds.reduce(function(inFilter,p){
+										inFilter.push({"property":p.dataIndex.toString(), "value":"tbd", "columnName":p.columnName});
+										return inFilter;
+									},[]);
+								cListener["beforeQuery"] = function(query) {
+										 	var cContainer = this.up();
+											//cFilters["value"]= cValue;
+											cFilters.forEach(function(f){
+												//for each filter param, we need to get the correct value...
+												var cValue = cContainer.grid.getSelectionModel().getSelected().items[0].data[f.columnName];
+												if(!cValue) cValue = 'novaluetofilterwith';
+												f.value=cValue;
+											});
+											this.store.clearFilter();
+											this.store.filter(cFilters);
+										};
+							}
+
+							//for each child, you need to clear it's value
+							if(cLookupDef.children)
+							{
+								var childFields = cLookupDef.children;
+								cListener["change"]= function(n,o,f)
+								{
+										var cContainer = this.up();
+										childFields.forEach(function(f){
+											cContainer.grid.getSelectionModel().getSelected().items[0].set(f,null);
+										});
+										ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+								};
+							}
+
+						}
+						catch(le)
+						{
+							ijfUtils.footLog("failed to handle complex lookup: " + le.message);
+							lookups[col.columnName] = [];
+						}
+					}
 					listColumns.push({
 							header: thisColHeader,
 							sortable: true,
@@ -4991,15 +5149,13 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 									validator: lValidator,
 									forceSelection: true,
 									store: lookups[col.columnName],
-									listeners: {
-										change: function(n,o,f)
-										{
-											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
-										},
-										focus: function(){
-											this.validate();
-										}
-									}
+									lookupDef: cLookupDef,
+									displayField: cLookupDef.index,
+								    valueField: cLookupDef.index,
+								    //triggerAction: 'all',
+								    //mode: 'local',
+								    //lastQuery: '',
+									listeners: cListener
 								}
 							}
 			});

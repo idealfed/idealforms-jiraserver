@@ -1359,7 +1359,11 @@ loadConfig:function(onSuccess, onError)
 		var targetControlKey =ijf.main.controlSet[controlKey];
 		targetControlKey.control.setVisible(visible);
 	},
-
+    getControlByDataSource: function(inDataSource)
+    {
+		var retCnt = Object.keys(ijf.main.controlSet).reduce(function(inObj,c){if(ijf.main.controlSet[c].field.dataSource==inDataSource) inObj=ijf.main.controlSet[c];return inObj;},null);
+		return retCnt;
+	},
 	getFieldValue:function(controlKey)
 	{
 		var retVal = null;
@@ -1908,7 +1912,7 @@ CSVtoArray:function (strData, strDelimiter ){
 	Data Reference
 	**********************/
 
-	getReferenceDataByName:function(refName){
+	getReferenceDataByName:function(refName, keyIndex){
 		var retRef = [];
 
 		var thisT = {};
@@ -1932,9 +1936,53 @@ CSVtoArray:function (strData, strDelimiter ){
 					//look for CSV....
 					if(retRef[0].indexOf(",")>-1)
 					{
-						retRef = retRef.map(function(r)
+						var i = 0;
+						var lookup = retRef.map(function(r)
 						{
-							return r.split(",").map(function(c){return c.trim();});
+							i=0;
+							return r.split(",").reduce(function(inObj, c){ inObj[i.toString()]=c.trim();i++;return inObj;},{});
+						});
+						var sFields = [];
+						for(var j=0;j<i;j++) sFields.push(j.toString());
+
+						//filter lookup for distinct elements for index
+						var uniqueVals = {};
+						lookup = lookup.filter(function(r){if(uniqueVals.hasOwnProperty(r[keyIndex])) return false; uniqueVals[r[keyIndex]]=true; return true;});
+
+						retRef = Ext.create('Ext.data.Store', {
+						  fields: sFields,
+						  data: lookup
+						});
+					}
+					else if(retRef[0].indexOf("\t")>-1)
+					{
+						var i = 0;
+
+						var lookup = retRef.map(function(r)
+						{
+							i=0;
+							return r.split("\t").reduce(function(inObj, c){ inObj[i.toString()]=c.trim();i++;return inObj;},{});
+						});
+						var sFields = [];
+						for(var j=0;j<i;j++) sFields.push(j.toString());
+
+						//filter lookup for distinct elements for index
+						var uniqueVals = {};
+						lookup = lookup.filter(function(r){if(uniqueVals.hasOwnProperty(r[keyIndex])) return false; uniqueVals[r[keyIndex]]=true; return true;});
+
+						retRef = Ext.create('Ext.data.Store', {
+						  fields: sFields,
+						  data: lookup
+						});
+					}
+					else{
+						var lookup = retRef.map(function(r)
+						{
+							return {"0":r};
+						});
+						retRef = Ext.create('Ext.data.Store', {
+						  fields: ["0"],
+						  data: lookup
 						});
 					};
 				}

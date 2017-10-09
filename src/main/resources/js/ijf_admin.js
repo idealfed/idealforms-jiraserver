@@ -855,11 +855,19 @@ addEditForm:function (sRow)
 										if(!ijf.admin.cwfAdmin_form.settings.hasOwnProperty(j)) continue;
 										settingsOut.push({name:j,value:thisForm.settings[j],comment:""});
 									};
-									for(var j in ijf.admin.cwfAdmin_form.fields)
+									for(var j in thisForm.fields)
 									{
-										if(!ijf.admin.cwfAdmin_form.fields.hasOwnProperty(j)) continue;
-										fieldsOut.push(thisForm.fields[j]);
+										if(!thisForm.fields.hasOwnProperty(j)) continue;
+										var fObj={};
+										Object.keys(thisForm.fields[j]).forEach(function(k)
+										{
+											if(k=="form") return;
+											fObj[k]=thisForm.fields[j][k];
+										});
+
+										fieldsOut.push(fObj);
 									};
+									debugger;
 									var jOut = {
 										id: ijf.admin.cwfAdmin_form.id,
 										testIssue: ijf.admin.cwfAdmin_form.testIssue,
