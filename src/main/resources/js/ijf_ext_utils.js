@@ -2114,8 +2114,12 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 								{
 									this.validate();
 								},
+<<<<<<< HEAD
 								select: function(f,n,o){
 
+=======
+								change: function(f,n,o){
+>>>>>>> 2cc40de971f8607ef85980b1dc9c923ca0313063
 									ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
 									ocf(f,n,o);
 								}

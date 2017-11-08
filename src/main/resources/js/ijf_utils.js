@@ -1940,6 +1940,7 @@ CSVtoArray:function (strData, strDelimiter ){
 					{
 						var i = 0;
 						var lookup = retRef.map(function(r)
+<<<<<<< HEAD
 						{
 							i=0;
 							return r.split(",").reduce(function(inObj, c){ inObj[i.toString()]=c.trim();i++;return inObj;},{});
@@ -1963,6 +1964,31 @@ CSVtoArray:function (strData, strDelimiter ){
 						var lookup = retRef.map(function(r)
 						{
 							i=0;
+=======
+						{
+							i=0;
+							return r.split(",").reduce(function(inObj, c){ inObj[i.toString()]=c.trim();i++;return inObj;},{});
+						});
+						var sFields = [];
+						for(var j=0;j<i;j++) sFields.push(j.toString());
+
+						//filter lookup for distinct elements for index
+						var uniqueVals = {};
+						lookup = lookup.filter(function(r){if(uniqueVals.hasOwnProperty(r[keyIndex])) return false; uniqueVals[r[keyIndex]]=true; return true;});
+
+						retRef = Ext.create('Ext.data.Store', {
+						  fields: sFields,
+						  data: lookup
+						});
+					}
+					else if(retRef[0].indexOf("\t")>-1)
+					{
+						var i = 0;
+
+						var lookup = retRef.map(function(r)
+						{
+							i=0;
+>>>>>>> 2cc40de971f8607ef85980b1dc9c923ca0313063
 							return r.split("\t").reduce(function(inObj, c){ inObj[i.toString()]=c.trim();i++;return inObj;},{});
 						});
 						var sFields = [];
@@ -1970,6 +1996,7 @@ CSVtoArray:function (strData, strDelimiter ){
 
 						//filter lookup for distinct elements for index
 						var uniqueVals = {};
+<<<<<<< HEAD
 						lookup = lookup.filter(function(r)
 						{
 							//harder...this needs to consider the immediate parent as well for uniqueness
@@ -1990,6 +2017,9 @@ CSVtoArray:function (strData, strDelimiter ){
 								return true;
 							}
 						});
+=======
+						lookup = lookup.filter(function(r){if(uniqueVals.hasOwnProperty(r[keyIndex])) return false; uniqueVals[r[keyIndex]]=true; return true;});
+>>>>>>> 2cc40de971f8607ef85980b1dc9c923ca0313063
 
 						retRef = Ext.create('Ext.data.Store', {
 						  fields: sFields,
