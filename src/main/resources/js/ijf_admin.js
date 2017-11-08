@@ -32,6 +32,9 @@ helpLink:function(inLabel, inCaller)
 	{
 
 		//field styles
+		case "attachmentlistgrid":
+		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-32#" + inLabel);
+		break;
 		case "reportbutton":
 		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-31#" + inLabel);
 		break;
@@ -855,10 +858,17 @@ addEditForm:function (sRow)
 										if(!ijf.admin.cwfAdmin_form.settings.hasOwnProperty(j)) continue;
 										settingsOut.push({name:j,value:thisForm.settings[j],comment:""});
 									};
-									for(var j in ijf.admin.cwfAdmin_form.fields)
+									for(var j in thisForm.fields)
 									{
-										if(!ijf.admin.cwfAdmin_form.fields.hasOwnProperty(j)) continue;
-										fieldsOut.push(thisForm.fields[j]);
+										if(!thisForm.fields.hasOwnProperty(j)) continue;
+										var fObj={};
+										Object.keys(thisForm.fields[j]).forEach(function(k)
+										{
+											if(k=="form") return;
+											fObj[k]=thisForm.fields[j][k];
+										});
+
+										fieldsOut.push(fObj);
 									};
 									var jOut = {
 										id: ijf.admin.cwfAdmin_form.id,
@@ -873,7 +883,7 @@ addEditForm:function (sRow)
 									//output....ijf.admin.cwfAdmin_form
 										var outStr = JSON.stringify(jOut);
 										var blob = new Blob([outStr], {type: "text/plain;charset=utf-8"});
-										saveAs(blob,ijf.admin.cwfAdmin_form.name + ".txt")
+										saveAs(blob,ijf.admin.cwfAdmin_form.name + ".json")
 				                }
 				            }
         			}
@@ -1355,7 +1365,7 @@ addEditForm:function (sRow)
 		});
 
 
-		var lookup = ["attachmentlist","attachmentmanaged","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","grouppicker","grouppickermulti","html","iframe","itemlist","itemtree","multiselect","navigatetoform","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
+		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","grouppicker","grouppickermulti","html","iframe","itemlist","itemtree","multiselect","navigatetoform","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
 
 	    var  sectionLookup = [];
 

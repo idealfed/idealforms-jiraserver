@@ -81,6 +81,9 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'attachmentlist':
                 ijf.extUtils.renderAttchmentList (inFormKey,item,inField,inContainer);
                 break;
+            case 'attachmentlistgrid':
+                ijf.extUtils.renderAttchmentListGrid (inFormKey,item,inField,inContainer);
+                break;
             case 'attachmentmanaged':
                 ijf.extUtils.renderAttchmentManaged (inFormKey,item,inField,inContainer);
                 break;
@@ -566,6 +569,222 @@ renderAttchmentList:function(inFormKey,item, inField, inContainer)
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
 
 },
+renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
+{
+    inContainer.title = inField.toolTip;
+
+	//sort desc
+	var sortedAttachments = item.fields.attachment.sort(function(a, b)
+	{
+		a = new Date(a.created);
+		b = new Date(b.created);
+		return a>b ? -1 : a<b ? 1 : 0;
+	});
+
+    if(inField.dataReference)
+    {
+		//filter out any occurence of the CSV list...
+		sortedAttachments = sortedAttachments.reduce(function(inArray, f)
+		{
+			if(f.filename.indexOf(inField.dataReference)>-1) inArray.push(f);
+			return inArray;
+		},[]);
+	}
+
+    if(inField.referenceFilter)
+    {
+		//filter out any occurence of the CSV list...
+		sortedAttachments = sortedAttachments.reduce(function(inArray, f)
+		{
+			if(inField.referenceFilter.indexOf(f.filename)>-1) return inArray;
+			inArray.push(f);
+			return inArray;
+		},[]);
+	}
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
+
+    var ocf =  ijfUtils.getEvent(inField);
+
+    var hideField = ijfUtils.renderIfShowField("",inField);
+	//permissions check....has to exist...
+	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
+    var collapsible = true;
+    if (l_fieldStyle.indexOf('collapsible:false')>-1)
+    {
+        collapsible=false;
+    }
+    var collapsed = false;
+    if (l_fieldStyle.indexOf('collapsed:true')>-1)
+    {
+        collapsed=true;
+    }
+    var canDelete = false;
+    if (l_fieldStyle.indexOf('delete:true')>-1)
+    {
+        canDelete=true;
+    }
+
+	var l_Height = 300;
+    var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
+    if(l_Height=="")
+    {
+		l_Height=300;
+	}
+	else
+	{
+    	l_Height = l_Height.replace("px","")/1;
+	}
+
+	var l_Width = 600;
+    var l_Width=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"width");
+    if(l_Width=="")
+    {
+		l_Width=600;
+	}
+	else
+	{
+    	l_Width = l_Width.replace("px","")/1;
+	}
+
+    var listColumns = [];
+    var tFields = [];
+
+    tFields.push({name: "fileid", type: 'string'});
+	listColumns.push({
+			header: "FID",
+			sortable: true,
+			hidden: true,
+			width: '1%',
+			dataIndex: "fileid"
+	});
+
+    tFields.push({name: "filename", type: 'string'});
+	listColumns.push({
+			header: "File",
+			sortable: true,
+			hidden: false,
+			width: '45%',
+			dataIndex: "filename",
+			filter: {
+				type: 'string'
+			}
+	});
+
+    tFields.push({name: "fUser", type: 'string'});
+	listColumns.push({
+			header: "User",
+			sortable: true,
+			hidden: false,
+			width: '20%',
+			dataIndex: "fUser",
+			filter: {
+				type: 'string'
+			}
+	});
+
+	tFields.push({name: "created", type: 'date'});
+	listColumns.push({
+			header: "Date",
+			sortable: true,
+			hidden: false,
+			xtype: 'datecolumn',
+			formatter:'date("m/d/y h:i:s A")',
+			width: '20%',
+			dataIndex: "created",
+			filter: {
+				type: 'date'
+				}
+	});
+	if(canDelete)
+	{
+		listColumns.push({xtype: 'actioncolumn',
+			  header: "Action",
+			  width: '10%',
+			  items: [{icon: '' },{
+					icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/tree/drop-no.png',
+					handler: function(grid, rowIndex, colIndex, itm) {
+						  try
+						  {
+							  var fileId = grid.store.getData().items[rowIndex].data["fileid"];
+							  //function to delete and remove the record....
+							  var removeFile = function()
+							  {
+								   var delRes = ijfUtils.jiraApiSync("DELETE","/rest/api/2/attachment/"+fileId,null);
+								   if(delRes!="OK")
+								   {
+										ijfUtils.modalDialogMessage("Error","Unable to delete the file: " + delRes);
+										return;
+								   }
+								  //remove the row from the grid....
+								  grid.getStore().removeAt(rowIndex);
+								  return;
+							  }
+							  ijfUtils.modalDialog("Warning","You are about to permanently remove this file, continue?",removeFile);
+						  }
+						  catch(e)
+						  {
+							  footLog("Failed delete action ");
+						  }
+					}
+				}]
+	  	});
+    }
+
+    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(",","_")))
+    {
+        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(",","_"), {
+            extend: 'Ext.data.Model',
+            fields: tFields
+        });
+    }
+    var gridStore = new Ext.data.Store({
+        model: inFormKey+'_mdl_'+inField.formCell.replace(",","_")
+    });
+    var fArray = sortedAttachments.map(function(a){
+		    return {"fileid":a.id,"created":a.created,"filename":"<a href='"+a.content+"' target='_blank'>" + a.filename + "</a>","fUser":a.author.displayName};
+	});
+	gridStore.loadData(fArray);
+
+
+    var gridPanel = new Ext.grid.GridPanel({
+		 title:  inField.caption,
+		 style: l_Style,
+		 hidden: hideField,
+		 bodyStyle: l_panelStyle,
+		 height: l_Height,
+        store: gridStore,
+        width:l_Width,
+        plugins: 'gridfilters',
+        id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+        //reserveScrollOffset: true,
+        columns: listColumns,
+        frame: true,
+        collapsible: collapsible,
+        collapsed: collapsed
+    });
+	//gridStore.parentGridPanel = gridPanel;
+
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](gridPanel, inFormKey,item, inField, inContainer);
+    gridPanel.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, gridPanel, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](gridPanel, inFormKey,item, inField, inContainer);
+
+},
 renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 {
 
@@ -914,10 +1133,18 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 					ijfUtils.hideProgress();
 					if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
 					ijf.main.setAllClean();
-					ijf.currentItem=ijfUtils.getJiraIssueSync(item.key);
+					//ijf.currentItem=ijfUtils.getJiraIssueSync(ijf.main.itemId);
+					g_itemId = ijf.main.itemId;
+					if(inField.referenceFilter) g_formId = inField.referenceFilter;
 					ijf.main.resetForm();
 				};
-				ijf.main.saveForm(onSuccessSave,null,inField.form,item);
+					var tForm = inField.form;
+
+					if(ijf.fw.forms.hasOwnProperty(inField.referenceFilter))
+					{
+	                     tForm=ijf.fw.forms[inField.referenceFilter];
+					}
+				    ijf.main.saveForm(onSuccessSave,null,inField.form,item);
 			}});
 
     }
@@ -968,12 +1195,14 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 
                 if(window.onbeforeunload==null)
                 {
+					window.g_formId=tForm;
                     ijf.main.renderForm("ijfContent", tForm, false, item);
                 }
                 else
                 {
                     var dFunc = function(){
                         window.onbeforeunload= null;
+                        window.g_formId=tForm;
 	                    ijf.main.renderForm("ijfContent", tForm, false, item);
                     };
                     ijfUtils.modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
@@ -1108,7 +1337,7 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 					ijfUtils.hideProgress();
 					ijf.main.setAllClean();
 					if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
-                    ijf.main.gPopupFormHandle.close();
+                    if(ijf.main.gPopupFormHandle) ijf.main.gPopupFormHandle.close();
                     ijf.main.gPopupFormHandle=null;
 				};
 				//IF ijf.main.parentItemId is not null and we are adding
@@ -1327,7 +1556,7 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
 	if(rOnly) l_fieldStyle="background:lightgray";
 
     var ocf =  ijfUtils.getEvent(inField);
-	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='attachmentUploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('attachmentFileDisplayId').update(this.value);></form>";
+	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='attachmentUploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('attachmentFileDisplayId').update(this.value.replace('C:'+String.fromCharCode(92)+'fakepath'+String.fromCharCode(92),''));></form>";
     var simple = new Ext.FormPanel({
         border:false,
         hidden: hideField,
@@ -1814,43 +2043,6 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
     //manage cases for the lookups
     //case one, simple collect constraint
     //case two reference lookup
-    switch (inField.dataReference)
-    {
-        case "ijfReference":
-            var ref = JSON.parse(inField.referenceFilter);
-            //value only for now...
-            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
-            var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
-            break;
-        default:
-
-			switch(jfFieldDef.schema.type)
-			{
-				case "priority":
-					var lookup = jfFieldMeta.allowedValues.map(function(e)
-					{
-							return [e.id,e.name];
-					});
-					break;
-				case "status":
-					var lookup = jfFieldMeta.transitions.map(function(e)
-					{
-							return [e.id,e.name];
-					});
-					lookup.push([data,item.fields.status.name]);
-					break;
-				case "option":
-					var lookup = jfFieldMeta.allowedValues.map(function(e)
-					{
-							return [e.id,e.value];
-					});
-					break;
-				default:
-					var lookup = [];
-					ijfUtils.footLog("No options found for schema: " + jfFieldDef.schema.type);
-			}
-     		break;
-    }
 
     var hideField = ijfUtils.renderIfShowField(data,inField);
     var hideLabel = false;
@@ -1884,6 +2076,8 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
         limitList=false;
     }
 
+
+
     var ocf =  ijfUtils.getEvent(inField);
 
     var l_labelStyle = inField.labelStyle;
@@ -1905,11 +2099,132 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 	//end permissions
 	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
-    var simple = new Ext.FormPanel({
-        hidden: hideField,
-        border:false,
-        bodyStyle: l_Style,
-        items:[{xtype: 'combobox',
+
+    //two forms:  JIRA references or IJF references
+    var combo = {};
+    var lookup = [];
+	switch (inField.dataReference)
+	{
+		case "ijfReference":
+
+		   //The lookup may be simple 1D array or part of a complex cascade.  The syntax of co.reference tells
+			var cLookupDef = {"index":"0"};
+			var cListener = {
+								afterrender: function(f)
+								{
+									this.validate();
+								},
+								select: function(f,n,o){
+
+									ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+									ocf(f,n,o);
+								}
+							};
+			if(ijf.fw.CustomTypes.find(function(t){return (t.name==inField.referenceFilter);}))
+			{
+				lookup = ijfUtils.getReferenceDataByName(inField.referenceFilter,"0");
+			}
+			else
+			{
+				//complex cascade...
+				try
+				{
+					cLookupDef = JSON.parse(inField.referenceFilter);
+					lookup = ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index);
+
+					//establish a listener for this combo if necessary
+					if(cLookupDef.parents)
+					{
+						var parentIds = cLookupDef.parents;
+						var cFilters = parentIds.reduce(function(inFilter,p){
+								inFilter.push({"property":p.dataIndex.toString(), "value":"tbd", "fieldName":p.fieldName});
+								return inFilter;
+							},[]);
+						cListener["beforeQuery"] = function(query) {
+									cFilters.forEach(function(f){
+										//for each filter param, we need to get the correct value...
+										var cValue = 'novaluetofilterwith';
+
+										var ctl = ijfUtils.getControlByDataSource(f.fieldName);
+										if(ctl) cValue = ctl.control.items.items[0].getValue();
+										f.value=cValue;
+									});
+									this.store.clearFilter();
+									this.store.filter(cFilters);
+								};
+					}
+					//for each child, you need to clear it's value
+					if(cLookupDef.children)
+					{
+						var childFields = cLookupDef.children;
+						cListener["change"]= function(n,o,f)
+						{
+								childFields.forEach(function(f){
+									var ctl = ijfUtils.getControlByDataSource(f);
+									if(ctl) cValue = ctl.control.items.items[0].setValue(null);
+								});
+								ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+						};
+					}
+				}
+				catch(le)
+				{
+					ijfUtils.footLog("failed to handle complex lookup: " + le.message);
+					lookups[col.columnName] = [];
+				}
+			}
+
+			combo = {xtype: 'combobox',
+					store: lookup,
+					labelAlign: 'left',
+					labelStyle: l_labelStyle,
+					style: l_panelStyle,
+					fieldStyle: l_fieldStyle,
+					fieldLabel: lCaption,
+					hideLabel: hideLabel,
+					allowBlank: lAllowBlank,
+					readOnly: rOnly,
+					value: data,
+					displayField: cLookupDef.index,
+					valueField: cLookupDef.index,
+					forceSelection: limitList,
+					triggerAction: 'all',
+					emptyText:'Please select...',
+					selectOnFocus:true,
+					id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+					listeners: cListener
+					};
+
+			break;
+		default:
+
+			switch(jfFieldDef.schema.type)
+			{
+				case "priority":
+					var lookup = jfFieldMeta.allowedValues.map(function(e)
+					{
+							return [e.id,e.name];
+					});
+					break;
+				case "status":
+					var lookup = jfFieldMeta.transitions.map(function(e)
+					{
+							return [e.id,e.name];
+					});
+					lookup.push([data,item.fields.status.name]);
+					break;
+				case "option":
+					var lookup = jfFieldMeta.allowedValues.map(function(e)
+					{
+							return [e.id,e.value];
+					});
+					break;
+				default:
+					var lookup = [];
+					ijfUtils.footLog("No options found for schema: " + jfFieldDef.schema.type);
+			}
+
+			combo = {xtype: 'combobox',
             store: lookup,
 			labelAlign: 'left',
 			labelStyle: l_labelStyle,
@@ -1934,7 +2249,17 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
 					ocf(f,n,o);
 				}
-			}}]
+			}};
+			break;
+    }
+
+
+
+    var simple = new Ext.FormPanel({
+        hidden: hideField,
+        border:false,
+        bodyStyle: l_Style,
+        items:[combo]
     });
     //before render....
     if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple, inFormKey,item, inField, inContainer);
@@ -2982,23 +3307,38 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 
     inContainer.title = inField.toolTip;
 
-    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=item.fields[jfFieldDef.id];
-    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 
-	//if status, the transitions are the field meta...
-	if(jfFieldDef.schema.type=='status')
+	if(inField.dataSource=="session")
 	{
-		//cache this?
-		if(!item.transitions)
-		{
-			item.transitions= ijfUtils.jiraApiSync('GET','/rest/api/2/issue/'+item.key+'/transitions', null);
-		}
-		var jfFieldMeta = item.transitions;
+		  var jfFieldMeta = {};
+		  jfFieldMeta.allowedValues = JSON.parse(inField.dataReference);
+		  var jfFieldDef = {};
+		  jfFieldDef.id=inField.formCell;
+		  jfFieldDef.schema={};
+		  jfFieldDef.schema.type="option";
+		  var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+		  if(data) data = data[Object.keys(data)[0]];
 	}
 	else
 	{
-		var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+      var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+	  var jf=item.fields[jfFieldDef.id];
+      var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+
+		//if status, the transitions are the field meta...
+		if(jfFieldDef.schema.type=='status')
+		{
+			//cache this?
+			if(!item.transitions)
+			{
+				item.transitions= ijfUtils.jiraApiSync('GET','/rest/api/2/issue/'+item.key+'/transitions', null);
+			}
+			var jfFieldMeta = item.transitions;
+		}
+		else
+		{
+			var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+		}
 	}
 
     var lAllowBlank = true;
@@ -3036,17 +3376,13 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 	var l_Style = inField.style;
 	var l_fieldStyle = inField.fieldStyle;
 
-
 	if(!l_labelStyle) l_labelStyle="background:transparent";
 	if(!l_panelStyle) l_panelStyle="background:transparent";
 	if(!l_Style) l_Style="background:transparent";
 	if(!l_fieldStyle) l_fieldStyle="background:transparent; margin: 0 10 0 0";
 
-
-
      var cColumns = ijfUtils.getNameValueFromStyleString(l_fieldStyle,'columns');
       if(!cColumns) cColumns = 2;
-
 
 		switch(jfFieldDef.schema.type)
 		{
@@ -3107,7 +3443,6 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
-
     var simple = new Ext.FormPanel({
         hidden: hideField,
         border:false,
@@ -3130,11 +3465,19 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 					this.validate();
 				},
 				change: function(f,n,o){
-					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					if(inField.dataSource=="session")
+					{
+						ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+					}
+					else
+					{
+						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					}
 					ocf(f,n,o);
 				}
 			}}]
     });
+
 	//before render....
 	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple, inFormKey,item, inField, inContainer);
     simple.render(inContainer);
@@ -3142,6 +3485,9 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
     ijf.main.controlSet[thisControl.id]=thisControl;
     //after render....
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
+
+
+
 }
 ,renderWorkflowButtons:function(inFormKey,item, inField, inContainer)
 {
@@ -3950,6 +4296,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
    	   var colMeta = [];
    	   colMeta["key"]={"id":"key","name":"key","schema":{}};
    	   var dataItems =[];
+   	   var jqlType = false;
    if(inField.dataSource=="related")
    {
 	    var translateFields = inField.dataReference;
@@ -4011,38 +4358,122 @@ renderItemList:function(inFormKey,item, inField, inContainer)
    }
    else
    {
-	    var translateFields = ijfUtils.translateJiraFieldsToIds(inField.dataReference);
+	   var translateFields = ijfUtils.translateJiraFieldsToIds(inField.dataReference);
+	   //get 1 row of data to set metadaa
 
-		var tSearch = "jql="+inField.dataSource+"&fields="+translateFields;
+	   //look for session vars for this itemList and handle
+	   //syntax:    {"replace":[{"status":"Open"}],"remove":["status","maxResults"]]}
+	   //roject=DJP and reporter = currentUser() order by key desc
+	   var lds = inField.dataSource;
+	   var qSet = function(inStr,key,value)
+	   {
+		   var retStr = inStr;
+		   if(inStr.indexOf(key)>-1){
+			  var startKey = inStr.indexOf(key);
+			  var vStart = 0;
+			  var vEnd = 0;
+			  for(var i=startKey;i<inStr.length;i++)
+			  {
+				  if(inStr[i]=="=")
+				  {
+					  vStart=i+1;
+				  }
+				  if((vStart>0) && (i<inStr.length-4))
+				  {
+					if((inStr.substr(i,4).toUpperCase()==" AND") || (inStr.substr(i,4).toUpperCase()==" ORD"))
+					{
+						vEnd=i;
+						break;
+					}
+				  }
+			  }
+			  if(vStart>0)
+			  {
+				  if(vEnd==0) vEnd=inStr.length;
+	  			  vEnd=vEnd-vStart;
+	  			  var tmpStr = inStr.substr(vStart,vEnd);
+				  retStr=inStr.replace(tmpStr,value);
+			  }
+		   }
+		   else
+		   {
+			//it's an add
+			retStr = key + "=" + value + " and " + inStr;
+		   }
+		   return retStr;
+	   };
+	   var qRemove = function(inStr,key)
+	   {
+		   var retStr = inStr;
+		   if(inStr.indexOf(key)>-1){
+			  var startKey = inStr.indexOf(key);
+			  var vStart = 0;
+			  var vEnd = 0;
+			  for(var i=startKey;i<inStr.length;i++)
+			  {
+				  if(inStr[i]=="=")
+				  {
+					  vStart=i+1;
+				  }
+				  if((vStart>0) && (i<inStr.length-4))
+				  {
+					if((inStr.substr(i,4).toUpperCase()==" AND") || (inStr.substr(i,4).toUpperCase()==" ORD"))
+					{
+						vEnd=i;
+						break;
+					}
+				  }
+			  }
+			  if(vStart>0)
+			  {
+				  if(vEnd==0) vEnd=inStr.length;
+	  			  vEnd=vEnd-startKey;
+	  			  var tmpStr = inStr.substr(startKey,vEnd);
+				  retStr=inStr.replace(tmpStr,value);
+				  //now look for and and
+				  retStr = retStr.replace(/and *and/i,"and");
+			  }
+		   }
+		   return retStr;
+	   };
 
-		tSearch = ijfUtils.replaceKeyValues(tSearch,item);
+	   if(ijf.session.hasOwnProperty(inFormKey+'_fld_'+inField.formCell))
+	   {
+		   var filterObj = ijf.session[inFormKey+'_fld_'+inField.formCell];
+		   if(filterObj.set)
+		   {
+			   filterObj.set.forEach(function(r){
+			   		lds = qSet(lds,Object.keys(r)[0],r[Object.keys(r)[0]]);
+			   });
+	   	   }
+	   	   if(filterObj.remove)
+	   	   {
+			   filterObj.remove.forEach(function(r){
+					lds = qRemove(lds,r);
+			   });
+	       }
+	   }
 
-		var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
-		//bail if dataItems not
-
-		var dataItems = rawList.issues.map(function(i){
-			var retObj ={};
+       var tSearch = "jql="+lds+"&maxResults=1&fields="+translateFields;
+	   tSearch = ijfUtils.replaceKeyValues(tSearch,item);
+	   var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
+       rawList.issues.forEach(function(i){
 			translateFields.split(",").forEach(function(f){
 				var thisField = f.trim();
 				var dVal = "unknown";
 				var jField = ijfUtils.getJiraFieldById(thisField);
 				if(i.fields.hasOwnProperty(jField.id))
 				{
-					dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
-					//perhaps build the types here...
 					colMeta[jField.id]=jField;
 				}
-				retObj[thisField]= dVal;
 			});
-			//retObj.iid=i.id;
-			retObj.iid=i.key;
-			return retObj;
 		});
-    }
-    if(inField.referenceFilter)
-    {
+	   jqlType = true;
+   }
 
-        //filter the peerItems...
+    if((inField.referenceFilter) & (!jqlType))
+    {
+        //filter the items...
         if(ijf.snippets.hasOwnProperty(inField.referenceFilter))
 	        dataItems = ijf.snippets[inField.referenceFilter](dataItems);
     }
@@ -4058,8 +4489,19 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 	{
 		if(colWidths[i]>0)
 		{
-			try{
-			if(colMeta[colNames[i]]) colMeta[colNames[i]].width=colWidths[i]/1;}catch(e){}
+
+			if(colMeta[colNames[i]])
+			{
+				if(colWidths[i].indexOf("%")>-1)
+				{
+					colMeta[colNames[i]].width=colWidths[i];
+				}
+				else
+				{
+					try{
+					colMeta[colNames[i]].width=colWidths[i]/1;}catch(e){}
+				}
+			}
 		}
 		else
 		{
@@ -4252,16 +4694,94 @@ renderItemList:function(inFormKey,item, inField, inContainer)
             fields: gridFieldArray
         });
     }
-    var store = Ext.create('Ext.data.Store', {
-        model: inField.dataSource + inField.formCell.replace(",",""),
-        proxy: {
-            type: 'memory',
-            reader: {
-                type: 'json'
-            }},
-        autoLoad: false});
-    store.proxy.data=dataItems;
-    store.load();
+    var itemsPerPage =1001;
+    if(!jqlType)
+    {
+		var store = Ext.create('Ext.data.Store', {
+			model: inField.dataSource + inField.formCell.replace(",",""),
+			proxy: {
+				type: 'memory',
+				reader: {
+					type: 'json'
+				}},
+			autoLoad: false});
+		store.proxy.data=dataItems;
+		store.load();
+    }
+    else
+    {
+        itemsPerPage = 1001;
+        var l_PageSize=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"paging");
+		if(l_PageSize) itemsPerPage = l_PageSize/1;
+
+	    var tSearch = "jql="+lds+"&fields="+translateFields;
+		tSearch = ijfUtils.replaceKeyValues(tSearch,item);
+		//var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
+
+
+        var store = Ext.create('Ext.data.Store', {
+            model: inField.dataSource + inField.formCell.replace(",",""),
+	        pageSize: itemsPerPage,
+        	proxy: {
+			        type: 'ajax',
+			        url: '/rest/api/2/search?'+tSearch,
+			        reader: {
+			            type: 'json',
+			            rootProperty: 'issues',
+			            totalProperty: 'total',
+						transform: function(data) {
+								// do some manipulation of the raw data object
+								var dataItems = data.issues.map(function(i){
+											var retObj ={};
+											translateFields.split(",").forEach(function(f){
+												var thisField = f.trim();
+												var dVal = "unknown";
+												var jField = ijfUtils.getJiraFieldById(thisField);
+												if(i.fields.hasOwnProperty(jField.id))
+												{
+													dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
+													//perhaps build the types here...
+													colMeta[jField.id]=jField;
+												}
+												retObj[thisField]= dVal;
+											});
+											//retObj.iid=i.id;
+											retObj.iid=i.key;
+											return retObj;
+										});
+								//if(ijf.snippets.hasOwnProperty(inField.referenceFilter)) dataItems = ijf.snippets[inField.referenceFilter](dataItems);
+								data.issues=dataItems;
+								return data;
+			            }
+					}
+        	},
+        	listeners: {"beforeload":function (store, operation, eOpts ) {
+				var test = "here";
+				operation._proxy.extraParams["maxResults"]= operation._limit;
+				operation._proxy.extraParams["startAt"]= operation._start;
+			}}
+        });
+        store.load({
+					params: {
+						limit: itemsPerPage,
+						start: 0,
+						// specify params for the first page load if using paging
+						startAt: 0,
+						maxResults: itemsPerPage,
+					}
+				});
+	  }
+
+
+    var myBbar = null;
+    if(itemsPerPage<1000)
+    {
+		myBbar={
+				        xtype: 'pagingtoolbar',
+				        displayInfo: true
+    	};
+	}
+
     var l_tbar=[];
     var lXtype="";
     var grid= new Ext.grid.GridPanel({
@@ -4273,6 +4793,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         ijfForm: inField,
         columns: colSettingsArray,
         selModel: {selType: 'rowmodel', mode: 'SINGLE'},
+        bbar: myBbar,
         listeners: {
             'selectionchange':  function(selMod, record, something ){
 				//if event,
@@ -4291,8 +4812,6 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				//look for snippet...
 				if(ijf.snippets.hasOwnProperty(tEvent))
 				{
-
-
 					ijf.snippets[tEvent](record[0].data.iid,this);
 					return;
 				}
@@ -4509,6 +5028,44 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 		}
 	}
 
+    var updateTree = function(container,inName,inValue)
+    {
+		var iKey = container.grid.selection.data.iid;
+		var putObj = {};
+		putObj["fields"]={};
+		putObj["fields"][inName]=inValue;
+		//how to save asynch....
+		var jData = JSON.stringify(putObj);
+		var tApi = "/rest/api/2/issue/"+iKey;
+		var lIndex = container.grid.selection.data.index;
+
+        var onsuccess =  function(data,e,f) {
+                 ijfUtils.footLog("Successful data response code: " + f.status);
+                 if((f.status==200) || (f.status==201) || (f.status==204))
+                 {
+					var delayCommit = function() {container.grid.store.getAt(lIndex).commit()};
+					window.setTimeout(delayCommit,300);
+				 }
+				 else
+				 {
+					 ijfUtils.modalDialogMessage('Error','Sorry a network error prevented the field from saving.');
+				 }
+        };
+        var onerror = function(e) {
+				 if(e.status==201)
+                 {
+				 	var delayCommit = function() {container.grid.store.getAt(lIndex).commit()};
+					window.setTimeout(delayCommit,300);
+				 }
+                 else
+                 {
+                     ijfUtils.footLog("Failed data post: " + " "  + e.statusText);
+                     ijfUtils.modalDialogMessage('Error','Sorry a network error prevented the field from saving.');
+                 }
+	    };
+		ijfUtils.jiraApi("PUT",tApi,jData,onsuccess,onerror);
+	}
+
 
 
     var colSettingsArray = [];
@@ -4547,6 +5104,22 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 				width: f.width,
 				style: l_labelStyle,
 				format: 'm/d/y',
+				editor: {
+					completeOnEnter: true,
+					field: {
+						xtype: 'datefield',
+						format: 'm/d/y',
+						listeners: {
+							focusleave: function(n,o,f)
+							{
+								if(n.lastValue==n.originalValue) return;
+								var container = n.up();
+								if(!container) return;
+								updateTree(container,n.name,moment(n.lastValue).format("YYYY-MM-DD"));
+							}
+						}
+					}
+				},
 				filter: {
 				  type: 'date'
 	            }
@@ -4582,7 +5155,28 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 				sortable: true,
 				filter: {
 				  type: fType
-	            }
+	            },
+	            editor: {
+					completeOnEnter: true,
+					field: {
+						xtype:'textfield',
+						//allowBlank: (col.required!="Yes"),
+						listeners: {
+							change: function(n,o,f)
+							{
+								//
+							},
+							focusleave: function(n,o,f)
+							{
+								if(n.lastValue==n.originalValue) return;
+								var container = n.up();
+								if(!container) return;
+								updateTree(container,n.name,n.lastValue);
+							}
+						}
+					}
+				}
+
 			});
         }
 	});
@@ -4605,31 +5199,102 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 			 	children: dataItems
 			}
 	});
+	var treeMenu = new Ext.menu.Menu({ items:
+		[
+			{ text: 'Edit Task', handler: function()  {
+					var rId = tree.selection.data.iid
+					ijf.main.gItemSectionGridIndex = rId;
+					var tEvent = tree.ijfForm.tableDblClick;
+					tEvent=tEvent.replace("popform:","");
+					if(ijf.fw.forms.hasOwnProperty(tEvent))
+					{
+						var action = {};
+						action.form = tEvent;
+						action.type = "open item";
+						action.itemId = rId;
+						action.inField = inField;
+						ijf.extUtils.renderPopupForm(inFormKey, item, action)
+						return;
+					}
+				} },
+			{ text: 'Add Child Task', handler: function()  {
+					var rId = tree.selection.data.iid
+					//add the issue with "new item" summary and insert into grid no refresh...
+					var putObj = {};
+					putObj["fields"]={};
+					putObj["fields"]["summary"]="new item";
+        			putObj.fields.project = {"key":inField.form.formSet.projectId};
+        			putObj.fields.issuetype = {"name":inField.form.issueType};
+					var jData = JSON.stringify(putObj);
+					var tApi = "/rest/api/2/issue";
+					saveRes = ijfUtils.jiraApiSync("POST",tApi,jData);
+					//saveRes is the Key of the new issue if successfull,
+					//set the relationship and reload
+					try
+					{
+						if(saveRes.key)
+						{
+							var jsonString = {
+											"type": {
+												"name": "Relates"
+											   },
+											"inwardIssue": {
+												"key": rId
+											   },
+											"outwardIssue": {
+												"key": saveRes.key
+											   },
+											"comment":{
+												"body":"Linked related issue"
+											  }
+							};
+							var saveRelRes = ijfUtils.jiraApiSync("POST","/rest/api/2/issueLink",JSON.stringify(jsonString));
+							if(saveRelRes!="OK")
+							{
+								ijfUtils.modalDialogMessage("Error","Unable to establish the issue link: " + saveRes);
+								return;
+							}
+							var rec = Ext.create(tree.store.model);
+							rec.data.iid=saveRes.key;
+							rec.data.text=saveRes.key;
+							rec.data.summary= "new item";
+							//refresh the grid....
+							tree.selection.appendChild(rec);
+							tree.selection.expand();
+						}
+						else
+						{
+							ijfUtils.modalDialogMessage("Error","Unable to add the issue");
+						}
+					}
+					catch(e)
+					{
+						ijfUtils.modalDialogMessage("Error","Sorry, there was an error with the add: " + e.message);
+					}
 
-/*
-var store = Ext.create('Ext.data.TreeStore', {
-    root: {
-        expanded: true,
-        children: [
-            { text: 'detention', leaf: true },
-            { text: 'homework', expanded: true, children: [
-                { text: 'book report', leaf: true },
-                { text: 'algebra', leaf: true}
-            ] },
-            { text: 'buy lottery tickets', leaf: true }
-        ]
-    }
-});
-*/
+
+				} },
+			{ text: 'Add Peer Task', handler: function()  {
+					//each row, blow away if same cell.
+					ijfUtils.modalDialogMessage("Hi","here");
+				} }
+		]});
+
     var tree= new Ext.tree.Panel({
         store: store,
         style: l_panelStyle,
         height: l_Height,
         useArrows: true,
         width: "100%",
+        ijfForm: inField,
+       	id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
         rootVisible: false,
         columns: colSettingsArray,
         ijfForm: inField,
+		plugins: {
+		        ptype: 'cellediting',
+		        clicksToEdit: 1
+        },
 		listeners: {
             'selectionchange':  function(selMod, record, something ){
 				//if event,
@@ -4649,8 +5314,6 @@ var store = Ext.create('Ext.data.TreeStore', {
 				//look for snippet...
 				if(ijf.snippets.hasOwnProperty(tEvent))
 				{
-
-
 					ijf.snippets[tEvent](record[0].data.iid,this);
 					return;
 				}
@@ -4709,6 +5372,13 @@ var store = Ext.create('Ext.data.TreeStore', {
     ijf.main.controlSet[thisControl.id]=thisControl;
     //after render....
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](layout, inFormKey,item, inField, inContainer);
+
+    //lastly disable context menu for this element
+	tree.getEl().on('contextmenu', function(e) {
+  	    e.preventDefault();
+		treeMenu.showAt(e.clientX,e.clientY);
+	});
+
 },
 renderGridPanel:function(inFormKey,item, inField, inContainer)
 {
@@ -4803,22 +5473,22 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
         collapsed=true;
     }
 
-	var l_Height = '300';
+	var l_Height = 300;
     var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
     if(l_Height=="")
     {
-		l_Height='300';
+		l_Height=300;
 	}
 	else
 	{
     	l_Height = l_Height.replace("px","")/1;
 	}
 
-	var l_Width = '600';
+	var l_Width = 600;
     var l_Width=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"width");
     if(l_Width=="")
     {
-		l_Width='600';
+		l_Width=600;
 	}
 	else
 	{
@@ -4972,7 +5642,72 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 			break;
 			case "combobox":
 					tFields.push({name: col.columnName, type: 'string'});
-					lookups[col.columnName] = ijfUtils.getReferenceDataByName(col.reference);
+					//The lookup may be simple 1D array or part of a complex cascade.  The syntax of co.reference tells
+					var cLookupDef = {"index":"0"};
+					var cListener = {
+										change: function(n,o,f)
+										{
+											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+										},
+										focus: function(){
+											this.validate();
+										}
+									};
+					if(ijf.fw.CustomTypes.find(function(t){return (t.name==col.reference);}))
+					{
+						lookups[col.columnName] = ijfUtils.getReferenceDataByName(col.reference,"0");
+					}
+					else
+					{
+						//complex cascade...
+						try
+						{
+							cLookupDef = JSON.parse(col.reference);
+							lookups[col.columnName] = ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index);
+
+							//establish a listener for this combo if necessary
+							if(cLookupDef.parents)
+							{
+								var parentIds = cLookupDef.parents;
+								var cFilters = parentIds.reduce(function(inFilter,p){
+										inFilter.push({"property":p.dataIndex.toString(), "value":"tbd", "columnName":p.columnName});
+										return inFilter;
+									},[]);
+								cListener["beforeQuery"] = function(query) {
+										 	var cContainer = this.up();
+											//cFilters["value"]= cValue;
+											cFilters.forEach(function(f){
+												//for each filter param, we need to get the correct value...
+												var cValue = cContainer.grid.getSelectionModel().getSelected().items[0].data[f.columnName];
+												if(!cValue) cValue = 'novaluetofilterwith';
+												f.value=cValue;
+											});
+											this.store.clearFilter();
+											this.store.filter(cFilters);
+										};
+							}
+
+							//for each child, you need to clear it's value
+							if(cLookupDef.children)
+							{
+								var childFields = cLookupDef.children;
+								cListener["change"]= function(n,o,f)
+								{
+										var cContainer = this.up();
+										childFields.forEach(function(f){
+											cContainer.grid.getSelectionModel().getSelected().items[0].set(f,null);
+										});
+										ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+								};
+							}
+
+						}
+						catch(le)
+						{
+							ijfUtils.footLog("failed to handle complex lookup: " + le.message);
+							lookups[col.columnName] = [];
+						}
+					}
 					listColumns.push({
 							header: thisColHeader,
 							sortable: true,
@@ -4991,15 +5726,13 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 									validator: lValidator,
 									forceSelection: true,
 									store: lookups[col.columnName],
-									listeners: {
-										change: function(n,o,f)
-										{
-											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
-										},
-										focus: function(){
-											this.validate();
-										}
-									}
+									lookupDef: cLookupDef,
+									displayField: cLookupDef.index,
+								    valueField: cLookupDef.index,
+								    //triggerAction: 'all',
+								    //mode: 'local',
+								    //lastQuery: '',
+									listeners: cListener
 								}
 							}
 			});

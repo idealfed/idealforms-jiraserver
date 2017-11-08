@@ -255,7 +255,7 @@ var ijfUtils = {
 				 }
              },
              error: function(e) {
-				 if((e.status==201) && (e.statusText=="Created"))
+				 if(e.status==201) //  && (e.statusText=="Created"))
                  {
 					 retVal="OK";
 				 }
@@ -277,7 +277,7 @@ var ijfUtils = {
 
      	var retVal="tbd";
      	jQuery.ajax({
-                 async: false,
+                 async: true,
                  type: inMethod,
                  contentType:"application/json; charset=utf-8",
                  url: g_root + inApi,
@@ -820,9 +820,9 @@ renderHeader:function(inContainerId, thisForm,item)
     var headerCenter = ijfUtils.replaceKeyValues(thisForm.settings["headerCenter"],item);
     var headerRight = ijfUtils.replaceKeyValues(thisForm.settings["headerRight"],item);
 
-    ijfUtils.setHead("<div style='width:100%'><div style='display:table-cell;width:205px'>" + headerLeft + "</div>" +
+    ijfUtils.setHead("<div style='width:100%'><div style='display:table-cell;width:17%'>" + headerLeft + "</div>" +
         "<div style='text-align:center;display:table-cell;width:65%'>"  + headerCenter + "</div>" +
-        "<div style='text-align:right;display:table-cell;width:205px'>" + headerRight + "</div></div>");
+        "<div style='text-align:right;display:table-cell;width:17%'>" + headerRight + "</div></div>");
 
     //ijfUtils.setHead("<table  role='presentation' width='100%' borders=0><tr><td width='33%' align='left'>" + headerLeft + "</td>" +
     //    "<td  width='33%' align ='center'>"  + headerCenter + "</td>" +
@@ -855,7 +855,8 @@ setContent:function(cId,x,y,colSpans,cellsOnly,rowSpans)
 		var rows = x/1+1;
 		var cols = y/1+1;
 
-		var cHtml = "<table  role='presentation' id='"+cId+"_ijfContentTableId' cellspacing=3 cellpadding=0>";
+		//trying with cell spacing at 0
+		var cHtml = "<table  role='presentation' id='"+cId+"_ijfContentTableId' cellspacing=0 cellpadding=3>";
 
 
 		var cellStyle = 'ijf-cell';
@@ -1359,7 +1360,11 @@ loadConfig:function(onSuccess, onError)
 		var targetControlKey =ijf.main.controlSet[controlKey];
 		targetControlKey.control.setVisible(visible);
 	},
-
+    getControlByDataSource: function(inDataSource)
+    {
+		var retCnt = Object.keys(ijf.main.controlSet).reduce(function(inObj,c){if(ijf.main.controlSet[c].field.dataSource==inDataSource) inObj=ijf.main.controlSet[c];return inObj;},null);
+		return retCnt;
+	},
 	getFieldValue:function(controlKey)
 	{
 		var retVal = null;
@@ -1464,6 +1469,7 @@ loadConfig:function(onSuccess, onError)
 		if(!inText)  return inText;
 
 		retText=retText.replace("#{user}",ijf.main.currentUser.displayName);
+		retText=retText.replace("#{userid}",ijf.main.currentUser.id);
         retText=retText.replace("#{datetime}",moment().format('LL'));
 
 		if(!item) return retText;
@@ -1908,7 +1914,7 @@ CSVtoArray:function (strData, strDelimiter ){
 	Data Reference
 	**********************/
 
-	getReferenceDataByName:function(refName){
+	getReferenceDataByName:function(refName, keyIndex){
 		var retRef = [];
 
 		var thisT = {};
@@ -1932,9 +1938,72 @@ CSVtoArray:function (strData, strDelimiter ){
 					//look for CSV....
 					if(retRef[0].indexOf(",")>-1)
 					{
-						retRef = retRef.map(function(r)
+						var i = 0;
+						var lookup = retRef.map(function(r)
 						{
-							return r.split(",").map(function(c){return c.trim();});
+							i=0;
+							return r.split(",").reduce(function(inObj, c){ inObj[i.toString()]=c.trim();i++;return inObj;},{});
+						});
+						var sFields = [];
+						for(var j=0;j<i;j++) sFields.push(j.toString());
+
+						//filter lookup for distinct elements for index
+						var uniqueVals = {};
+						lookup = lookup.filter(function(r){if(uniqueVals.hasOwnProperty(r[keyIndex])) return false; uniqueVals[r[keyIndex]]=true; return true;});
+
+						retRef = Ext.create('Ext.data.Store', {
+						  fields: sFields,
+						  data: lookup
+						});
+					}
+					else if(retRef[0].indexOf("\t")>-1)
+					{
+						var i = 0;
+
+						var lookup = retRef.map(function(r)
+						{
+							i=0;
+							return r.split("\t").reduce(function(inObj, c){ inObj[i.toString()]=c.trim();i++;return inObj;},{});
+						});
+						var sFields = [];
+						for(var j=0;j<i;j++) sFields.push(j.toString());
+
+						//filter lookup for distinct elements for index
+						var uniqueVals = {};
+						lookup = lookup.filter(function(r)
+						{
+							//harder...this needs to consider the immediate parent as well for uniqueness
+
+							var filterKey=r[keyIndex];
+							if(keyIndex>0)
+							{
+								filterKey=r[keyIndex-1]+r[keyIndex];
+							}
+
+							if(uniqueVals.hasOwnProperty(filterKey))
+							{
+								return false;
+							}
+							else
+							{
+								uniqueVals[filterKey]=true;
+								return true;
+							}
+						});
+
+						retRef = Ext.create('Ext.data.Store', {
+						  fields: sFields,
+						  data: lookup
+						});
+					}
+					else{
+						var lookup = retRef.map(function(r)
+						{
+							return {"0":r};
+						});
+						retRef = Ext.create('Ext.data.Store', {
+						  fields: ["0"],
+						  data: lookup
 						});
 					};
 				}

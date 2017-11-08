@@ -75,7 +75,7 @@
 												<li><a href="#iframsection">iFrame</a></li>
 												<li><a href="#itemList">Item List</a></li>
 												<li><a href="#formButtons">Form Buttons</a></li>
-												<li><a href="#formButtonsForPopup">Popup Form Buttons</a></li>
+												<li><a href="#formButtonsForPopup">Form Futtons for Popup</a></li>
 												<li><a href="#multiselect">Multiselect</a></li>
 												<li><a href="#navigatetoform">Navigate to Form</a></li>
 												<li><a href="#subform">Sub Form</a></li>
@@ -338,7 +338,7 @@
 											<b>Link to Designer Example:</b> <a href="http://forms.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-1&formId=Simple%20Form%20Date" target="_blank">Designer Example</a><br>
 											<b><u>Valid Properties</u></b><br>
 											<b>Caption:</b> The label for the control, or "none" for nothing, or blank to inherit JIRA label.<br>
-											<b>Control Type:</b> "checkbox"<br>
+											<b>Control Type:</b> "datebox"<br>
 											<b>Cell:</b> "row,column" in which to put the field.  Example "5,2"<br>
 											<b>Data Source:</b> Name of the JIRA field to bind, option types:  date or datetime.<br>
 											<b>Outer Style:</b> CSS that styles the outer container<br>
@@ -451,15 +451,23 @@
 											from a standard JIRA JQL query or they can be child issues or related issues.  In all cases item lists
 											can call a javascript function to filter the results after the primary list has been created.
 											<br>
-											<b>Link to Example:</b> <a href="http://forms.idealfed.com/plugins/servlet/iforms?itemId=DJP-1&formId=Simple%20Form%20Item%20List" target="_blank">Example</a><br>
-											<b>Link to Designer Example:</b> <a href="http://forms.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-1&formId=Simple%20Form%20Item%20List" target="_blank">Designer Example</a><br>
+											<b>Link to Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?itemId=DJP-1&formId=Complex%20Form%20Item%20List" target="_blank">Example</a><br>
+											<b>Link to Designer Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-1&formId=Complex%20Form%20Item%20List" target="_blank">Designer Example</a><br>
 											<b><u>Valid Properties</u></b><br>
 											<b>Control Type:</b> "itemlist"<br>
 											<b>Cell:</b> "row,column" in which to put the field.  Example "5,2"<br>
 											<b>Data Source:</b> a JQL query, or "children" for child issues or "related" for related issues<br>
+											The JQL here is very powerful.  JIRA includes many functions you can include.  Anything you can write in <br>
+											JQL can be used here, and you can use memory variables in your query. (similar to SQL parameter binding.)<br>
+											Example helpful JQLs:  PARENT IN (#{key}) -> this will use the memory variable "key" and pull all children<br>
+											Example helpful JQLs:  project = PMM and cf[13819] = "#{EPMD Project}" -> this pulls PMM issues where custom field 13819 = form value "EPMD Project"<br>
+											You can also set the number rows to return with a &maxResults=200 at the end of your JQL.
 											<b>Outer Style:</b> CSS that styles the outer container<br>
 											<b>Inner Style:</b> CSS that styles the inner container<br>
-											<b>Field Style:</b> CSS that styles the field container, and optionally "required:true" if required<br>
+											<b>Field Style:</b> CSS and optionally "paging", Ex:  paging:10<br>
+											Paging is important if your return list has a lot of rows.  Paging will display the number of entries<br>
+											on a page with controls to page forward and backward.  You can also use paging to prevent paging from happening<br>
+											by setting it to a very high number like 1000.  Note, JIRA's maxiumum return is 1000 rows in one page.  <br>
 											<b>Label Style:</b> CSS that styles the label<br>
 											<b>Tb. Col. Widths:</b> A comma delimited list of widths for the display<br>
 											<b>Tb. Col. Heads:</b> Overrides for the column headers<br>
@@ -503,11 +511,11 @@
 											<b>Save/Done:</b> Saves the form and closes dialog.<br>
 											<b>Done:</b> Closes the form with no save.<br>
 											<br>
-											<b>Link to Example:</b> <a href="http://forms.idealfed.com/plugins/servlet/iforms?itemId=Simple%20Form%20Item%20List%20for%20Popup" target="_blank">Example</a><br>
-											<b>Link to Designer Example:</b> <a href="http://forms.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=Simple%20Form%20Item%20List%20for%20Popup" target="_blank">List that pops form Example</a><br>
-											<b>Link to Designer Example:</b> <a href="http://forms.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=Simple%20Form%20for%20Popup" target="_blank">Popup form Example</a><br>
+											<b>Link to Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?itemId=DJP-1&formId=Simple%20Form%20Item%20List%20for%20Popup" target="_blank">Example</a><br>
+											<b>Link to Designer Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-1&formId=Simple%20Form%20Item%20List%20for%20Popup" target="_blank">List that pops form Example</a><br>
+											<b>Link to Designer Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-1&formId=Simple%20Form%20for%20Popup" target="_blank">Popup form Example</a><br>
 											<b><u>Valid Properties</u></b><br>
-											<b>Control Type:</b> "formbuttons"<br>
+											<b>Control Type:</b> "formbuttonsforpopup"<br>
 											<b>Cell:</b> "row,column" in which to put the field.  Example "5,2"<br>
 											<b>Data Source:</b> A form to open when "Done" is clicked, if blank default form from Form Group will be rendered<br>
 											<b>Outer Style:</b> A comma separated list of labels to override names.  Also used to supress a button.  Example:  ",,Home" will show
@@ -653,8 +661,8 @@
 
 
 											<br>
-											<b>Link to Example:</b> <a href="http://forms.idealfed.com/plugins/servlet/iforms?itemId=DJP-1&formId=Simple%20Form%20Radio" target="_blank">Example</a><br>
-											<b>Link to Designer Example:</b> <a href="http://forms.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-1&formId=Simple%20Form%20Radio" target="_blank">Designer Example</a><br>
+											<b>Link to Example:</b> <a href="http://forms.idealfed.com/plugins/servlet/iforms?itemId=DJP-1&formId=Subform%20Tab%20Menu" target="_blank">Example</a><br>
+											<b>Link to Designer Example:</b> <a href="http://forms.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-1&formId=Subform%20Tab%20Menu" target="_blank">Designer Example</a><br>
 											<b><u>Valid Properties</u></b><br>
 											<b>Caption:</b> The label for the control, or "none" for nothing, or blank to inherit JIRA label.<br>
 											<b>Control Type:</b> "tabmenu"<br>

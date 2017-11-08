@@ -1,8 +1,3 @@
-/*
-   Set g_version for this version of the JS
-*/
-window.g_version = "2.0.9";
-
 var ijf = ijf || {};
 ijf.main = (function(){
 
@@ -47,6 +42,11 @@ var gSaveIncludesFile = false;
 
 function init(inConfigVersion)
 {
+	/*
+	   Set g_version for this version of the JS
+	*/
+    window.g_version = "2.0.9";
+
 
     ijfUtils.showProgress();
 
@@ -712,8 +712,9 @@ function saveBatch(onSuccess,inFields,inForm, item)
 				if(saveRes.key)
 				{
 					ijf.main.itemId=saveRes.key;
+					if(!item.key)item.key=saveRes.key;
 					//window.g_itemId=saveRes.key;
-					onSuccess();
+					//onSuccess();
 					//ijf.main.resetForm();
 				}
 				else
