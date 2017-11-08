@@ -1,5 +1,4 @@
 var ijf = ijf || {};
-
 ijf.admin = {
 
 	cwfAdmin_thisField:"",
@@ -870,7 +869,6 @@ addEditForm:function (sRow)
 
 										fieldsOut.push(fObj);
 									};
-									debugger;
 									var jOut = {
 										id: ijf.admin.cwfAdmin_form.id,
 										testIssue: ijf.admin.cwfAdmin_form.testIssue,
