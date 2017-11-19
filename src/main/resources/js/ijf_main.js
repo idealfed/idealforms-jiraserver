@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "2.0.9";
+    window.g_version = "2.0.11";
 
 
     ijfUtils.showProgress();
@@ -101,7 +101,8 @@ function init(inConfigVersion)
 			{
     	        ijfUtils.footLog("Config failed to parsee: " + e.message);
     	        ijfUtils.hideProgress();
-    	        ijfUtils.modalDialogMessage("Fatal","Unable to get the configuration: " + e.message);
+    	        ijfUtils.modalDialogMessage("Fatal","Unable to get the configuration.  Don't panic, the system maintains 20 prior snapshots from which to recover.  Click the 'History' button, apply a config and download and upload.");
+				ijfUtils.renderAdminButtons('ijfContent');
     	        return;
 			}
 			if(!ijf.fw) return;

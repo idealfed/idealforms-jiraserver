@@ -242,6 +242,7 @@ addEditForm:function (sRow)
 					snippet: JSON.stringify(sRow.data.snippet)
 				};
 				var sJson = JSON.stringify(sendData);
+
 				var sRes =  ijfUtils.saveJiraFormSync(sJson,"saveSnippet");
 
 				if(jQuery.isNumeric(sRes))
@@ -325,7 +326,12 @@ addEditForm:function (sRow)
 			//cwfAdmin_fieldId = f.iid;
 			var f = ijf.admin.cwfAdmin_form.fields[fk];
 			ijf.admin.cwfAdmin_thisField = f;
-			fArray.push({"iid":f.iid, "cell":f.formCell,"type":f.controlType,"source":f.dataSource});
+			var lType = f.controlType;
+			if(f.hasOwnProperty("rawPermissions"))
+			{
+				if(f.rawPermissions.indexOf("enabled\":true")>-1) lType = lType + " (p)";
+			}
+			fArray.push({"iid":f.iid, "cell":f.formCell,"type":lType,"source":f.dataSource});
 		});
 		ijf.admin.listView.getStore().loadData(fArray);
 	},
@@ -390,23 +396,22 @@ addEditForm:function (sRow)
 		{
 		};
 
-		var updateTables = function(inState)
+		var updateTables = function(inState,inObj)
 		{
-
 			if(!inState)
 			{
 				editAvailStore.loadData([]);
 				editAssStore.loadData([]);
 				viewAvailStore.loadData([]);
 				viewAssStore.loadData([]);
-				wfsNameStore.loadData(Object.keys(thisForm.permissions.states).map(function(s){return {"state":s};}));
+				wfsNameStore.loadData(Object.keys(inObj.permissions.states).map(function(s){return {"state":s};}));
 				return;
 			}
 
-			if(!thisForm.permissions.states.hasOwnProperty(inState)) return;
-			wfsNameStore.loadData(Object.keys(thisForm.permissions.states).map(function(s){return {"state":s};}));
+			if(!inObj.permissions.states.hasOwnProperty(inState)) return;
+			wfsNameStore.loadData(Object.keys(inObj.permissions.states).map(function(s){return {"state":s};}));
 
-			var cState = thisForm.permissions.states[inState];
+			var cState = inObj.permissions.states[inState];
 			var tmpArr = allGroupNames.slice(0);
 			editAssStore.loadData(cState.edit.map(function(g){
 					tmpArr = tmpArr.reduce(function(inArr,i){if(i.role==g) return inArr;inArr.push(i);	return inArr;},[]);
@@ -428,10 +433,6 @@ addEditForm:function (sRow)
 		var wfsNameStore = new Ext.data.Store({
 			fields: ['state']
 		});
-
-		wfsNameStore.loadData(Object.keys(thisForm.permissions.states).map(function(s){
-			return {"state":s};
-		}));
 
 		var editAvailStore = new Ext.data.Store({
 			fields: ['role']
@@ -472,6 +473,10 @@ addEditForm:function (sRow)
 
 								//list of workflow status
 								//don't know how to handle, not in the API
+								wfsNameStore.loadData(Object.keys(thisForm.permissions.states).map(function(s){
+											return {"state":s};
+								}));
+
 								var grps = ijfUtils.jiraApiSync("GET","/rest/api/2/groups/picker",null);
 
 					   			var headStyle =  " style='background:lightgray;border-bottom:solid blue 2px' ";
@@ -486,7 +491,7 @@ addEditForm:function (sRow)
 									close: function()
 									{
 										cPermState=null;
-										updateTables(cPermState);
+										updateTables(cPermState,thisForm);
 									}
 								},
 								closable: true,
@@ -540,7 +545,7 @@ addEditForm:function (sRow)
 															{
 																thisForm.permissions.states[newStateName]={"view":[],"edit":[]};
 																cPermState=newStateName;
-																updateTables(cPermState);
+																updateTables(cPermState,thisForm);
 															}
 														}
                 								}}
@@ -578,7 +583,7 @@ addEditForm:function (sRow)
 															listeners: {
 																select:function(view, record, eops) {
 																	cPermState = record.data.state;
-																	updateTables(cPermState);
+																	updateTables(cPermState,thisForm);
 																}
 															}
 														},
@@ -591,7 +596,7 @@ addEditForm:function (sRow)
 																{
 																	delete ijf.admin.cwfAdmin_form.permissions.states[cPermState];
 																	cPermState="";
-																	updateTables(null);
+																	updateTables(null,thisForm);
 																}
 
 															}
@@ -633,7 +638,7 @@ addEditForm:function (sRow)
 																			if(!cPermState) return;
 																			var newRole=record.data.role;
 																			ijf.admin.cwfAdmin_form.permissions.states[cPermState].edit.push(newRole);
-																			updateTables(cPermState);
+																			updateTables(cPermState,thisForm);
 																		}
 																	}
 																},
@@ -658,7 +663,7 @@ addEditForm:function (sRow)
 																			ijf.admin.cwfAdmin_form.permissions.states[cPermState].edit=ijf.admin.cwfAdmin_form.permissions.states[cPermState].edit.filter(function(item){
 																				return item !== newRole;
 																			});
-																			updateTables(cPermState);
+																			updateTables(cPermState,thisForm);
 																		}
 																	}
 																}
@@ -695,7 +700,7 @@ addEditForm:function (sRow)
 																					if(!cPermState) return;
 																					var newRole=record.data.role;
 																					ijf.admin.cwfAdmin_form.permissions.states[cPermState].view.push(newRole);
-																					updateTables(cPermState);
+																					updateTables(cPermState,thisForm);
 																				}
 																			}
 																		},
@@ -720,7 +725,7 @@ addEditForm:function (sRow)
 																					ijf.admin.cwfAdmin_form.permissions.states[cPermState].view=ijf.admin.cwfAdmin_form.permissions.states[cPermState].edit.filter(function(item){
 																						return item !== newRole;
 																					});
-																					updateTables(cPermState);
+																					updateTables(cPermState,thisForm);
 																				}
 																			}
 																		}
@@ -1159,7 +1164,12 @@ addEditForm:function (sRow)
 			//cwfAdmin_fieldId = f.iid;
 			var f = thisForm.fields[fk];
 			ijf.admin.cwfAdmin_thisField = f;
-			fArray.push({"iid":f.iid, "cell":f.formCell,"type":f.controlType,"source":f.dataSource});
+			var lType = f.controlType;
+			if(f.hasOwnProperty("rawPermissions"))
+			{
+				if(f.rawPermissions.indexOf("enabled\":true")>-1) lType = lType + " (p)";
+			}
+			fArray.push({"iid":f.iid, "cell":f.formCell,"type":lType,"source":f.dataSource});
 		});
 		fieldStore.loadData(fArray);
 
@@ -1337,6 +1347,7 @@ addEditForm:function (sRow)
 						//get existing field by ID
 						ijf.admin.cwfAdmin_thisField = ijf.admin.cwfAdmin_form.fields[record[0].data.iid];
 					}
+
 					Ext.getCmp("adminFormFields_beforeRenderId").setValue(ijf.admin.cwfAdmin_thisField["beforeRender"]);
 					Ext.getCmp("adminFormFields_afterRenderId").setValue(ijf.admin.cwfAdmin_thisField["afterRender"]);
 					Ext.getCmp("adminFormFields_captionId").setValue(ijf.admin.cwfAdmin_thisField["caption"]);
@@ -1382,9 +1393,308 @@ addEditForm:function (sRow)
 		var fieldPanel = new Ext.FormPanel({
 			border:true,
 			width: 850,
-			//hidden: hideField,
-			//bodyStyle: l_Style,
 			items: [{
+				    xtype: 'button',
+				    width:150,
+				    style: 'margin-left:125px;margin-top:4px',
+				    text: 'Field Permissions',
+				    handler: function()
+					{
+					/////////////////////////////////////////field permissions
+
+								//verify field has model then process
+								//set field permissions if they are not there
+								if(!ijf.admin.cwfAdmin_thisField.permissions)
+								{
+									if(!ijf.admin.cwfAdmin_thisField.hasOwnProperty("rawPermissions"))
+									{
+										ijf.admin.cwfAdmin_thisField.permissions =
+											{"enabled":false,
+											 "states":{}
+											};
+									}
+									else
+									{
+										ijf.admin.cwfAdmin_thisField.permissions=JSON.parse(ijf.admin.cwfAdmin_thisField.rawPermissions);
+									}
+								}
+
+								wfsNameStore.loadData(Object.keys(ijf.admin.cwfAdmin_thisField.permissions.states).map(function(s){
+											return {"state":s};
+								}));
+								//list of workflow status
+								//don't know how to handle, not in the API
+								var grps = ijfUtils.jiraApiSync("GET","/rest/api/2/groups/picker",null);
+					   			var headStyle =  " style='background:lightgray;border-bottom:solid blue 2px' ";
+								var fieldRefWin = new Ext.Window({
+								layout: 'vbox',
+								title: "Field Security: " + ijf.admin.cwfAdmin_thisField["dataSource"],
+								width: 1100,
+								height:570,
+								listeners: {
+									show: loadPermissions,
+									close: function()
+									{
+										cPermState=null;
+										updateTables(cPermState,ijf.admin.cwfAdmin_thisField);
+									}
+								},
+								closable: true,
+								items: [
+									{
+									xtype: "checkboxfield",
+									boxLabel: "Field Security Enabled",
+									value : ijf.admin.cwfAdmin_thisField.permissions.enabled,
+									listeners: {
+										change: function(f,n,o)
+										{
+											ijf.admin.cwfAdmin_thisField.permissions.enabled=n;
+										}
+								    },
+									name: "secEnabled",
+									margin: '0 0 0 10',
+									inputValue: 1},
+									{
+										layout: 'hbox',
+										border: false,
+										frame: false,
+										xtype: "panel",
+										items: [{
+												xtype: 'textfield',
+												labelAlign: 'left',
+												fieldLabel: 'Workflow State',
+												labelWidth: 100,
+												labelStyle: "color:darkblue",
+												margin: '0 0 0 10',
+												width: 300,
+												value: "",
+												listeners: {
+													change: function(f,n,o){
+															newStateName = n;
+														}
+													}
+							            		},
+							            		{
+													xtype: 'button',
+													margin: '0 0 0 10',
+													text:'Add',
+													handler: function(){
+														if(newStateName)
+														{
+															//make sure unique...
+															if(ijf.admin.cwfAdmin_thisField.permissions.states.hasOwnProperty(newStateName))
+															{
+																ijfUtils.modalDialogMessage("Information","Please enter a name that does not exist.");
+															}
+															else
+															{
+																ijf.admin.cwfAdmin_thisField.permissions.states[newStateName]={"view":[],"edit":[]};
+																cPermState=newStateName;
+																updateTables(cPermState,ijf.admin.cwfAdmin_thisField);
+															}
+														}
+                								}}
+						            		]
+						            },
+						            {
+										xtype: "panel",
+										html: "<hr>",
+										width: "100%"
+										},
+									{
+										xtype: "panel",
+										layout: "hbox",
+										width: "100%",
+										items:[
+											{
+												xtype: "panel",
+												layout: "vbox",
+												width: 260,
+												items:
+													[
+														{	xtype: "gridpanel",
+															store: wfsNameStore,
+															style: "border: solid black 2px",
+															height:400,
+															margin: "0 20px 20px 20px",
+															width: 230,
+															id: "stateTableId",
+															columns: [{
+																		header: 'Workflow State',
+																		width:"100%",
+																		hidden: false,
+																		dataIndex: "state"
+																	}],
+															listeners: {
+																select:function(view, record, eops) {
+																	cPermState = record.data.state;
+																	updateTables(cPermState,ijf.admin.cwfAdmin_thisField);
+																}
+															}
+														},
+														{
+															xtype:'button',
+															hidden: false,
+															text:"Delete",
+															handler: function(){
+																if(cPermState)
+																{
+																	delete ijf.admin.cwfAdmin_thisField.permissions.states[cPermState];
+																	cPermState="";
+																	updateTables(null,ijf.admin.cwfAdmin_thisField);
+																}
+
+															}
+														}
+													]
+											},
+											{
+												xtype: "panel",
+												layout: "vbox",
+												width: 750,
+												items:[
+													{
+														xtype: "panel",
+														width: "100%",
+														layout: "hbox",
+														items:[{
+															xtype: "panel",
+															html: "Can Edit: ",
+															bodyStyle: "width:70px;font-weight:bold",
+															margin: "0 20px 0 20px",
+															},
+															{	xtype: "gridpanel",
+																	store: editAvailStore,
+																	style: "border: solid black 2px",
+																	height:200,
+																	margin: "0 20px 20px 20px",
+																	width:300,
+																	id: "permTableEditAvailRolesId",
+																	columns: [{
+																				header: 'Available Role',
+																				width:"100%",
+																				hidden: false,
+																				dataIndex: "role"
+																			}],
+																	listeners: {
+																		rowdblclick:function(view, record, eops) {
+																			//remove this, add partner
+																			if(!record.data.role) return;
+																			if(!cPermState) return;
+																			var newRole=record.data.role;
+																			ijf.admin.cwfAdmin_thisField.permissions.states[cPermState].edit.push(newRole);
+																			updateTables(cPermState,ijf.admin.cwfAdmin_thisField);
+																		}
+																	}
+																},
+																{	xtype: "gridpanel",
+																	store: editAssStore,
+																	style: "border: solid black 2px",
+																	height:200,
+																	width:300,
+																	id: "permTableEditAssRolesId",
+																	columns: [{
+																				header: 'Assigned Role',
+																				width:"100%",
+																				hidden: false,
+																				dataIndex: "role"
+																			}],
+																	listeners: {
+																		rowdblclick:function(view, record, eops) {
+																			//remove this, add partner
+																			if(!record.data.role) return;
+																			if(!cPermState) return;
+																			var newRole=record.data.role;
+																			ijf.admin.cwfAdmin_thisField.permissions.states[cPermState].edit=ijf.admin.cwfAdmin_form.permissions.states[cPermState].edit.filter(function(item){
+																				return item !== newRole;
+																			});
+																			updateTables(cPermState,ijf.admin.cwfAdmin_thisField);
+																		}
+																	}
+																}
+
+														]
+													},
+													{
+																xtype: "panel",
+																width: "100%",
+																layout: "hbox",
+																items:[{
+																	xtype: "panel",
+																	html: "Can View: ",
+																	bodyStyle: "width:80px;font-weight:bold",
+																	margin: "0 20px 0 20px",
+																	},
+																	{	xtype: "gridpanel",
+																			store: viewAvailStore,
+																			style: "border: solid black 2px",
+																			height:200,
+																			margin: "0 20px 0 20px",
+																			width:300,
+																			id: "permTableViewAvailRolesId",
+																			columns: [{
+																						header: 'Available Role',
+																						width:"100%",
+																						hidden: false,
+																						dataIndex: "role"
+																					}],
+																			listeners: {
+																				rowdblclick:function(view, record, eops) {
+																					//remove this, add partner
+																					if(!record.data.role) return;
+																					if(!cPermState) return;
+																					var newRole=record.data.role;
+																					ijf.admin.cwfAdmin_thisField.permissions.states[cPermState].view.push(newRole);
+																					updateTables(cPermState,ijf.admin.cwfAdmin_thisField);
+																				}
+																			}
+																		},
+																		{	xtype: "gridpanel",
+																			store: viewAssStore,
+																			style: "border: solid black 2px",
+																			height:200,
+																			width:300,
+																			id: "permTableViewAssRolesId",
+																			columns: [{
+																						header: 'Assigned Role',
+																						width:"100%",
+																						hidden: false,
+																						dataIndex: "role"
+																					}],
+																			listeners: {
+																				rowdblclick:function(view, record, eops) {
+																					//remove this, add partner
+																					if(!record.data.role) return;
+																					if(!cPermState) return;
+																					var newRole=record.data.role;
+																					ijf.admin.cwfAdmin_thisField.permissions.states[cPermState].view=ijf.admin.cwfAdmin_form.permissions.states[cPermState].edit.filter(function(item){
+																						return item !== newRole;
+																					});
+																					updateTables(cPermState,ijf.admin.cwfAdmin_thisField);
+																				}
+																			}
+																		}
+
+																]
+														}
+												]
+											},
+										]
+									},
+
+
+
+								],
+								modal: true
+								});
+								fieldRefWin.show();
+							}
+					//////////////////////////////////////////END field permission
+				},
+				{
+					xtype:'panel'
+				},
+				{
 				xtype: 'textfield',
 				labelAlign: 'left',
 				labelWidth: 120,
@@ -1968,608 +2278,8 @@ addEditForm:function (sRow)
 		 }
     });
 
-
     ijf.lists.dWin.show();
     ijf.admin.renderForm("ijfContent",false);
-
-//		ijf.admin.cwfAdmin_settingsPanel.render(document.getElementById("ijfCraft1"));
-
-/*
-
-		//now render the reference data....
-		//do a side by side panel with grid selector on left and table on right.
-		if(!Ext.ClassManager.isCreated('gridTableArray'))
-		{
-			Ext.define('gridTableArray', {
-				extend: 'Ext.data.Model',
-				fields: [
-					{name: 'Table',  type: 'string'},
-					{name: 'Rows', type: 'string'}
-				]
-			});
-		}
-		if(!Ext.ClassManager.isCreated('gridTableRawArray'))
-		{
-			Ext.define('fieldFieldsArray', {
-				extend: 'Ext.data.Model',
-				fields: [
-					{name: 'table',  type: 'string'},
-					{name: 'field', type: 'string'},
-					{name: 'type', type: 'string'},
-					{name: 'colNumber', type: 'string'},
-					{name: 'colValue', type: 'string'},
-					{name: 'rowNumber', type: 'string'},
-					{name: 'fkTable', type: 'string'},
-					{name: 'fkField', type: 'string'}
-				]
-			});
-		}
-
-		cwfAdmin_thisTable = {};
-
-		var tablesStore = new Ext.data.Store({
-			model: 'gridTableArray'
-		});
-		var fTArray = new Array();
-
-		for(var ety in fw.reference)
-		{
-			if(fw.reference.hasOwnProperty(ety))
-			{
-				var thisEnt = fw.reference[ety];
-				fTArray.push({"Table":ety,"Rows":thisEnt.rows.length});
-				cwfAdmin_thisTable = thisEnt;
-			}
-		}
-		tablesStore.loadData(fTArray);
-
-		var tableDataStore = new Ext.data.Store({
-			model: 'gridTableArray'
-		});
-		var fRowsArray = new Array();
-
-		tableDataStore.loadData(fRowsArray);
-
-
-		var addEditTableFunction = function(){
-
-					// model
-					if(Ext.ClassManager.isCreated('addEditTableArray'))
-					{
-						var tempObj = Ext.getCmp('addEditTableArray');
-						Ext.destroy(tempObj);
-					}
-
-					if(!Ext.ClassManager.isCreated('addEditTableArray'))
-					{
-						Ext.define('addEditTableArray', {
-							extend: 'Ext.data.Model',
-							fields: [
-								{name: 'table',  type: 'string'},
-								{name: 'field', type: 'string', unique:'true'},
-								{name: 'type', type: 'string'},
-								{name: 'colNumber', type: 'string'},
-								{name: 'fkTable', type: 'string'},
-								{name: 'fkField', type: 'string'}
-							]
-						});
-					}
-
-
-					//load data
-					var tableAddEditStore = new Ext.data.Store({
-						model: 'addEditTableArray'
-					});
-
-					if(cwfAdmin_thisTable)
-					{
-						//load the table specs...
-						var tFieldList =cwfAdmin_thisTable.getTableSpecsAsObjArray();
-						tableAddEditStore.loadData(tFieldList);
-					}
-
-
-					var tEditingBar=[];
-					tEditingBar.push({
-						iconCls: 'icon-user-add',
-						text: 'Add',
-						align: 'center',
-						handler: function(){
-
-							var rec = Ext.create('addEditTableArray');
-
-							addEditTablePanel.getStore().insert(0, rec);
-							addEditTablePanel.getView().refresh();
-
-						}
-					});
-					tEditingBar.push({
-						ref: '../removeBtn',
-						iconCls: 'icon-user-delete',
-						text: 'Remove',
-						handler: function(){
-							//editor.stopEditing();
-							var s = addEditTablePanel.getSelectionModel().getSelection();
-							for(var i = 0, r; r = s[i]; i++){
-								addEditTablePanel.getStore().remove(r);
-							}
-							addEditTablePanel.getView().refresh();
-						}
-					});
-
-					tEditingBar.push({
-						text: 'Save',
-						handler: function(){
-							//create entity with one row of null data...
-
-							//need validations:  same Table name.  if exist, don't save.
-							var tRows = tableAddEditStore.getRange();
-							var eName = "";
-							var lastEname = "";
-							var eRow = "";
-							var refData = [];
-							for(var tr in tRows)
-							{
-								if(!tRows.hasOwnProperty) continue;
-								tRows[tr].commit();
-								eName = tRows[tr].data.table;
-								if(lastEname)
-								{
-									if(lastEname != eName)
-									{
-										//stop
-										modalDialogMessage("ERROR", "Sorry, the table name must be the same for all columns.  The col numbers should be unique.");
-										return;
-									}
-								}
-								lastEname=eName;
-								eRow = tRows[tr].data.table + "~~~" + tRows[tr].data.field + "~~~" +tRows[tr].data.type + "~~~" + tRows[tr].data.colNumber + "~~~~~~1~~~" + tRows[tr].data.fkTable + "~~~" + tRows[tr].data.fkField;
-								refData.push(eRow.split("~~~"));
-							}
-
-							//Add the table name to the root table list....
-							fw.reference[eName] = new Mwf_Entity(eName,refData,fw.reference);
-							if(!cwfAdmin_thisTable)
-							{
-								var thisEnt = fw.reference[eName];
-								var rec = Ext.create('gridTableArray');
-								rec.data.Table = eName;
-								rec.data.Rows = thisEnt.rows.length;
-								cwfAdmin_thisTable = thisEnt;
-								tWin.close();
-								tablesStore.insert(0, rec);
-								listAllTables.getView().refresh();
-							}
-						}
-					});
-
-
-					//create grid panel
-					var tce  = new Ext.grid.plugin.CellEditing({
-						clicksToEdit: 1
-					});
-					var addEditTablePanel = new Ext.grid.GridPanel({
-						xtype: "cell-editing",
-						store: tableAddEditStore,
-						height:500,
-						width:800,
-						id: "addEditTableEditorId",
-						columns:   [{
-							header: 'Table Name',
-							width:150,
-							hidden: false,
-							dataIndex: 'table',
-							editor: {
-								xtype: 'textfield',
-								width: 'auto'
-							}
-						},
-							{
-								header: 'Field Name',
-								width:150,
-								hidden: false,
-								dataIndex: 'field',
-								editor: {
-									xtype: 'textfield',
-									width: 'auto'
-								}
-							},{
-								header: 'Type',
-								width:100,
-								hidden: false,
-								dataIndex: 'type',
-								editor: {
-									xtype: 'textfield',
-									width: 'auto'
-								}
-							},{
-								header: 'Col Index',
-								width:100,
-								hidden: false,
-								dataIndex: 'colNumber',
-								editor: {
-									xtype: 'textfield',
-									width: 'auto'
-								}
-							},{
-								header: 'Ref Table',
-								width:100,
-								hidden: false,
-								dataIndex: 'fkTable',
-								editor: {
-									xtype: 'textfield',
-									width: 'auto'
-								}
-							},{
-								header: 'Ref Field',
-								width:100,
-								hidden: false,
-								dataIndex: 'fkField',
-								editor: {
-									xtype: 'textfield',
-									width: 'auto'
-								}
-							}],
-						tbar: tEditingBar,
-						plugins: [tce],
-						selModel: {selType: 'rowmodel', mode: 'MULTI'},
-						listeners: {
-							selectionchange:function(view, record, eops) {
-								if(record.length==0) return;
-							}
-						}
-					});
-					addEditTablePanel.cellEditing=tce;
-					var tName = "New";
-					if(cwfAdmin_thisTable) tName = cwfAdmin_thisTable.name;
-					var tWin = new Ext.Window({
-						layout: 'fit',
-						title: tName,
-						width: 820,
-						height: 500,
-						closable: true,
-						items:addEditTablePanel,
-						modal: true
-					});
-					tWin.show();
-			  };
-
-		var l_etBar = [];
-
-		l_etBar.push({
-			text: 'Add',
-			align: 'center',
-			handler: function() {
-				cwfAdmin_thisTable = null;
-				addEditTableFunction();
-			}
-		});
-		l_etBar.push({
-			text: 'Edit',
-			align: 'center',
-			handler: function() {
-				if(!cwfAdmin_thisTable) return;
-				modalDialog("Warning","Editing a table definition will delete all data, are you sure you want to continue?",addEditTableFunction);
-			}
-		});
-		l_etBar.push({
-			ref: '../removeBtn',
-			text: 'Delete',
-			handler: function(){
-				//editor.stopEditing();
-				if(!cwfAdmin_thisTable) return;
-
-				var dFunct = function(){
-					delete fw.reference[cwfAdmin_thisTable.name];
-					var s = listAllTables.getSelectionModel().getSelection();
-					for(var i = 0, r; r = s[i]; i++){
-						listAllTables.getStore().remove(r);
-					}
-					listAllTables.getView().refresh();
-				};
-
-				modalDialog("Warning","This will delete the table definition and all data, are you sure you want to continue?",dFunct);
-			}
-		});
-		l_etBar.push({
-			text: 'Save',
-			align: 'center',
-			handler: function() {
-				showProgress();
-				fw.saveReferenceData();
-			}
-		});
-
-		var table_tbar=[];
-		//Editor for table data
-		table_tbar.push({
-			text: 'Edit Values',
-			align: 'center',
-			handler: function(){
-				//dynamic table of data....
-
-				if(!cwfAdmin_thisTable) return;
-				var firstRow;
-				for(var rw in cwfAdmin_thisTable.rows)
-				{
-					if(cwfAdmin_thisTable.rows.hasOwnProperty(rw))
-					{
-						firstRow = cwfAdmin_thisTable.rows[rw];
-						break;
-					}
-				}
-				if(!firstRow) return;
-
-				//dynamic model
-				if(Ext.ClassManager.isCreated('dynamicTableArray'))
-				{
-					var tempObj = Ext.getCmp('dynamicTableArray');
-					Ext.destroy(tempObj);
-				}
-
-				//each field, create paring...
-				var tFieldDefs = [];
-				var tPanelCols = [];
-				var winWidth = 110;
-				tFieldDefs.push({name:"rowkey",type:"string"});
-				tPanelCols.push( {
-						header: "ID",
-						width: 75,
-						hidden: false,
-						readOnly: true,
-						dataIndex: "rowkey"
-					}
-				);
-				for(var rf in firstRow.fields)
-				{
-					if(firstRow.fields.hasOwnProperty(rf))
-					{
-						var thisField = firstRow.fields[rf];
-						tFieldDefs.push({name:thisField.colName,type:"string"});
-						tPanelCols.push( {
-								header: thisField.colName,
-								width:150,
-								hidden: false,
-								dataIndex: thisField.colName,
-								readOnly: false,
-								editor: {
-									xtype: 'textfield',
-									width: 'auto'
-								}
-							}
-						);
-						winWidth+=150;
-					}
-				}
-
-				Ext.define('dynamicTableArray', {
-					extend: 'Ext.data.Model',
-					fields: tFieldDefs
-				   });
-
-				//load data
-				var tableEditorStore = new Ext.data.Store({
-					model: 'dynamicTableArray'
-				});
-
-				tableEditorStore.loadData(cwfAdmin_thisTable.getTableAsObjArray());
-
-
-
-				var tEditingBar=[];
-				tEditingBar.push({
-					iconCls: 'icon-user-add',
-					text: 'Add',
-					align: 'center',
-					handler: function(){
-
-						var rec = Ext.create('dynamicTableArray');
-
-						rec.data.rowkey = cwfAdmin_thisTable.getNextKey();
-
-						listTables.getStore().insert(0, rec);
-						listTables.getView().refresh();
-
-					}
-				});
-				tEditingBar.push({
-					ref: '../removeBtn',
-					iconCls: 'icon-user-delete',
-					text: 'Remove',
-					handler: function(){
-						//editor.stopEditing();
-						var s = listTables.getSelectionModel().getSelection();
-						for(var i = 0, r; r = s[i]; i++){
-							cwfAdmin_thisTable.removeRow(r);
-							listTables.getStore().remove(r);
-						}
-						listTables.getView().refresh();
-					}
-				});
-
-				tEditingBar.push({
-					text: 'Save',
-					handler: function(){
-						//editor.stopEditing();
-						//for each row that has changed.  update it in the Entity...
-					   var tRows = tableEditorStore.getRange();
-					   for(var tr in tRows)
-					   {
-						  tRows[tr].commit();
-						  if(tRows.hasOwnProperty(tr)) cwfAdmin_thisTable.updateRow(tRows[tr]);
-					   }
-					}
-				});
-
-
-				//create grid panel
-				var tce  = new Ext.grid.plugin.CellEditing({
-					clicksToEdit: 1
-				});
-				var listTables = new Ext.grid.GridPanel({
-					xtype: "cell-editing",
-					store: tableEditorStore,
-					height:500,
-					width:winWidth,
-					id: "dynamicTableEditorId",
-					columns: tPanelCols,
-					tbar: tEditingBar,
-					plugins: [tce],
-					selModel: {selType: 'rowmodel', mode: 'MULTI'},
-					listeners: {
-						selectionchange:function(view, record, eops) {
-							if(record.length==0) return;
-						}
-					}
-				});
-				listTables.cellEditing=tce;
-
-				var tWin = new Ext.Window({
-					layout: 'fit',
-					title: cwfAdmin_thisTable.name,
-					width: winWidth+20,
-					height: 500,
-					closable: true,
-					items:listTables,
-					modal: true
-				});
-				tWin.show();
-			}
-		});
-
-
-
-		var listAllTables = new Ext.grid.GridPanel({
-			store: tablesStore,
-			height:600,
-			width:200,
-			id: "fieldsListViewId",
-			//reserveScrollOffset: true,
-			columns: [{
-				header: 'Table',
-				width:150,
-				hidden: false,
-				dataIndex: 'Table'
-			},
-				{
-					header: 'Rows',
-					width:50,
-					sortable: true,
-					dataIndex: 'Rows'
-				}],
-			tbar: l_etBar,
-			listeners: {
-				selectionchange:function(view, record, eops) {
-					if(record.length==0) return;
-
-					cwfAdmin_thisTable =fw.reference[record[0].data.Table];
-
-					if(!cwfAdmin_thisTable) return;
-					//tableRawPanel.removeAll();
-					tableDataStore.removeAll();
-					fRowsArray = new Array();
-					for(var rw in cwfAdmin_thisTable.rows)
-					{
-						if(cwfAdmin_thisTable.rows.hasOwnProperty(rw))
-						{
-							var thisRow = cwfAdmin_thisTable.rows[rw];
-							for(var rf in thisRow.fields)
-							{
-								if(thisRow.fields.hasOwnProperty(rf))
-								{
-									var thisField = thisRow.fields[rf];
-									fRowsArray.push({"table":thisField.entity.name,"field":thisField.colName,"type":thisField.colType,"colNumber":thisField.colNumber,"colValue":thisField.colValue,"rowNumber":thisField.rowkey,"fkTable":thisField.fkEntity,"fkField":thisField.fkField,});
-								}
-							}
-						}
-					}
-					tableDataStore.loadData(fRowsArray);
-				}
-			}
-		});
-
-
-
-		var tableRawPanel = new Ext.grid.GridPanel({
-			store: tableDataStore,
-			height:600,
-			width:800,
-			id: "tableDataRawViewId",
-			//reserveScrollOffset: true,
-			columns: [{
-						header: 'Table',
-						width:100,
-						hidden: false,
-						dataIndex: 'table'
-					},
-				{
-					header: 'Field',
-					width:100,
-					hidden: false,
-					dataIndex: 'field'
-				},{
-					header: 'Type',
-					width:50,
-					hidden: false,
-					dataIndex: 'type'
-				},{
-					header: 'Col',
-					width:50,
-					hidden: false,
-					dataIndex: 'colNumber'
-				},{
-					header: 'Value',
-					width:100,
-					hidden: false,
-					dataIndex: 'colValue'
-				},{
-					header: 'Row',
-					width:75,
-					hidden: false,
-					dataIndex: 'rowNumber'
-				},{
-					header: 'Ref Table',
-					width:100,
-					hidden: false,
-					dataIndex: 'fkTable'
-				},{
-					header: 'Ref Field',
-					width:100,
-					hidden: false,
-					dataIndex: 'fkField'
-				}],
-			tbar: table_tbar,
-			listeners: {
-				selectionchange:function(view, record, eops) {
-					if(record.length==0) return;
-				}
-			}
-		});
-
-
-
-
-		var cwfAdmin_referencePanel = new Ext.FormPanel({
-			border:true,
-			width: 900,
-			layout:'hbox',
-			collapsible: true,
-			collapsed: true,
-			title: "Reference Data",
-			id: "cwfAdmin_referencePanel_id",
-			//hidden: hideField,
-			//bodyStyle: l_Style,
-			items: [listAllTables, tableRawPanel]
-		});
-
-*/
-		//alert(document.getElementById("mwfAdmin1"));
-		//if(document.getElementById("mwfAdmin1") && document.getElementById("mwfAdmin2") && document.getElementById("mwfAdmin3"))
-		//{
-		//	cwfAdmin_snippetPanel.render(document.getElementById("ijfAdmin1"));
-		//}
-		//cwfAdmin_referencePanel.render(document.getElementById("mwfAdmin4"));
-
 	},
 
 	setFieldsPanelDirty:function()
@@ -2580,7 +2290,6 @@ addEditForm:function (sRow)
 	//save form
 	saveSettings:function()
 	{
-
 
 		var settingsOut = new Array();
 		var fieldsOut = new Array();
@@ -2641,6 +2350,10 @@ addEditForm:function (sRow)
 			fRow["fieldStyle"] = ijf.admin.cwfAdmin_form.fields[j]["fieldStyle"];
 			fRow["regEx"] = ijf.admin.cwfAdmin_form.fields[j]["regEx"];
 			fRow["regExMessage"] = ijf.admin.cwfAdmin_form.fields[j]["regExMessage"];
+
+			//permissions settings
+			if(ijf.admin.cwfAdmin_form.fields[j].permissions)
+				fRow["rawPermissions"] = JSON.stringify(ijf.admin.cwfAdmin_form.fields[j].permissions);
 
 			fieldsOut.push(fRow);
 		}

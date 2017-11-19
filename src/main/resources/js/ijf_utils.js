@@ -820,8 +820,8 @@ renderHeader:function(inContainerId, thisForm,item)
     var headerCenter = ijfUtils.replaceKeyValues(thisForm.settings["headerCenter"],item);
     var headerRight = ijfUtils.replaceKeyValues(thisForm.settings["headerRight"],item);
 
-    ijfUtils.setHead("<div style='width:100%'><div style='display:table-cell;width:17%'>" + headerLeft + "</div>" +
-        "<div style='text-align:center;display:table-cell;width:65%'>"  + headerCenter + "</div>" +
+    ijfUtils.setHead("<div style='display: table;width:100%'><div style='display:table-cell;width:17%'>" + headerLeft + "</div>" +
+        "<div style='text-align:center;display:table-cell;width:66%'>"  + headerCenter + "</div>" +
         "<div style='text-align:right;display:table-cell;width:17%'>" + headerRight + "</div></div>");
 
     //ijfUtils.setHead("<table  role='presentation' width='100%' borders=0><tr><td width='33%' align='left'>" + headerLeft + "</td>" +
@@ -1550,8 +1550,9 @@ loadConfig:function(onSuccess, onError)
 				return inField.name;
 				break;
 			case "user":
+				//ijfUtils.footLog("User Field: " + JSON.stringify(inField));
 				if(forDisplay) if(inField) return inField.displayName;
-				return inField.name;
+				return inField.key;//inField.name;
 				break;
 			case "group":
 				return inField.name;
@@ -1936,27 +1937,7 @@ CSVtoArray:function (strData, strDelimiter ){
 				{
 					retRef = retRef.split("\n");
 					//look for CSV....
-					if(retRef[0].indexOf(",")>-1)
-					{
-						var i = 0;
-						var lookup = retRef.map(function(r)
-						{
-							i=0;
-							return r.split(",").reduce(function(inObj, c){ inObj[i.toString()]=c.trim();i++;return inObj;},{});
-						});
-						var sFields = [];
-						for(var j=0;j<i;j++) sFields.push(j.toString());
-
-						//filter lookup for distinct elements for index
-						var uniqueVals = {};
-						lookup = lookup.filter(function(r){if(uniqueVals.hasOwnProperty(r[keyIndex])) return false; uniqueVals[r[keyIndex]]=true; return true;});
-
-						retRef = Ext.create('Ext.data.Store', {
-						  fields: sFields,
-						  data: lookup
-						});
-					}
-					else if(retRef[0].indexOf("\t")>-1)
+					if(retRef[0].indexOf("\t")>-1)
 					{
 						var i = 0;
 
@@ -1990,6 +1971,26 @@ CSVtoArray:function (strData, strDelimiter ){
 								return true;
 							}
 						});
+
+						retRef = Ext.create('Ext.data.Store', {
+						  fields: sFields,
+						  data: lookup
+						});
+					}
+					else if(retRef[0].indexOf(",")>-1)
+					{
+						var i = 0;
+						var lookup = retRef.map(function(r)
+						{
+							i=0;
+							return r.split(",").reduce(function(inObj, c){ inObj[i.toString()]=c.trim();i++;return inObj;},{});
+						});
+						var sFields = [];
+						for(var j=0;j<i;j++) sFields.push(j.toString());
+
+						//filter lookup for distinct elements for index
+						var uniqueVals = {};
+						lookup = lookup.filter(function(r){if(uniqueVals.hasOwnProperty(r[keyIndex])) return false; uniqueVals[r[keyIndex]]=true; return true;});
 
 						retRef = Ext.create('Ext.data.Store', {
 						  fields: sFields,

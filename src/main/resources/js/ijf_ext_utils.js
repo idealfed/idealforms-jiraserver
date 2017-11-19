@@ -13,6 +13,20 @@ renderField:function(inFormKey, item, inField, inContainer)
 	(inField.dataSource) ? null: inField.dataSource="";
 	(inField.toolTip) ? null: inField.toolTip="";
 
+    if(!inField.permissions)
+	{
+		if(!inField.hasOwnProperty("rawPermissions"))
+		{
+			inField.permissions =
+				{"enabled":false,
+				 "states":{}
+				};
+		}
+		else
+		{
+			inField.permissions=JSON.parse(inField.rawPermissions);
+		}
+	}
 
     //attempt to pull data....
     try
@@ -173,7 +187,14 @@ renderField:function(inFormKey, item, inField, inContainer)
     var l_fieldStyle = inField.fieldStyle;
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -227,7 +248,14 @@ renderField:function(inFormKey, item, inField, inContainer)
         panelTitle= ijfUtils.replaceKeyValues(tPt[0],item);
     }
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
     if(collapsible)
@@ -451,7 +479,14 @@ renderCommentList:function(inFormKey,item, inField, inContainer)
     var hideField = ijfUtils.renderIfShowField("",inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -544,7 +579,14 @@ renderAttchmentList:function(inFormKey,item, inField, inContainer)
     var hideField = ijfUtils.renderIfShowField("",inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -616,7 +658,14 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
 
     var hideField = ijfUtils.renderIfShowField("",inField);
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -842,7 +891,14 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
     var hideField = ijfUtils.renderIfShowField("",inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -1057,7 +1113,14 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     var hideField = ijfUtils.renderIfShowField("",inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -1095,7 +1158,14 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     var hideField = ijfUtils.renderIfShowField("",inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -1253,7 +1323,14 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
     var hideField = ijfUtils.renderIfShowField("",inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -1415,7 +1492,14 @@ renderNavigateToForm:function(inFormKey,item, inField, inContainer)
     var hideField = ijfUtils.renderIfShowField("",inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -1518,7 +1602,14 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
     var hideField = ijfUtils.renderIfShowField(data,inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -1677,7 +1768,14 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
     }
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
     console.log(JSON.stringify(perms));
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
@@ -1955,7 +2053,14 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -2093,7 +2198,14 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -2434,7 +2546,14 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -2557,7 +2676,17 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 				}
 		    });
 		    //now you need to load the inital data:
-			if(jf)  lookup.loadData([{"name":jf.key, "displayName":jf.displayName}]);
+			if(jf)
+			{
+				if(jf.displayName)
+				{
+					lookup.loadData([{"name":jf.key, "displayName":jf.displayName}]);
+				}
+				else
+				{
+					lookup.loadData([{"name":jf.key, "displayName":jf.key}]);
+				}
+			}
      		break;
     }
 
@@ -2608,7 +2737,14 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -2773,7 +2909,14 @@ renderUserMultiselect:function(inFormKey,item, inField, inContainer)
 
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -2934,7 +3077,14 @@ renderGroupPicker:function(inFormKey,item, inField, inContainer)
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -3095,7 +3245,14 @@ renderGroupMultiselect:function(inFormKey,item, inField, inContainer)
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -3251,7 +3408,14 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -3318,7 +3482,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 		  jfFieldDef.schema.type="option";
 		  var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
 		  if(data) data = data[Object.keys(data)[0]];
-	}
+		  if(!data) data=inField.dataReference2;	}
 	else
 	{
       var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
@@ -3438,7 +3602,14 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
     var hideField = ijfUtils.renderIfShowField(data,inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -3527,7 +3698,14 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 	var l_fieldStyle = inField.fieldStyle;
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	//end permissions
 
     //if(!l_labelStyle) l_labelStyle="background:transparent";
@@ -3602,6 +3780,8 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 		  var jfFieldDef = {};
 		  jfFieldDef.id=inField.formCell;
 		  var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+
+		  if(!data) data=inField.dataReference2;
 	}
 	else
 	{
@@ -3679,7 +3859,14 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
       var hideField = ijfUtils.renderIfShowField(data,inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -3756,7 +3943,14 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -3823,7 +4017,14 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
     var ocf =  ijfUtils.getEvent(inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -3883,7 +4084,14 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
     var ocf =  ijfUtils.getEvent(inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
@@ -4157,7 +4365,14 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 
 
 		//permissions check....has to exist...
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.permissions.enabled)
+		{
+			var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+		else
+		{
+			var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
 		if((!rOnly) && (!perms.canEdit)) rOnly=true;
 		if((!hideField) && (!perms.canSee))	hideField=true;
 		//end permissions
@@ -4372,12 +4587,32 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 			  var startKey = inStr.indexOf(key);
 			  var vStart = 0;
 			  var vEnd = 0;
+			  var vStartFound=false;
 			  for(var i=startKey;i<inStr.length;i++)
 			  {
-				  if(inStr[i]=="=")
+				  if(!vStartFound)
 				  {
-					  vStart=i+1;
-				  }
+					  if(inStr[i]=="=")
+					  {
+						  vStart=i+1;
+						  vStartFound=true;
+					  }
+					  if((vStart==0) && (i<inStr.length-7))
+					  {
+						//where IN
+						if(inStr.substr(i,3).toUpperCase()==" IN")
+						{
+							vStart=i+1;
+							vStartFound=true;
+						}
+						//where NOT IN
+						if(inStr.substr(i,7).toUpperCase()==" NOT IN")
+						{
+							vStart=i+1;
+							vStartFound=true;
+						}
+					  }
+			      }
 				  if((vStart>0) && (i<inStr.length-4))
 				  {
 					if((inStr.substr(i,4).toUpperCase()==" AND") || (inStr.substr(i,4).toUpperCase()==" ORD"))
@@ -4398,7 +4633,21 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 		   else
 		   {
 			//it's an add
-			retStr = key + "=" + value + " and " + inStr;
+			if(value.toUpperCase().indexOf("NOT IN")>-1)
+			{
+				retStr = key + " " + value + " and " + inStr;
+			}
+			else if((value.toUpperCase().indexOf("IN(")>-1) || (value.toUpperCase().indexOf("IN (")>-1))
+			{
+				retStr = key + " " + value + " and " + inStr;
+			}
+			else
+			{
+				retStr = key + "=" + value + " and " + inStr;
+			}
+			//clean the and...
+			 retStr = retStr.replace(/and *order/i,"order");
+
 		   }
 		   return retStr;
 	   };
@@ -4409,12 +4658,32 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 			  var startKey = inStr.indexOf(key);
 			  var vStart = 0;
 			  var vEnd = 0;
+			  var vStartFound=false;
 			  for(var i=startKey;i<inStr.length;i++)
 			  {
-				  if(inStr[i]=="=")
+				  if(!vStartFound)
 				  {
-					  vStart=i+1;
-				  }
+					  if(inStr[i]=="=")
+					  {
+						  vStart=i+1;
+						  vStartFound=true;
+					  }
+					  if((vStart==0) && (i<inStr.length-7))
+					  {
+						//where IN
+						if(inStr.substr(i,3).toUpperCase()==" IN")
+						{
+							vStart=i-1;
+							vStartFound=true;
+						}
+						//where NOT IN
+						if(inStr.substr(i,7).toUpperCase()==" NOT IN")
+						{
+							vStart=i-1;
+							vStartFound=true;
+						}
+					  }
+			      }
 				  if((vStart>0) && (i<inStr.length-4))
 				  {
 					if((inStr.substr(i,4).toUpperCase()==" AND") || (inStr.substr(i,4).toUpperCase()==" ORD"))
@@ -4429,9 +4698,14 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				  if(vEnd==0) vEnd=inStr.length;
 	  			  vEnd=vEnd-startKey;
 	  			  var tmpStr = inStr.substr(startKey,vEnd);
-				  retStr=inStr.replace(tmpStr,value);
+				  retStr=inStr.replace(tmpStr,"");
 				  //now look for and and
 				  retStr = retStr.replace(/and *and/i,"and");
+				  //look for and and order
+				  retStr = retStr.replace(/and *order/i,"order");
+				  //and leading and
+				  if(retStr.substr(0,5).toUpperCase()==" AND ")
+				  	retStr = retStr.substr(5,retStr.length);
 			  }
 		   }
 		   return retStr;
@@ -4452,6 +4726,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 					lds = qRemove(lds,r);
 			   });
 	       }
+	       inField.dataSource=lds;
 	   }
 
        var tSearch = "jql="+lds+"&maxResults=1&fields="+translateFields;
@@ -4965,6 +5240,10 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 			return retObj;
 		});
 
+        var taskOrderKey = Object.keys(colMeta).reduce(function(inV,c)
+        {
+			if(colMeta[c].name=="taskOrder") inV=colMeta[c].id;
+			return inV;},null);
         //now rip through and set parent assignments,
         dataItems.forEach(function(i){
 			if(i.parents)
@@ -4990,8 +5269,18 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 			return inArray;
 		},[]);
 
-   //data items are here, you now need to restructure into a tree based on Item relations...
+    //add sort function to all nodes...if taskOrder is included...
+    if(tSearch.indexOf("taskOrder")>-1)
+    {
+		dataItems.forEach(function(i){
+			i.sort = function(a,b)
+			{
+				return(a[taskOrderKey]-b[taskOrderKey]);
+			};
+		});
+	}
 
+   //data items are here, you now need to restructure into a tree based on Item relations...
     if(inField.referenceFilter)
     {
         //filter the items...
@@ -5028,8 +5317,22 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 		}
 	}
 
+    var updateTreeQuiet = function(inId,inName,inValue)
+    {
+		var taskOrderKey = null;
+		var iKey = inId;
+		var putObj = {};
+		putObj["fields"]={};
+		putObj["fields"][inName]=inValue;
+		//how to save asynch....
+		var jData = JSON.stringify(putObj);
+		var tApi = "/rest/api/2/issue/"+iKey;
+
+		return ijfUtils.jiraApiSync("PUT",tApi,jData);
+	}
     var updateTree = function(container,inName,inValue)
     {
+		var taskOrderKey = null;
 		var iKey = container.grid.selection.data.iid;
 		var putObj = {};
 		putObj["fields"]={};
@@ -5037,13 +5340,13 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 		//how to save asynch....
 		var jData = JSON.stringify(putObj);
 		var tApi = "/rest/api/2/issue/"+iKey;
-		var lIndex = container.grid.selection.data.index;
+		var cRow = container.grid.selection;//container.grid.selection.data.index;
 
         var onsuccess =  function(data,e,f) {
                  ijfUtils.footLog("Successful data response code: " + f.status);
                  if((f.status==200) || (f.status==201) || (f.status==204))
                  {
-					var delayCommit = function() {container.grid.store.getAt(lIndex).commit()};
+					var delayCommit = function() {cRow.commit()};
 					window.setTimeout(delayCommit,300);
 				 }
 				 else
@@ -5054,7 +5357,7 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
         var onerror = function(e) {
 				 if(e.status==201)
                  {
-				 	var delayCommit = function() {container.grid.store.getAt(lIndex).commit()};
+				 	var delayCommit = function() {cRow.commit()};
 					window.setTimeout(delayCommit,300);
 				 }
                  else
@@ -5141,6 +5444,41 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 	            }
 			});
 		}
+		else  if(f.schema.type=="number")
+		{
+			gridFieldArray.push({name: f.id, type: "number"});
+			var hideIt = false;
+			if(f.id==taskOrderKey) hideIt=true;
+			colSettingsArray.push({
+				text: f.header,
+				width: 'auto',
+				dataIndex: f.id,
+				width: f.width,
+				style: l_labelStyle,
+				sortable: true,
+				hidden: hideIt,
+				filter: {
+				  type: fType
+	            },
+	            editor: {
+					completeOnEnter: true,
+					field: {
+						xtype:'numberfield',
+						//allowBlank: (col.required!="Yes"),
+						listeners: {
+							focusleave: function(n,o,f)
+							{
+								if(n.lastValue==n.originalValue) return;
+								var container = n.up();
+								if(!container) return;
+								updateTree(container,n.name,n.lastValue);
+							}
+						}
+					}
+				}
+
+			});
+        }
 		else
 		{
 			var fType = 'list';
@@ -5162,10 +5500,6 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 						xtype:'textfield',
 						//allowBlank: (col.required!="Yes"),
 						listeners: {
-							change: function(n,o,f)
-							{
-								//
-							},
 							focusleave: function(n,o,f)
 							{
 								if(n.lastValue==n.originalValue) return;
@@ -5197,7 +5531,10 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
         root: {
 			 	expanded:true,
 			 	children: dataItems
-			}
+			},
+		sorters: [{
+					property: taskOrderKey,
+					direction: 'ASC'}]
 	});
 	var treeMenu = new Ext.menu.Menu({ items:
 		[
@@ -5274,11 +5611,203 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 
 
 				} },
-			{ text: 'Add Peer Task', handler: function()  {
-					//each row, blow away if same cell.
-					ijfUtils.modalDialogMessage("Hi","here");
+                { text: 'Add Peer Task', handler: function()  {
+					var rId = tree.selection.data.iid
+					//add the issue with "new item" summary and insert into grid no refresh...
+					var putObj = {};
+					putObj["fields"]={};
+					putObj["fields"]["summary"]="new item";
+        			putObj.fields.project = {"key":inField.form.formSet.projectId};
+        			putObj.fields.issuetype = {"name":inField.form.issueType};
+					var jData = JSON.stringify(putObj);
+					var tApi = "/rest/api/2/issue";
+					saveRes = ijfUtils.jiraApiSync("POST",tApi,jData);
+					//saveRes is the Key of the new issue if successfull,
+					//set the relationship and reload
+	 				var pNode = tree.selection.parentNode;
+					try
+					{
+						if(saveRes.key)
+						{
+							//if parant NOT Root.  Set the parent to the current selection parent....
+							if(pNode.data.text!="Root")
+							{
+								var jsonString = {
+												"type": {
+													"name": "Relates"
+												   },
+												"inwardIssue": {
+													"key": pNode.data.iid
+												   },
+												"outwardIssue": {
+													"key": saveRes.key
+												   },
+												"comment":{
+													"body":"Linked related issue"
+												  }
+								};
+								var saveRelRes = ijfUtils.jiraApiSync("POST","/rest/api/2/issueLink",JSON.stringify(jsonString));
+								if(saveRelRes!="OK")
+								{
+									ijfUtils.modalDialogMessage("Error","Unable to establish the issue link: " + saveRes);
+									return;
+								}
+						    }
+							var rec = Ext.create(tree.store.model);
+							rec.data.iid=saveRes.key;
+							rec.data.text=saveRes.key;
+							rec.data.summary= "new item";
+							//refresh the grid....
+							pNode.appendChild(rec);
+						}
+						else
+						{
+							ijfUtils.modalDialogMessage("Error","Unable to add the issue");
+						}
+					}
+					catch(e)
+					{
+						ijfUtils.modalDialogMessage("Error","Sorry, there was an error with the add: " + e.message);
+					}
+				} },
+ 				{text: 'Delete Task', handler: function()  {
+					var rId = tree.selection.data.iid
+
+					var delFunc = function()
+					{
+						var delKeys = [];
+						var getKeys = function(inNode){if(inNode.data.iid) delKeys.push(inNode.data.iid); inNode.childNodes.forEach(function(n){getKeys(n)});};
+						getKeys(tree.selection);
+						delKeys.reverse();
+						delKeys.forEach(function(k)
+						{
+							var tApi = "/rest/api/2/issue/"+k;
+							var delRes = ijfUtils.jiraApiSync("DELETE",tApi,null);
+							try
+							{
+								if(delRes=="OK")
+								{
+									var rec = tree.store.findBy(function(r)
+									{
+										if(r.data.iid==k)return true;
+										return false;
+									});
+									if(rec) tree.store.removeAt(rec);
+								}
+								else
+								{
+									ijfUtils.modalDialogMessage("Error","Unable to delete all the issues");
+									return;
+								}
+							}
+							catch(e)
+							{
+								ijfUtils.modalDialogMessage("Error","Sorry, there was an error with the delete: " + e.message);
+								return
+							}
+						});
+				    }
+				    ijfUtils.modalDialog("Warning","You are about to permanently remove this item and it's children, continue?",delFunc);
 				} }
 		]});
+
+	//alter tree menue to only show order options if "taskOrder" exists in query
+	if(Object.keys(colMeta).find(function(c){if(colMeta[c].name=="taskOrder") return true; return false}))
+	{
+		treeMenu.add({  text: 'Move Up', handler: function()  {
+					var rId = tree.selection.data.iid
+					//find out it it's order and flip it's order with the node above
+					var cNode = tree.selection;
+	 				var pNode = tree.selection.parentNode;
+
+					var cOrder = cNode.data[taskOrderKey];
+					var switchOrder = -999999999;
+					var switchWith = null;
+					//switch orders with the one just above.
+					pNode.childNodes.forEach(function(n)
+					{
+						if((n.data.iid!=rId)&&(n.data[taskOrderKey] <= cOrder))
+						{
+							if(n.data[taskOrderKey] > switchOrder)
+							{
+								switchOrder = n.data[taskOrderKey];
+								switchWith = n;
+							}
+						}
+					});
+					if(switchWith)
+					{
+						//two updates, the refresh tree.
+						if(switchOrder == cOrder) switchOrder=switchOrder-1;
+						var res = updateTreeQuiet(cNode.data.iid,taskOrderKey,switchOrder);
+						var res2 = updateTreeQuiet(switchWith.data.iid,taskOrderKey,cOrder);
+						if((res!="OK") || (res2!="OK"))
+						{
+							ijfUtils.modalDialogMessage("Error","Sorry but the reorder did not save properly, try again.");
+						}
+						else
+						{
+							cNode.set(taskOrderKey,switchOrder);
+							cNode.commit();
+							switchWith.set(taskOrderKey,cOrder);
+							switchWith.commit();
+							pNode.sort();
+						}
+					}
+				} });
+treeMenu.add({  text: 'Move Down', handler: function()  {
+					var rId = tree.selection.data.iid
+					//find out it it's order and flip it's order with the node above
+					var cNode = tree.selection;
+	 				var pNode = tree.selection.parentNode;
+
+					var cOrder = cNode.data[taskOrderKey];
+					var switchOrder = 999999999;
+					var switchWith = null;
+					//switch orders with the one just above.
+					pNode.childNodes.forEach(function(n)
+					{
+						if((n.data.iid!=rId)&&(n.data[taskOrderKey] >= cOrder))
+						{
+							if(n.data[taskOrderKey] < switchOrder)
+							{
+								switchOrder = n.data[taskOrderKey];
+								switchWith = n;
+							}
+						}
+					});
+					if(switchWith)
+					{
+						//two updates, the refresh tree.
+						if(switchOrder == cOrder) switchOrder=switchOrder+1;
+						var res = updateTreeQuiet(cNode.data.iid,taskOrderKey,switchOrder);
+						var res2 = updateTreeQuiet(switchWith.data.iid,taskOrderKey,cOrder);
+						if((res!="OK") || (res2!="OK"))
+						{
+							ijfUtils.modalDialogMessage("Error","Sorry but the reorder did not save properly, try again.");
+						}
+						else
+						{
+							cNode.set(taskOrderKey,switchOrder);
+							cNode.commit();
+							switchWith.set(taskOrderKey,cOrder);
+							switchWith.commit();
+							pNode.sort();
+						}
+					}
+				} });
+		/*
+		treeMenu.add({ text: 'Indent', handler: function()  {
+					//each row, blow away if same cell.
+					ijfUtils.modalDialogMessage("Hi","here");
+		} });
+		treeMenu.add({ text: 'Outdent', handler: function()  {
+					//each row, blow away if same cell.
+					ijfUtils.modalDialogMessage("Hi","here");
+		} });
+		*/
+	}
+
 
     var tree= new Ext.tree.Panel({
         store: store,
@@ -5364,6 +5893,7 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
         style: l_Style,
         items: [tree]
     });
+
 	//before render....
 	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](layout, inFormKey,item, inField, inContainer);
 
@@ -5373,6 +5903,7 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
     //after render....
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](layout, inFormKey,item, inField, inContainer);
 
+    tree.expandAll();
     //lastly disable context menu for this element
 	tree.getEl().on('contextmenu', function(e) {
   	    e.preventDefault();
@@ -5432,6 +5963,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
         hideLabel=true;
         hideField=true;
     }
+
     var rOnly = false;
     if (inField.fieldStyle.indexOf('readonly:true')>-1)
     {
@@ -5452,15 +5984,22 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
-	if(rOnly) l_fieldStyle="background:lightgray";
+	//if(rOnly) l_fieldStyle="background:lightgray";
 
     var ocf =  ijfUtils.getEvent(inField);
 
 	//permissions check....has to exist...
-	var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
-
 
     var collapsible = true;
     if (l_fieldStyle.indexOf('collapsible:false')>-1)
@@ -5494,8 +6033,6 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 	{
     	l_Width = l_Width.replace("px","")/1;
 	}
-
-
 
 	var colWidths=[];
 	var colHeaders = [];
@@ -5638,6 +6175,25 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 									}
 								}
 							}
+			});
+			break;
+			case "checkbox":
+				tFields.push({name: col.columnName, type: 'boolean'});
+				listColumns.push({
+						header: thisColHeader,
+						sortable: true,
+						hidden: false,
+						xtype: 'checkcolumn',
+						centered:true,
+						//renderer: validRenderer,
+						width: thisColWidth,
+						dataIndex: col.columnName,
+						listeners: {
+							checkchange: function(n,o,f)
+							{
+								ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+							}
+						}
 			});
 			break;
 			case "combobox":
@@ -5799,61 +6355,56 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 			throw('Failed to parse the grid json');
 		}
 	}
+	var headerButtons =[];
+		headerButtons.push({
+						xtype:'button',
+						text: 'Add Row',
+						scope: this,
+						handler: function(){
+							 //create record...
 
-    var gridPanel = new Ext.grid.GridPanel({
-		 title: lCaption,
-		 style: l_Style,
-		 hidden: hideField,
-		 bodyStyle: l_panelStyle,
-		 height: l_Height,
-		 header:{
-				titlePosition: 0,
-				items:[{
-					xtype:'button',
-					text: 'Add Row',
-					scope: this,
-					handler: function(){
-						 //create record...
-
-						var newRecord = {id:Ext.id()};
-						gCols.forEach(function(col){
-							newRecord[col.columnName]=col["default"];
-						});
-						 //gridStore.parentGridPanel.stopEditing();
-						 var position = gridStore.getCount();
-						 gridStore.insert(position, newRecord);
-
-						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
-						//gridStore.parentGridPanel.startEditing(position, 1);
-					}
-				}, {
-					xtype:'button',
-					text: 'Delete Row',
-					scope: this,
-					handler: function(){
-						var selection = gridStore.parentGridPanel.getSelection();
-						if (selection) {
-							selection.forEach(function(r){
-								gridStore.remove(r);
+							var newRecord = {id:Ext.id()};
+							gCols.forEach(function(col){
+								newRecord[col.columnName]=col["default"];
 							});
+							 //gridStore.parentGridPanel.stopEditing();
+							 var position = gridStore.getCount();
+							 gridStore.insert(position, newRecord);
+
+							ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+							//gridStore.parentGridPanel.startEditing(position, 1);
 						}
-						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					});
+		headerButtons.push({
+						xtype:'button',
+						text: 'Delete Row',
+						scope: this,
+						handler: function(){
+							var selection = gridStore.parentGridPanel.getSelection();
+							if (selection) {
+								selection.forEach(function(r){
+									gridStore.remove(r);
+								});
+							}
+							ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+						}
+					});
+		headerButtons.push({
+					xtype:'button',
+					text:"Clear All",
+					scope: this,
+					handler: function(){
+					   //need the formset ID...
+					   var clearGridRows = function(){
+							gridStore.getData().each(function(r){
+									gridStore.remove(r);
+							});
+							ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					   };
+					   ijfUtils.modalDialog("Warning","You are about to remove all rows, are you sure?",clearGridRows);
 					}
-				},{
-				xtype:'button',
-				text:"Clear All",
-				scope: this,
-				handler: function(){
-				   //need the formset ID...
-				   var clearGridRows = function(){
-					    gridStore.getData().each(function(r){
-								gridStore.remove(r);
-						});
-						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
-				   };
-				   ijfUtils.modalDialog("Warning","You are about to remove all rows, are you sure?",clearGridRows);
-				}
-			}, {
+				});
+		headerButtons.push({
 					xtype:'button',
 					text: 'Download',
 					margin: '0 0 0 20',
@@ -5888,13 +6439,14 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 						var blob = new Blob([outStr], {type: "text/plain;charset=utf-8"});
 						saveAs(blob,inField.dataSource+".csv");
 					}
-				},{
+				});
+			headerButtons.push({
 				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upGrdFrm_'+inField.formCell.replace(",","_")+"'><input id='"+inFormKey+'_upGrd_'+inField.formCell.replace(",","_")+"' type='file' name='file' onchange='ijfUtils.gridUploadCsvFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(",","_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\");'></form>",
 				frame: false,
 				hidden: true,
 				border: false,
-			    xtype: "panel"},
-			    {
+			    xtype: "panel"});
+			headerButtons.push({
 				xtype:'button',
 				text:"Upload",
 				scope: this,
@@ -5904,7 +6456,18 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 				   jQuery(jKey).val("");
 				   jQuery(jKey).trigger('click');
 				}
-			}]
+			});
+
+
+    var gridPanel = new Ext.grid.GridPanel({
+		 title: lCaption,
+		 style: l_Style,
+		 hidden: hideField,
+		 bodyStyle: l_panelStyle,
+		 height: l_Height,
+		 header:{
+				titlePosition: 0,
+				items: headerButtons
 		},
         store: gridStore,
         width:l_Width,
@@ -5916,9 +6479,10 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
         collapsible: collapsible,
         collapsed: collapsed,
         selModel: 'cellmodel',
+        disabled: rOnly,
 		plugins: {
-		        ptype: 'cellediting',
-		        clicksToEdit: 1
+			ptype: 'cellediting',
+			clicksToEdit: 1
         }
     });
 
