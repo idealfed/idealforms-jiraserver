@@ -1256,7 +1256,7 @@ addEditFormSet:function (inFrmId)
         layout: 'vbox',
         title: "IJF Form Group Settings",
         width: 600,
-        height:420,
+        height:520,
         closable: true,
         items: [{
             html: dMes,
@@ -1386,7 +1386,62 @@ addEditFormSet:function (inFrmId)
 					}
 				}
             },
-			{
+			//{
+			//		xtype: 'textfield',
+			//		labelAlign: 'left',
+			//		fieldLabel: 'Proxy Username',
+			//		labelWidth: 100,
+			//		labelStyle: "color:darkblue",
+			//		margin: '4 0 0 10',
+			//		width: 400,
+			//		value: thisF.settings["proxyUsername"],
+			//		listeners: {
+			//		afterrender: function(f)
+			//		{
+			//			this.validate();
+			//		},
+			//		change: function(f,n,o){
+			//				thisF.settings["proxyUsername"] = n;
+			//			}
+			//		}
+            //},            {
+			//	xtype: 'textfield',
+			//	labelAlign: 'left',
+			//	fieldLabel: 'Proxy Password',
+			//	labelWidth: 100,
+			//	labelStyle: "color:darkblue",
+			//	margin: '4 0 0 10',
+			//	width: 400,
+			//	value: thisF.settings["proxyPassword"],
+			//	listeners: {
+			//	afterrender: function(f)
+			//	{
+			//		this.validate();
+			//	},
+			//	change: function(f,n,o){
+			//			thisF.settings["proxyPassword"] = n;
+			//		}
+			//	}
+            //},          {
+			//	xtype: 'textfield',
+			//	labelAlign: 'left',
+			//	fieldLabel: 'Proxy Server',
+			//	labelWidth: 100,
+			//	labelStyle: "color:darkblue",
+			//	margin: '4 0 0 10',
+			//	width: 400,
+			//	value: thisF.settings["proxyServer"],
+			//	listeners: {
+			//	afterrender: function(f)
+			//	{
+			//		this.validate();
+			//	},
+			//	change: function(f,n,o){
+			//			thisF.settings["proxyServer"] = n;
+			//		}
+			//	}
+            //},
+			,{
 				xtype: 'combobox',
 				labelAlign: 'left',
 				forceSelection: true,

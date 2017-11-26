@@ -107,6 +107,9 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'commentlist':
                 ijf.extUtils.renderCommentList (inFormKey,item,inField,inContainer);
                 break;
+            case 'historylist':
+                ijf.extUtils.renderHistoryList (inFormKey,item,inField,inContainer);
+                break;
             case 'subform':
                 ijf.extUtils.renderNestedForm (inFormKey,item,inField,inContainer);
                 break;
@@ -523,6 +526,105 @@ renderCommentList:function(inFormKey,item, inField, inContainer)
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
 }
 ,
+renderHistoryList:function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+
+
+    var outHtml = "";
+
+    //get item history....
+
+    if(!item.changelog)
+    {
+	    var tItem = ijfUtils.jiraApiSync("GET","/rest/api/2/issue/" + item.key + "?expand=changelog",null);
+	    item.changelog = tItem.changelog;
+	}
+
+    if(item.changelog.histories)
+    {
+		//sort desc
+		var sortedLogs = item.changelog.histories.sort(function(a, b)
+		{
+			a = new Date(a.created);
+		    b = new Date(b.created);
+		    return a>b ? -1 : a<b ? 1 : 0;
+		});
+		outHtml="<div class=ijfCommentList>";
+			outHtml += "<div  class=ijfCommentListHead><div class=ijfCommentListHeadName>Change</div><div class=ijfCommentListHeadAuthor>Author</div><div class=ijfCommentListHeadDate>Date</div></div>";
+		outHtml = sortedLogs.reduce(function(outHtml,a){
+
+			var outChange = a.items.reduce(function(oStr,i){
+				oStr += "<b>Field:</b> " + i.field;
+				oStr += "<br>&nbsp;&nbsp;&nbsp;<b>From Value:</b> " + i.fromString;
+				oStr += "<br>&nbsp;&nbsp;&nbsp;<b>To Value:</b> " + i.toString;
+				oStr += "<br><br>";
+				return oStr;
+			},"");
+
+			outHtml += "<div class=ijfCommentListRow><div  class=ijfCommentListName>" + outChange.replace(/\n/g,"<br>") + "</div><div class=ijfCommentListAuthor>" + a.author.displayName + "</div><div class=ijfCommentListDate>" + moment(a.created).format('ll') + "<br>" + moment(a.created).format('LT') +"</div></div>";
+			return outHtml;
+		},outHtml);
+		outHtml+="</div>";
+	}
+
+    if(!l_Style) l_Style = l_panelStyle;
+    //rendeIf logic
+    var hideField = ijfUtils.renderIfShowField("",inField);
+
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
+    //height:
+	var l_Height=ijfUtils.getNameValueFromStyleString(l_panelStyle,"height");
+	if(l_Height=="")
+	{
+		l_Height=300;
+	}
+	else
+	{
+		l_Height = l_Height.replace("px","").replace("%","")/1;
+	}
+
+    var pnl = new Ext.FormPanel({
+        labelAlign: 'left',
+        border:false,
+        hidden: hideField,
+        bodyStyle: l_Style,
+        items: {
+            html: outHtml,
+            height:l_Height,
+            frame: false,
+            border: false,
+            bodyStyle:  l_panelStyle,
+            xtype: "panel"}
+    });
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](pnl,inFormKey,item, inField, inContainer);
+    pnl.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
+},
 renderAttchmentList:function(inFormKey,item, inField, inContainer)
 {
 
@@ -1214,7 +1316,9 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 					{
 	                     tForm=ijf.fw.forms[inField.referenceFilter];
 					}
-				    ijf.main.saveForm(onSuccessSave,null,inField.form,item);
+					Ext.getBody().mask("Saving...");
+					var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,inField.form,item)};
+					window.setTimeout(saveIt,10);
 			}});
 
     }
@@ -1370,6 +1474,7 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 				var onSuccessSave = function()
 				{
 					ijfUtils.hideProgress();
+					ijf.main.gPopupFormHandle.unmask();
 					ijf.main.setAllClean();
 					//now change item to be the new loaded item....
 					item = ijfUtils.getJiraIssueSync(ijf.main.itemId);
@@ -1384,7 +1489,13 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 					fields.parent={"key":ijf.main.parentItemId};
 				}
 
-				ijf.main.saveForm(onSuccessSave,fields, this.inField.form, item);
+				//ijf.main.saveForm(onSuccessSave,fields, this.inField.form, item);
+				var kForm = this.inField.form;
+				Ext.getBody().mask("Saving...");
+				ijf.main.gPopupFormHandle.mask("Saving...");
+				var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,kForm,item)};
+				window.setTimeout(saveIt,10);
+
 			}});
     }
     if(l_reload)
@@ -1425,7 +1536,12 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 					fields = {};
 					fields.parent={"key":ijf.main.parentItemId};
 				}
-			    ijf.main.saveForm(onSuccessSave,fields, this.inField.form, item);
+			    //ijf.main.saveForm(onSuccessSave,fields, this.inField.form, item);
+				var kForm = this.inField.form;
+				//Ext.getBody().mask("Saving...");
+				ijf.main.gPopupFormHandle.mask("Saving...");
+				var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,kForm,item)};
+				window.setTimeout(saveIt,10);
 			}});
     }
     if(l_done)
@@ -1647,7 +1763,7 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
 	if(rOnly) l_fieldStyle="background:lightgray";
 
     var ocf =  ijfUtils.getEvent(inField);
-	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='attachmentUploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('attachmentFileDisplayId').update(this.value.replace('C:'+String.fromCharCode(92)+'fakepath'+String.fromCharCode(92),''));></form>";
+	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='attachmentUploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('attachmentFileDisplayId').update(ijfUtils.getFileInputName(this,'attachmentFileDisplayId')); multiple></form>";
     var simple = new Ext.FormPanel({
         border:false,
         hidden: hideField,
@@ -1782,9 +1898,6 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
 	//end permissions
 
 
-
-
-
     var l_labelStyle = inField.labelStyle;
     var l_panelStyle = inField.panelStyle;
     var l_Style = inField.style;
@@ -1799,11 +1912,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
 
     var ocf =  ijfUtils.getEvent(inField);
 
-    var simple = new Ext.FormPanel({
-        border:false,
-        hidden: hideField,
-        bodyStyle: l_Style,
-        items:[{
+    var sItems = [{
             xtype: 'textfield',
             labelAlign: 'left',
             //labelWidth: labelWidth,
@@ -1820,33 +1929,52 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
             value: data,
             id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
             listeners: {
-                afterrender: function(f)
-                {
-                    this.validate();
-                },
-                valid: function(f)
-                {
-                    inContainer.title = inField.toolTip;
-                },
-                invalid: function(f,msg){
-                    if(!inField.toolTip) inContainer.title = f.getErrors().join();
-                },
-                change: function(f,n,o){
-                    if(inField.dataSource=="session")
-                    {
-						ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
-					}
-					else
+					afterrender: function(f)
 					{
-						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+						this.validate();
+					},
+					valid: function(f)
+					{
+						inContainer.title = inField.toolTip;
+					},
+					invalid: function(f,msg){
+						if(!inField.toolTip) inContainer.title = f.getErrors().join();
+					},
+					change: function(f,n,o){
+						if(inField.dataSource=="session")
+						{
+							ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+						}
+						else
+						{
+							ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+						}
+						if(f.isValid())
+						{
+							ocf(f,n,o);
+						}
 					}
-                    if(f.isValid())
-                    {
-                        ocf(f,n,o);
-                    }
-                }
-            }
-        }]
+				}
+			}];
+    if (inField.style.indexOf('query:true')>-1)
+    {
+            sItems.push({
+						xtype: 'button',
+						icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/magnify.png',
+						handler: function(f,n,o) {
+							var cup = this.up();
+							var tVal = cup.items.items[0].getValue();
+							if(ijf.snippets.hasOwnProperty(inField["dataReference2"])) ijf.snippets[inField["dataReference2"]](tVal);
+						}
+			});
+    }
+
+    var simple = new Ext.FormPanel({
+        border:false,
+        hidden: hideField,
+        bodyStyle: l_Style,
+        layout: 'hbox',
+        items: sItems
     });
     //before render....
     if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple,inFormKey,item, inField, inContainer);
@@ -2312,6 +2440,7 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 
 			switch(jfFieldDef.schema.type)
 			{
+				case "securitylevel":
 				case "priority":
 					var lookup = jfFieldMeta.allowedValues.map(function(e)
 					{
@@ -3471,7 +3600,6 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 
     inContainer.title = inField.toolTip;
 
-
 	if(inField.dataSource=="session")
 	{
 		  var jfFieldMeta = {};
@@ -3550,6 +3678,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 
 		switch(jfFieldDef.schema.type)
 		{
+			case "securitylevel":
 			case "priority":
 				var rOptions= jfFieldMeta.allowedValues.map(function(e)
 				{
@@ -3613,6 +3742,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
+
 	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
     var simple = new Ext.FormPanel({
         hidden: hideField,
@@ -3620,7 +3750,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
         bodyStyle: l_Style,
         items:[{xtype: 'radiogroup',
 			labelAlign: 'left',
-			labelStyle: l_labelStyle,
+			labelStyle: l_fieldStyle, //was panel style
 			style: l_panelStyle,
   			columns: cColumns,
 			fieldLabel: lCaption,
@@ -4155,6 +4285,10 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 						}
 					});
 
+					//add special values:  key, status
+					itemData["key"]=ijf.currentItem.key;
+					itemData["status"]=ijf.currentItem.status.name;
+
 					//add ocf hook to alter data
 					ocf(itemData);
 
@@ -4597,6 +4731,16 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 						  vStart=i+1;
 						  vStartFound=true;
 					  }
+					  if(inStr[i]=="~")
+					  {
+						  vStart=i+1;
+						  vStartFound=true;
+					  }
+					  if(inStr[i]=="!")
+					  {
+						  vStart=i+1;
+						  vStartFound=true;
+					  }
 					  if((vStart==0) && (i<inStr.length-7))
 					  {
 						//where IN
@@ -4607,6 +4751,18 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 						}
 						//where NOT IN
 						if(inStr.substr(i,7).toUpperCase()==" NOT IN")
+						{
+							vStart=i+1;
+							vStartFound=true;
+						}
+						//where IS
+						if(inStr.substr(i,3).toUpperCase()==" IS")
+						{
+							vStart=i+1;
+							vStartFound=true;
+						}
+						//where IS NOT
+						if(inStr.substr(i,7).toUpperCase()==" IS NOT")
 						{
 							vStart=i+1;
 							vStartFound=true;
@@ -4627,6 +4783,8 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				  if(vEnd==0) vEnd=inStr.length;
 	  			  vEnd=vEnd-vStart;
 	  			  var tmpStr = inStr.substr(vStart,vEnd);
+	  			  value = value.replace("!~","");
+	  			  value = value.replace("~","");
 				  retStr=inStr.replace(tmpStr,value);
 			  }
 		   }
@@ -4640,6 +4798,24 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 			else if((value.toUpperCase().indexOf("IN(")>-1) || (value.toUpperCase().indexOf("IN (")>-1))
 			{
 				retStr = key + " " + value + " and " + inStr;
+			}
+			else if(value.toUpperCase().indexOf(" IS ")>-1)
+			{
+				retStr = key + " " + value + " and " + inStr;
+			}
+			else if(value.toUpperCase().indexOf("~")>-1)
+			{
+				//~needs to be outside quote...
+				if(value.indexOf("!~")>-1)
+				{
+					value = value.replace("!~","");
+					retStr = key + " !~ " + value + " and " + inStr;
+				}
+				else
+				{
+					value = value.replace("~","");
+					retStr = key + " ~ " + value + " and " + inStr;
+				}
 			}
 			else
 			{
@@ -4668,6 +4844,16 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 						  vStart=i+1;
 						  vStartFound=true;
 					  }
+					  if(inStr[i]=="~")
+					  {
+						  vStart=i+1;
+						  vStartFound=true;
+					  }
+					  if(inStr[i]=="!")
+					  {
+						  vStart=i+1;
+						  vStartFound=true;
+					  }
 					  if((vStart==0) && (i<inStr.length-7))
 					  {
 						//where IN
@@ -4680,6 +4866,18 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 						if(inStr.substr(i,7).toUpperCase()==" NOT IN")
 						{
 							vStart=i-1;
+							vStartFound=true;
+						}
+						//where IS
+						if(inStr.substr(i,3).toUpperCase()==" IS")
+						{
+							vStart=i+1;
+							vStartFound=true;
+						}
+						//where IS NOT
+						if(inStr.substr(i,7).toUpperCase()==" IS NOT")
+						{
+							vStart=i+1;
 							vStartFound=true;
 						}
 					  }

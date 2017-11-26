@@ -64,6 +64,8 @@
 											<ul class="style2">
 												<li><a href="#">Control Reference</a></li>
 												<li><a href="#attachmentList">Attachment List</a></li>
+												<li><a href="#attachmentListGrid">Attachment List Grid</a></li>
+												<li><a href="#attachmentManaged">Attachment Managed</a></li>
 												<li><a href="#attachmentUpload">Attachment Upload</a></li>
 												<li><a href="#button">Button</a></li>
 												<li><a href="#checkbox">Checkbox</a></li>
@@ -72,26 +74,24 @@
 												<li><a href="#dropdown">Dropdown</a></li>
 												<li><a href="#gridsection">GRID</a></li>
 												<li><a href="#htmlsection">HTML</a></li>
+												<li><a href="#historyList">History List</a></li>
 												<li><a href="#iframsection">iFrame</a></li>
 												<li><a href="#itemList">Item List</a></li>
+												<li><a href="#itemTree">Item Tree</a></li>
 												<li><a href="#formButtons">Form Buttons</a></li>
-												<li><a href="#formButtonsForPopup">Form Futtons for Popup</a></li>
+												<li><a href="#formButtonsForPopup">Form Buttons for Popup</a></li>
 												<li><a href="#multiselect">Multiselect</a></li>
 												<li><a href="#navigatetoform">Navigate to Form</a></li>
 												<li><a href="#subform">Sub Form</a></li>
 												<li><a href="#openurl">Open URL</a></li>
 												<li><a href="#popform">Popup Form</a></li>
 												<li><a href="#radio">Radio Group</a></li>
+												<li><a href="#reportsection">Report Button</a></li>
 												<li><a href="#tabmenu">Tab Menu</a></li>
 												<li><a href="#textareaid">Text Area</a></li>
 												<li><a href="#textboxid">Text Box</a></li>
 												<li><a href="#userpicker">User Picker</a></li>
 												<li><a href="#checkbox">Checkbox</a></li>
-												<li><a href="#checkbox">Checkbox</a></li>
-
-
-
-
 												<li><a href="controlReference.html">Control Reference</a></li>
 											</ul>
 										</section>
@@ -191,6 +191,52 @@
 										</article>
 
 
+										<article>
+
+											<h2 id=attachmentListGrid>Attachment List Grid(attachmentlistgrid)</h2>
+											<a href="#topics">back to topics</a>
+											<p>Attachment list will display a list of attachments in a table format.  The layout is done with a grid control
+											and optionally, you can have a delete file action.<br>
+											<br>
+											<b>Link to Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?itemId=DJP-1&formId=Document%20List%20Grid" target="_blank">Example</a><br>
+											<b>Link to Designer Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-1&formId=Document%20List%20Grid" target="_blank">Designer Example</a><br>
+											<b><u>Valid Properties</u></b><br>
+											<b>Control Type:</b> "attachmentlistgrid"<br>
+											<b>Cell:</b> "row,column" in which to put the field.  Example "5,2"<br>
+											<b>Data Source:</b> "Attachment"<br>
+											<b>Outer Style:</b> CSS that will style the outer container.<br>
+											<b>Inner Style:</b> CSS that will style the inner container.<br>
+											<b>Field Styles:</b> CSS that will style the inner container, "delete:true" for the delete option<br>
+											<b>renderIf:</b> if set, function called that returns true or false, if false will be hidden.<br>
+											<b>Before Render:</b> function called just before rendering.<br>
+											<b>After Render:</b> function called just after rendering.<br>
+
+											</p>
+										</article>
+
+										<article>
+
+											<h2 id=attachmentManaged>Attachment Managed(attachmentmanaged)</h2>
+											<a href="#topics">back to topics</a>
+											<p>Attachment managed will render a single control that manages one single file, by name.  This effectively gives you
+											versioning.  Meaning, you name the file you want uploaded and this will manage all of the file uploads in a single
+											conntrol.<br>
+											<br>
+											<b>Link to Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?itemId=DJP-1&formId=Attachment%20Managed" target="_blank">Example</a><br>
+											<b>Link to Designer Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-1&formId=Attachment%20Managed" target="_blank">Designer Example</a><br>
+											<b><u>Valid Properties</u></b><br>
+											<b>Control Type:</b> "attachmentmanaged"<br>
+											<b>Cell:</b> "row,column" in which to put the field.  Example "5,2"<br>
+											<b>Data Source:</b> NAME OF THE FILE, WITH EXTENSION, YOU WANT LOADED<br>
+											<b>Outer Style:</b> CSS that will style the outer container.<br>
+											<b>Inner Style:</b> CSS that will style the inner container.<br>
+											<b>Field Styles:</b> CSS that will style the inner container.<br>
+											<b>renderIf:</b> if set, function called that returns true or false, if false will be hidden.<br>
+											<b>Before Render:</b> function called just before rendering.<br>
+											<b>After Render:</b> function called just after rendering.<br>
+
+											</p>
+										</article>
 
 										<article>
 											<h2 id=attachmentUpload>Attachment Upload (attachmentupload)</h2>
@@ -252,6 +298,29 @@
 											<b>Before Render:</b> function called just before rendering.<br>
 											<b>After Render:</b> function called just after rendering.<br>
 											</p>
+										</article>
+										<article>
+
+											<h2 id=historyList>History List (commentlist)</h2>
+											<a href="#topics">back to topics</a>
+											<p>History list will display a list of item changes in a table format. The layout is done with DIVs and the
+											DIVs all have CSS classes assigned to them, this control uses the same DIVs as the Comment list so alter those divs to change.
+											To alter the default layout of the table you can alter the styles by using
+											the <a href="javascriptReference.html#styleReference">style override</a> in the javascript business rules section.<br>
+											<br>
+											<b>Link to Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?itemId=DJP-1&formId=History%20List%20Example" target="_blank">Example</a><br>
+											<b>Link to Designer Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-1&formId=History%20List%20Example" target="_blank">Designer Example</a><br>
+											<b><u>Valid Properties</u></b><br>
+											<b>Control Type:</b> "commentlist"<br>
+											<b>Cell:</b> "row,column" in which to put the field.  Example "5,2"<br>
+											<b>Data Source:</b> "Comment"<br>
+											<b>Outer Style:</b> CSS that will style the outer container.<br>
+											<b>Inner Style:</b> CSS that will style the inner container.<br>
+											<b>Default Styles:</b> The attachments are layed out in a DIV table with styles.  The default styles are:
+											<b>renderIf:</b> if set, function called that returns true or false, if false will be hidden.<br>
+											<b>Before Render:</b> function called just before rendering.<br>
+											<b>After Render:</b> function called just after rendering.<br>
+										</p>
 										</article>
 										<article>
 
@@ -379,14 +448,17 @@
 										<article>
 											<h2 id=gridsection>GRID (GRID)</h2>
 											<a href="#topics">back to topics</a>
-											<p>This is the EXTJS GRID panel control implemented using a custom type definition.  This is available now and<br>
-											seems to work well.  The GRID definition is done at the main administration menu in "Custom Types".  Creating a <br>
-											custom type of type GRID will allow you to define columns and types and validation rules for your values.  Also<br>
-											you must tell the Custom Type what field you will storing the data in.  This field must be jira type TEXT MULTILINE.<br>
-											Ideal Forms will store the JSON representation of the table in that JIRA field.  (Note the underlying database type is CLOB.<br>
+											<p>This is the EXTJS GRID panel control implemented using a custom type definition.  The GRID definition is done at the <br>
+											main administration menu in "Custom Types".  Creating a custom type of type GRID will allow you to define columns and types <br>
+											and validation rules for your values.<br>
+											Also you must tell the Custom Type what field you will storing the data in.  This field must be jira type TEXT MULTILINE and the<br>
+											field must be available to the issue. Ideal Forms will store the JSON representation of the table in that JIRA field.  <br>
+											<br>Note: the underlying database type is CLOB.<br>
+											Note: do not name the custom type the same name as the JIRA Field storing the contents
 											<br>
-											<b>Link to Example:</b> tbd<br>
-											<b>Link to Designer Example:</b> <br>
+											<b>Link to Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?itemId=DJP-30&formId=Grid%20Example%20with%20Cascade" target="_blank">Example</a><br>
+											<b>Link to Designer Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-30&formId=Grid%20Example%20with%20Cascade" target="_blank">Designer Example</a><br>
+											<b>Link to Custom Type, click "Custom Types and open "seasonsActivitiesForDemo":</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms" target="_blank">Custom Types</a><br>
 											<b><u>Valid Properties</u></b><br>
 											<b>Control Type:</b> "GRID"<br>
 											<b>Cell:</b> "row,column" in which to put the field.  Example "5,2"<br>
@@ -395,6 +467,33 @@
 											<b>Inner Style:</b> CSS that styles the inner container<br>
 											<b>Field Style:</b> CSS that styles the field container<br>
 											<b>Label Style:</b> CSS that styles the label<br>
+											<b>renderIf:</b> if set, function called that returns true or false, if false will be hidden.<br>
+											<b>Before Render:</b> function called just before rendering.<br>
+											<b>After Render:</b> function called just after rendering.<br>
+											</p>
+										</article>
+										<article>
+											<h2 id=reportsection>Report Button</h2>
+											<a href="#topics">back to topics</a>
+											<p>Forms has a report function that allows you to download a Word file with dynamically embedded values from your issues.
+											The word reports are stored as "Custom Types" from the main administration form.  The Word file is a normal docx word file
+											in which you include tags to output your issue values.  The syntax for tags is {tagname} and you can format the tags however
+											you would like.  Example tags include:<br>
+											<br>{Summary}
+											<br>{Description}
+											<br>{Due Date}
+											<br>
+											<b>Link to Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?itemId=DJP-30&formId=Word%20Example" target="_blank">Example</a><br>
+											<b>Link to Designer Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-30&formId=Word%20Example" target="_blank">Designer Example</a><br>
+											<b>Link to Custom Type, click "Custom Types and open "Demo Word Doc":</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms" target="_blank">Custom Types</a><br>
+											<b><u>Valid Properties</u></b><br>
+											<b>Control Type:</b>reportbutton<br>
+											<b>Cell:</b> "row,column" in which to put the field.  Example "5,2"<br>
+											<b>Data Source:</b> Name of the CUSTOM TYPE you created from the main screen<br>
+											<b>Outer Style:</b> NA<br>
+											<b>Inner Style:</b> NA<br>
+											<b>Field Style:</b> NA<br>
+											<b>Label Style:</b> NA<br>
 											<b>renderIf:</b> if set, function called that returns true or false, if false will be hidden.<br>
 											<b>Before Render:</b> function called just before rendering.<br>
 											<b>After Render:</b> function called just after rendering.<br>
@@ -468,6 +567,45 @@
 											Paging is important if your return list has a lot of rows.  Paging will display the number of entries<br>
 											on a page with controls to page forward and backward.  You can also use paging to prevent paging from happening<br>
 											by setting it to a very high number like 1000.  Note, JIRA's maxiumum return is 1000 rows in one page.  <br>
+											<b>Label Style:</b> CSS that styles the label<br>
+											<b>Tb. Col. Widths:</b> A comma delimited list of widths for the display<br>
+											<b>Tb. Col. Heads:</b> Overrides for the column headers<br>
+											<b>Tb. Dbl Clk:</b> A form name or a javascript function.  Will be invoked on a row double click<br>
+											<b>On Change:</b> A form name or a javascript function.  Will be invoked on a row single click<br>
+											<b>renderIf:</b> if set, function called that returns true or false, if false will be hidden.<br>
+											<b>Before Render:</b> function called just before rendering.<br>
+											<b>After Render:</b> function called just after rendering.<br>
+											</p>
+										</article>
+
+										<article>
+											<h2 id=itemTree>Item Tree (itemtree)</h2>
+											<a href="#topics">back to topics</a>
+											<p>The item tree is a control for displaying items in a tree format.  The tree nodes are determined by
+											the "links" of the Issue.  The item tree control helps create links between issues using a right mouse click
+											to add children.  Functionally, the objective is to add a tree structure from which you hang child nodes
+											that model data for your use case.  This control can be used in a similar way to the Gantt chart of a project
+											management tool.  The links are created to the same project, issue type.
+											<br>
+											<br>
+											Note:  you have to include a custom field, type number, called "taskOrder" for the nodes to automatically order like a gantt chart
+											and for the "move up" and "move down" menu options to appear.
+
+											<br>
+											<b>Link to Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?itemId=DJP-1&formId=IJF%20Tree%20Demo" target="_blank">Example</a><br>
+											<b>Link to Designer Example:</b> <a href="http://jira.idealfed.com/plugins/servlet/iforms?debug=true&craft=true&itemId=DJP-1&formId=IJF%20Tree%20Demo" target="_blank">Designer Example</a><br>
+											<b><u>Valid Properties</u></b><br>
+											<b>Control Type:</b> "itemtree"<br>
+											<b>Cell:</b> "row,column" in which to put the field.  Example "5,2"<br>
+											<b>Data Source:</b> a JQL query<br>
+											JQL is used here, and you can use memory variables in your query. (similar to SQL parameter binding.)<br>
+											Example helpful JQLs:  PARENT IN (#{key}) -> this will use the memory variable "key" and pull all children<br>
+											Example helpful JQLs:  project = PMM and cf[13819] = "#{EPMD Project}" -> this pulls issues where custom field 13819 = form value "EPMD Project"<br>
+											You can also set the number rows to return with a &maxResults=200 at the end of your JQL.
+											<b>Outer Style:</b> CSS that styles the outer container<br>
+											<b>Inner Style:</b> CSS that styles the inner container<br>
+											<b>Field Style:</b> CSS and optionally "paging", Ex:  paging:10<br>
+											Paging is not enabled for this control yet, so the max results must be used to pull up to 1000 issues<br>
 											<b>Label Style:</b> CSS that styles the label<br>
 											<b>Tb. Col. Widths:</b> A comma delimited list of widths for the display<br>
 											<b>Tb. Col. Heads:</b> Overrides for the column headers<br>

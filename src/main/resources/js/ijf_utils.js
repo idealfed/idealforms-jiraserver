@@ -214,6 +214,143 @@ var ijfUtils = {
 			});
 			return retVal;
 		},
+     sendEmail:function(inTargets,inSubject,inBody,inHtml,inSuccess,inError){
+		jQuery.ajax({
+				async: true,
+				type: 'POST',
+				url: g_root + '/plugins/servlet/iforms',
+				data: {
+					targets: inTargets,
+					subject: inSubject,
+					body: inBody,
+					html: inHtml, //true or false
+					action: 'sendMail'
+				},
+				timeout: 60000,
+				success: inSuccess,
+				error: inError
+			});
+		},
+     sendEmailSync:function(inTargets,inSubject,inBody,inHtml){
+		var retVal = "";
+		jQuery.ajax({
+				async: false,
+				type: 'POST',
+				url: g_root + '/plugins/servlet/iforms',
+				data: {
+					targets: inTargets,
+					subject: inSubject,
+					body: inBody,
+					html: inHtml, //true or false
+					action: 'sendMail'
+				},
+				timeout: 60000,
+				success: function(data) {
+				ijfUtils.hideProgress();
+
+					ijfUtils.footLog("Send email form data response: " + data);
+					if(data=="sent")
+					{
+						retVal=data;
+					}
+					else
+					{
+						retVal = "Failed to save " + jRet.status;
+					}
+				},
+				error: function(e) {
+					ijfUtils.footLog("Failed email sendt! " + e.message);
+					retVal = "Failed to send " + e.message;
+				}
+			});
+			return retVal;
+		},
+     getProxyCall:function(inUrl,inMethod,inData,inSuccess,inError){
+			jQuery.ajax({
+				async: true,
+				type: 'POST',
+				url: g_root + '/plugins/servlet/iforms',
+				data: {
+					url: encodeURI(inUrl),
+					method: inMethod,
+					data: inData,
+					action: 'proxyCall'
+				},
+				timeout: 60000,
+				success: inSuccess,
+				error: inError
+			});
+		},
+     getProxyCallSync:function(inUrl,inMethod,inData){
+			var retVal = "";
+			jQuery.ajax({
+				async: false,
+				type: 'POST',
+				url: g_root + '/plugins/servlet/iforms',
+				data: {
+					url: encodeURI(inUrl),
+					method: inMethod,
+					data: inData,
+					action: 'proxyCall'
+				},
+				timeout: 60000,
+				success: function(data) {
+				ijfUtils.hideProgress();
+
+					ijfUtils.footLog("URL data aquired: " + inUrl);
+					retVal=data;
+				},
+				error: function(e) {
+					ijfUtils.footLog("Failed email sendt! " + e.message);
+					retVal = "Failed to send " + e.message;
+				}
+			});
+			return retVal;
+		},
+     getProxyApiCall:function(inUrl,inMethod,inData,formSetId,inSuccess,inError){
+			jQuery.ajax({
+				async: true,
+				type: 'POST',
+				url: g_root + '/plugins/servlet/iforms',
+				data: {
+					url: encodeURI(inUrl),
+					method: inMethod,
+					data: inData,
+					formSetId: formSetId,
+					action: 'proxyApiCall'
+				},
+				timeout: 60000,
+				success: inSuccess,
+				error: inError
+			});
+		},
+     getProxyApiCallSync:function(inUrl,inMethod,inData,formSetId){
+			var retVal = "";
+			jQuery.ajax({
+				async: false,
+				type: 'POST',
+				url: g_root + '/plugins/servlet/iforms',
+				data: {
+					url: encodeURI(inUrl),
+					method: inMethod,
+					data: inData,
+					formSetId: formSetId,
+					action: 'proxyApiCall'
+				},
+				timeout: 60000,
+				success: function(data) {
+				ijfUtils.hideProgress();
+
+					ijfUtils.footLog("URL data aquired: " + inUrl);
+					retVal=data;
+				},
+				error: function(e) {
+					ijfUtils.footLog("Failed proxyapi call! " + e.message);
+					retVal = "Failed to send " + e.message;
+				}
+			});
+			return retVal;
+		},
 	getFieldDef:function(issueKey, inFieldName)
 		{
 			if(inFieldName=="Status")
@@ -797,7 +934,24 @@ clearAll:function()
     jQuery('#ijfOuterContainer').removeAttr("style")
 
 },
-
+getFileInputName:function(inInput,inLableKey)
+{
+	var retStr = "";
+	var fls = inInput.files;
+	if(inInput.files.length==1)
+	{
+		retStr = fls[0].name;
+		document.getElementById(inLableKey).title = "";
+		return retStr;
+	}
+	retStr =fls[0].name;
+	for(var i=1;i<fls.length;i++)
+	{
+		retStr+=", " + fls[i].name;
+	};
+	document.getElementById(inLableKey).title = retStr;
+	return fls.length + " files selected";
+},
 setElementWithStyleString:function(inDomId,inStyleString)
 {
 	try
@@ -1569,6 +1723,7 @@ loadConfig:function(onSuccess, onError)
 		        if(forDisplay) return inField.reduce(function(inStr,e){inStr+= e.value + " "; return inStr;},"");
 			    return inField;
 				break;
+			case "securitylevel":
 			case "priority":
 			case "status":
 				 if(forDisplay) return inField.name;

@@ -549,6 +549,7 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				var tv = {"name":newGroup};
  				this.newVal = tv;
 				break;
+			case 'securitylevel':
 			case 'status':
 			case 'priority':
 			case 'option':

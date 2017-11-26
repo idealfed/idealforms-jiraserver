@@ -4,17 +4,29 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.SessionTrackingMode;
 import javax.servlet.annotation.MultipartConfig;
+import javax.servlet.annotation.WebListener;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -23,7 +35,9 @@ import javax.servlet.http.Cookie;
 
 
 import com.atlassian.activeobjects.external.ActiveObjects;
-
+import com.atlassian.jira.mail.Email;
+import com.atlassian.mail.MailFactory;
+import com.atlassian.mail.server.SMTPMailServer;
 import com.atlassian.jira.util.json.JSONArray;
 import com.atlassian.jira.util.json.JSONException;
 import com.atlassian.jira.util.json.JSONObject;
@@ -99,7 +113,6 @@ public class Craft extends HttpServlet
     	String username = userManager.getRemoteUsername(request);
 
 //section to comment or uncomment license
-/*
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -121,7 +134,8 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-*/
+//end comment section
+
 
 		String contextPath = request.getRequestURI();
 		contextPath = contextPath.replace("/plugins/servlet/iforms","");
@@ -159,7 +173,6 @@ public class Craft extends HttpServlet
 //comment for unlicensed running
 //determine if Admin call or a Craft call, either way, require Administrator....
 
-/*
         if(iwfAction.equals("noAction"))
         {
 			if ((craftFlag.equals("true")) || (formId.equals("")))
@@ -180,8 +193,8 @@ public class Craft extends HttpServlet
 				}
 			}
 	    }
-*/
 
+//end comment section
 
 
 
@@ -411,6 +424,7 @@ public class Craft extends HttpServlet
 	        					sObject = new JSONObject(outSnip);
 	        					outSnip = sObject.getString("snippet");
 	        					outSnip=outSnip.replace("~pct~", "%");
+	        					snips.append("\n");
 	        					snips.append(outSnip);
 	        				}
 	        			}
@@ -464,7 +478,9 @@ public class Craft extends HttpServlet
 		sb.append("\"name\":\"" + fs.getName() + "\",");
 		sb.append("\"projectName\":\"" + fs.getProjectName() + "\",");
 		sb.append("\"projectId\":\"" + fs.getProjectId() + "\",");
-		sb.append("\"settings\":\"" + fs.getSettings() + "\",");
+		String sfSettings = fs.getSettings();
+		sfSettings = sfSettings.replaceFirst("(?<=proxyPassword\\\\\",\\\\\"value\\\\\":\\\\\")(.*?)(?=\\\\\",\\\\\"comment)","hidden");
+		sb.append("\"settings\":\"" + sfSettings + "\",");
 		sb.append("\"forms\":[");
         for (Form f : fs.getForms()) // (2)
         {
@@ -539,10 +555,239 @@ public class Craft extends HttpServlet
 		if (username == null)
 		{
 	    		final PrintWriter w = res.getWriter();
-	    		w.printf("{\"status\":\"NOSESSION\"}");
+	    		w.print("{\"status\":\"NOSESSION\"}");
 	    		w.close();
 	    		return;
     	}
+ 		String iwfAction = req.getParameter("action");
+		if(iwfAction==null) iwfAction="noAction";
+
+
+ 		//proxyApi call
+		if(iwfAction.equals("proxyApiCall"))
+		{
+			try
+			{
+				//plog.error("Calling proxy");
+
+				String targetUrl = java.net.URLDecoder.decode(req.getParameter("url"));
+				String targetMethod = req.getParameter("method");
+				String targetData = req.getParameter("data");
+				String formSetId = req.getParameter("formSetId");
+				//plog.error("Have params");
+				FormSet fs = ao.get(FormSet.class, new Integer(formSetId).intValue());
+
+				if((!targetMethod.equals("GET")) || (fs==null))
+				{
+					final PrintWriter w = res.getWriter();
+					w.print("Invalid method or bad formset configuration");
+					w.close();
+					return;
+				}
+
+				String fSettings = fs.getSettings();
+				plog.error("Proxy password: " + fSettings);
+				if(fSettings.indexOf("proxyPassword")<1)
+				{
+					final PrintWriter w = res.getWriter();
+					w.print("No proxy password configured");
+					w.close();
+					return;
+				}
+
+				String proxyServer = "";
+				Pattern MY_PATTERN = Pattern.compile("(?<=proxyServer\\\\\",\\\\\"value\\\\\":\\\\\")(.*?)(?=\\\\\",\\\\\"comment)");
+				Matcher m = MY_PATTERN.matcher(fSettings);
+				while (m.find()) {
+					proxyServer = m.group(1);
+				}
+
+				//look for cookie in session
+				Object sCookie = req.getSession().getAttribute("sessionCookie");
+
+	sCookie=null;
+
+				String cookie = "";
+				if(sCookie==null)
+				{
+					String proxyUser = "";
+					String proxyPass = "";
+					MY_PATTERN = Pattern.compile("(?<=proxyUsername\\\\\",\\\\\"value\\\\\":\\\\\")(.*?)(?=\\\\\",\\\\\"comment)");
+					m = MY_PATTERN.matcher(fSettings);
+					while (m.find()) {
+						proxyUser = m.group(1);
+					}
+					MY_PATTERN = Pattern.compile("(?<=proxyPassword\\\\\",\\\\\"value\\\\\":\\\\\")(.*?)(?=\\\\\",\\\\\"comment)");
+					m = MY_PATTERN.matcher(fSettings);
+					while (m.find()) {
+						proxyPass = m.group(1);
+					}
+					//(?<=proxyUsername\\",\\"value\\":\\")(.*)(?=\\",\\"comment)
+					//(?<=proxyPassword\\",\\"value\\":\\")(.*)(?=\\",\\"comment)
+
+					//need to pull username and password from the formset settings...
+					plog.error("Proxy server: " + proxyServer);
+					plog.error("Proxy username: " + proxyUser);
+					plog.error("Proxy password: " + proxyPass);
+
+					//perform login, get session cookie, store in header
+					URL urlSession = new URL(proxyServer + "/rest/auth/1/session");
+					String creds ="{\"username\":\""+proxyUser+"\",\"password\":\""+proxyPass+"\"}";
+					HttpURLConnection conSession = (HttpURLConnection) urlSession.openConnection();
+					conSession.setRequestMethod("POST");
+					conSession.setDoOutput(true);
+					DataOutputStream out = new DataOutputStream(conSession.getOutputStream());
+					out.writeBytes(creds);
+					out.flush();
+					out.close();
+					String headerName=null;
+					for (int i=1; (headerName = conSession.getHeaderFieldKey(i))!=null; i++) {
+						if (headerName.equals("Set-Cookie")) {
+							cookie = conSession.getHeaderField(i);
+							plog.error("cookie is: " + cookie);
+						}
+					}
+					req.getSession().setAttribute("sessionCookie", cookie);
+					BufferedReader ins = new BufferedReader(new InputStreamReader(conSession.getInputStream()));
+					String inputLines;
+					StringBuffer contents = new StringBuffer();
+					while ((inputLines = ins.readLine()) != null) {
+						contents.append(inputLines);
+					}
+					ins.close();
+					conSession.disconnect();
+					plog.error("Content is: " + contents.toString());
+				}
+				else{
+					cookie=sCookie.toString();
+				}
+
+
+				cookie = cookie.substring(0, cookie.indexOf(";"));
+				String jSessionKey = cookie.substring(0, cookie.indexOf("="));
+				String jSessionId = cookie.substring(cookie.indexOf("=") + 1, cookie.length());
+				plog.error("jSessionKey is: " + jSessionKey);
+				plog.error("jSessionId is: " + jSessionId);
+				//cookie aquired, now call API
+
+				URL url = new URL(proxyServer + targetUrl);
+				HttpURLConnection con = (HttpURLConnection) url.openConnection();
+				con.setRequestMethod(targetMethod);
+				con.setRequestProperty("Cookie", cookie);
+				//set cookie...
+
+				int status = con.getResponseCode();
+
+				BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+				String inputLine;
+				StringBuffer content = new StringBuffer();
+				while ((inputLine = in.readLine()) != null) {
+					content.append(inputLine);
+				}
+				in.close();
+				con.disconnect();
+				//plog.error("Have response");
+				final PrintWriter w = res.getWriter();
+				w.print(content.toString());
+				w.close();
+				return;
+			}
+			catch(Exception e)
+			{
+				plog.error("Failed to get api proxy call: " + e.getMessage());
+				final PrintWriter w = res.getWriter();
+				w.print("Failed call: " + e.getMessage());
+				w.close();
+				return;
+			}
+		}
+
+    	//proxy call
+		if(iwfAction.equals("proxyCall"))
+		{
+			try
+			{
+				//plog.error("Calling proxy");
+
+				String targetUrl = java.net.URLDecoder.decode(req.getParameter("url"));
+				String targetMethod = req.getParameter("method");
+				String targetData = req.getParameter("data");
+				//plog.error("Have params");
+
+				URL url = new URL(targetUrl);
+				HttpURLConnection con = (HttpURLConnection) url.openConnection();
+				con.setRequestMethod(targetMethod);
+
+				if((targetMethod.equals("POST")) || (targetMethod.equals("PUT")))
+				{
+					targetData="data="+targetData;
+					con.setDoOutput(true);
+					DataOutputStream out = new DataOutputStream(con.getOutputStream());
+					out.writeBytes(targetData);
+					out.flush();
+					out.close();
+				}
+
+				int status = con.getResponseCode();
+
+				BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+				String inputLine;
+				StringBuffer content = new StringBuffer();
+				while ((inputLine = in.readLine()) != null) {
+					content.append(inputLine);
+				}
+				in.close();
+				con.disconnect();
+				//plog.error("Have response");
+				final PrintWriter w = res.getWriter();
+				w.print(content.toString());
+				w.close();
+				return;
+			}
+			catch(Exception e)
+			{
+				plog.error("Failed to get proxy call: " + e.getMessage());
+				final PrintWriter w = res.getWriter();
+				w.print("Failed call: " + e.getMessage());
+				w.close();
+				return;
+			}
+		}
+
+		if(iwfAction.equals("sendMail"))
+		{
+			String toAddresses = req.getParameter("targets");
+			String subject = req.getParameter("subject");
+			String body = req.getParameter("body");
+			String html = req.getParameter("html");
+			String targets[] = toAddresses.split(",");
+			try
+			{
+				   for(int i=0;i<targets.length;i++)
+				   {
+						SMTPMailServer  mailServer = MailFactory.getServerManager().getDefaultSMTPMailServer();
+						if (html.equals("true"))
+							mailServer.send(new Email(targets[i]).setSubject(subject).setBody(body).setMimeType("text/html"));
+						else
+							mailServer.send(new Email(targets[i]).setSubject(subject).setBody(body));
+				   }
+				final PrintWriter w = res.getWriter();
+				w.print("sent");
+				w.close();
+				return;
+			}
+			catch(Exception e)
+			{
+				final PrintWriter w = res.getWriter();
+				w.print("Failed to send: " + e.getMessage());
+				w.close();
+				return;
+			}
+		}
+		//end public POST methods
+
+
+    	String inJson = req.getParameter("jsonConfig");
     	if (!userManager.isSystemAdmin(username))
     	{
 				final PrintWriter w = res.getWriter();
@@ -550,10 +795,6 @@ public class Craft extends HttpServlet
 				w.close();
 	    		return;
 		}
-
-		String iwfAction = req.getParameter("action");
-		String inJson = req.getParameter("jsonConfig");
-		if(iwfAction==null) iwfAction="noAction";
 
     	if(iwfAction.equals("saveFormBasic"))
     	{
@@ -735,7 +976,28 @@ public class Craft extends HttpServlet
 	    		f.setName(inForm.getString("name"));
         		f.setProjectId(inForm.getString("projectId"));
         		f.setProjectName(inForm.getString("projectName"));
-	    		f.setSettings(inForm.getString("settings"));
+        		//if proxypassword = hidden, do not overwrite...,need to get the value from the
+        		//existing form settings and set it here....
+
+				String settingsToSave = inForm.getString("settings");
+				if(settingsToSave.indexOf("hidden")<-1)
+        		{
+					//need to replace existing pw with this one....
+					String fSettings = f.getSettings();
+					String proxyPass ="";
+					Pattern MY_PATTERN = Pattern.compile("(?<=proxyPassword\\\\\",\\\\\"value\\\\\":\\\\\")(.*?)(?=\\\\\",\\\\\"comment)");
+					Matcher m = MY_PATTERN.matcher(fSettings);
+					while (m.find()) {
+						proxyPass = m.group(1);
+					}
+					if(!proxyPass.equals(""))
+					{
+						//replace "hidden
+						settingsToSave = settingsToSave.replaceFirst("hidden",proxyPass);
+					}
+				}
+        		f.setSettings(settingsToSave);
+	    		//f.setSettings(inForm.getString("settings"));
 	    		f.save();
 	    		final PrintWriter w = res.getWriter();
 	    		w.printf("{\"status\":\"OK\"}");

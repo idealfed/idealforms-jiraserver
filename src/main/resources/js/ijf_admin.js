@@ -31,6 +31,9 @@ helpLink:function(inLabel, inCaller)
 	{
 
 		//field styles
+		case "historylist":
+		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-33#" + inLabel);
+		break;
 		case "attachmentlistgrid":
 		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-32#" + inLabel);
 		break;
@@ -161,7 +164,15 @@ helpLink:function(inLabel, inCaller)
 		case "onload":
 		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
 		break;
-
+		case "onload":
+		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		break;
+		case "onload":
+				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		break;
+		case "additionalSave":
+				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		break;
 		default:
 			window.open("http://www.idealfed.com/controlReference.html");
 	}
@@ -1131,6 +1142,21 @@ addEditForm:function (sRow)
 							ijf.admin.cwfAdmin_form.settings["beforeLoad"] = n;
 							f.addCls("cwf-dirty");
 						}}
+				},
+				{
+					xtype: 'textfield',
+					labelAlign: 'left',
+					labelWidth: 120,
+					fieldLabel: "Additional Save",
+				labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"additionalSave\",null)>",
+					width: 850,
+					value: thisForm.settings["additionalSave"],
+					id: "adminFormSettings_additionalSaveId",
+					listeners: {
+						change: function(f, n, o){
+							ijf.admin.cwfAdmin_form.settings["additionalSave"] = n;
+							f.addCls("cwf-dirty");
+						}}
 				}]
 		});
 
@@ -1375,7 +1401,7 @@ addEditForm:function (sRow)
 		});
 
 
-		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","grouppicker","grouppickermulti","html","iframe","itemlist","itemtree","multiselect","navigatetoform","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
+		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","grouppicker","grouppickermulti","html","historylist","iframe","itemlist","itemtree","multiselect","navigatetoform","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
 
 	    var  sectionLookup = [];
 
@@ -3256,10 +3282,13 @@ addEditForm:function (sRow)
 													sourceCell = ijf.admin.cwfAdmin_form.fields[r.data.iid];
 												}
 											});
-
 											if(sourceCell)
 											{
-												var targetCell = JSON.parse(JSON.stringify(sourceCell));
+												//circular pevents var targetCell = JSON.parse(JSON.stringify(sourceCell));
+												var targetCell = Object.keys(sourceCell).reduce(function(inObj,k){
+													if(k!="form") inObj[k]=sourceCell[k];
+													return inObj;
+												},{});
 												targetCell.formCell = toRow + "," + toCol;
 												targetCell.iid = new Date().getTime();
 											    ijf.admin.cwfAdmin_form.fields[targetCell.iid]=targetCell;

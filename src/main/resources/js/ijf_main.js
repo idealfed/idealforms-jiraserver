@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "2.0.11";
+    window.g_version = "2.1.1";
 
 
     ijfUtils.showProgress();
@@ -607,11 +607,16 @@ function saveForm(onSuccess, inFields, inForm, item)
     //before the save, verify if any fields is required AND is null...
     if(!ijf.main.isFormValid())
     {
+		ijfUtils.hideProgress();
         ijfUtils.modalDialogMessage("Information", "The form has invalid fields and cannot be saved.  <br><br>Please provide values for all errored fields and save again.");
         return;
     }
 
-  	if(ijf.main.allControlsClean()) return;
+  	if(ijf.main.allControlsClean())
+  	{
+		ijfUtils.hideProgress();
+		return;
+	}
 
     //check form business rules
     gSaveIncludesFile=false;
@@ -620,24 +625,27 @@ function saveForm(onSuccess, inFields, inForm, item)
     ijf.main.saveQueue = new Array();
     ijf.main.saveQueueBatch = new Array();
 
-
-    ijfUtils.showProgress();
     for (var i in ijf.main.controlSet)
     {
         if((!ijf.main.controlSet.hasOwnProperty(i)) || (i.indexOf("_fld_")<0)) continue;
         var cnt = ijf.main.controlSet[i];
         if(cnt.dirty)
         {
-
                 ijf.main.saveQueue[cnt.id]=cnt;
                 cnt.prepForSave(ijf.main.saveQueueBatch);
-
         }
     }
-
     //process batch save
-    ijf.main.saveBatch(onSuccess,inFields,inForm, item);
-
+    try
+    {
+    	ijf.main.saveBatch(onSuccess,inFields,inForm, item);
+	}
+	catch(e)
+	{
+		ijfUtils.hideProgress();
+        ijfUtils.modalDialogMessage("Error", "The form failed to save properly: " + e.message);
+        return;
+	}
 }
 
 function saveBatch(onSuccess,inFields,inForm, item)
@@ -696,6 +704,19 @@ function saveBatch(onSuccess,inFields,inForm, item)
 			if(saveRes=="OK")
 			{
 				fieldsOk=true;
+
+				//adding hook to save to additional target. if form
+				//additionalSave ! null attempt to save...
+				if(inForm.settings.hasOwnProperty("additionalSave"))
+				{
+					//saving additional target...
+					putObj.key=item.key;
+					jData = JSON.stringify(putObj);
+					var addTarget = inForm.settings["additionalSave"];
+					var onAddSuccess = function(d){ijfUtils.footLog("Additional Save Success");};
+					var onAddError = function(e){ijfUtils.footLog("Additional Save Failed: " + JSON.stringify(e));};
+					ijfUtils.getProxyCall(addTarget,"POST",jData,onAddSuccess,onAddError);
+				}
 			}
 		}
 		else
@@ -714,9 +735,18 @@ function saveBatch(onSuccess,inFields,inForm, item)
 				{
 					ijf.main.itemId=saveRes.key;
 					if(!item.key)item.key=saveRes.key;
-					//window.g_itemId=saveRes.key;
-					//onSuccess();
-					//ijf.main.resetForm();
+					//adding hook to save to additional target. if form
+					//additionalSave ! null attempt to save...
+					if(inForm.settings.hasOwnProperty("additionalSave"))
+					{
+						//saving additional target...
+						putObj.key=saveRes.key;
+ 						jData = JSON.stringify(putObj);
+						var addTarget = inForm.settings["additionalSave"];
+						var onAddSuccess = function(d){ijfUtils.footLog("Additional Save Success");};
+					    var onAddError = function(e){ijfUtils.footLog("Additional Save Failed: " + JSON.stringify(e));};
+						ijfUtils.getProxyCall(addTarget,"POST",jData,onAddSuccess,onAddError);
+					}
 				}
 				else
 				{
@@ -770,16 +800,23 @@ function saveBatch(onSuccess,inFields,inForm, item)
 		//upload attachment...
 		var uForm = attachment.control.form;
 
-        var uploadFormId = "#" + attachment.id.replace(",","_")+"UploadFormId";
+        //var uploadFormId = attachment.id.replace(",","_")+"UploadFormId";
 		if(uForm.isValid())
 		{
-			var fd = new FormData(jQuery(uploadFormId)[0]);
+			var fd = new FormData(); //(jQuery(uploadFormId)[0]);
+			var fcontainer = document.getElementById("attachmentUploadFileId");
+			var files = fcontainer.files;
+
+			for(var i=0;i<files.length;i++)
+			{
+				fd.append('file', files[i]);
+			};
+
 			//fd.append("CustomField", "This is some extra data");
 			jQuery.ajax({
 				url: g_root + "/rest/api/2/issue/"+item.key+"/attachments",
 				type: 'POST',
 				headers: {"X-Atlassian-Token": "no-check"},
-				//'Content-Type':'multipart/form-data; charset=UTF-8'},
 				data: fd,
 					success: function(fp, o) {
 						onSuccess();
@@ -805,7 +842,6 @@ function saveBatch(onSuccess,inFields,inForm, item)
 		//ijf.currentItem=ijfUtils.getJiraIssueSync(item.key);
 		onSuccess();
 	}
-
 }
 
 
