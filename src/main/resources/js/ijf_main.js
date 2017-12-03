@@ -45,8 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "2.1.1";
-
+    window.g_version = "2.1.2";
 
     ijfUtils.showProgress();
 
@@ -73,8 +72,8 @@ function init(inConfigVersion)
             //jQuery('#main').html(jQuery(data).find('#main *'));
             ijfUtils.footLog("Successful load");
             ijf.userPool = new IjfUserPool();
-            ijf.main.currentUser = ijf.userPool.getUser(g_username);
-
+            ijf.main.currentUser = {};
+			if(g_username!="$ijfUsername") ijf.main.currentUser = ijf.userPool.getUser(g_username);
 			ijf.jiraEditMeta = [];
 			ijf.jiraEditMetaKeyed = [];
 			ijf.jiraAddMeta = [];
@@ -121,6 +120,22 @@ function init(inConfigVersion)
 						var	jData = JSON.stringify(putObj);
 						var	tApi = "/rest/auth/1/session";
 						var login = ijfUtils.jiraApiSync("POST",tApi,jData);
+
+						if(login.hasOwnProperty("session"))
+						{
+							//need to see this error and add a handle if it fails.
+							//then need to construct user because it's null now
+							ijf.main.currentUser = ijf.userPool.getUser(tForm.formSet.settings.anonUsername);
+						}
+						else
+						{
+							if(login.indexOf("Failed")>-1)
+							{
+								ijfUtils.hideProgress();
+								ijfUtils.modalDialogMessage("Error","Sorry, unable to authenticate with the system with stored credentials.");
+								return;
+							}
+						}
 					}
 				}
 			}
@@ -210,6 +225,7 @@ function processSetup(inContainerId)
         //look to see if item is constructed
         if(ijf.currentItem == null)
         {
+
             ijf.main.loadItem(inContainerId);
         }
         else
@@ -229,14 +245,27 @@ function loadItem(inContainerId)
         return;
     }
 
-    var tItem = ijfUtils.getJiraIssueSync(ijf.main.itemId);
+    //concept of proxy connection, if the current form is "proxy" then call this as
+    //a proxy call...
+
+	ijf.main.outerForm=ijf.fw.forms[window.g_formId];
+    if((ijf.main.outerForm.hasOwnProperty("formProxy"))&&(ijf.main.outerForm.formProxy=="true"))
+    {
+		//proxy auth
+	    var tItem = ijfUtils.getProxyApiCallSync("/rest/api/2/issue/"+ijf.main.itemId,ijf.main.outerForm.formSet.id);
+	    ijfUtils.footLog('Item aquired with proxy auth');
+	}
+	else
+	{
+		//normal
+	    var tItem = ijfUtils.getJiraIssueSync(ijf.main.itemId);
+	}
 
 
     if(tItem.key)
     {
 		try
 		{
-
 			ijf.currentItem = tItem;
 			ijfUtils.footLog("Modeled " + ijf.currentItem.key)
 
@@ -253,7 +282,6 @@ function loadItem(inContainerId)
 				});
 			}
 
-
 			ijfUtils.hideProgress(true);
 
 			ijf.main.processSetup(inContainerId);
@@ -269,7 +297,19 @@ function loadItem(inContainerId)
 	{
 	    if(typeof tItem=="string")
 	    {
-		    if(tItem.indexOf("Failed")>-1)
+		    if(tItem.indexOf("not have the permission")>-1)
+		    {
+				 ijfUtils.modalDialogMessage("Error","Unable to load the item because you doe not have the correct permissions.");
+			}
+		    else if(tItem.indexOf("401 for URL")>-1)
+		    {
+				 ijfUtils.modalDialogMessage("Error","Unable to load the item because you doe not have the correct permissions. (401)");
+			}
+		    else if(tItem.indexOf("403 for URL")>-1)
+		    {
+				 ijfUtils.modalDialogMessage("Error","Unable to load the item because you doe not have the correct permissions.<br>And it appears the account is locked.  Please contact support.  (403)");
+			}
+		    else if(tItem.indexOf("Failed")>-1)
 		    {
 				 ijfUtils.modalDialogMessage("Error","Unable to load issue: " + ijf.main.itemId + "<br>" + tItem);
 		    }
@@ -376,7 +416,19 @@ function renderForm(inContainerId, inFormId, isNested, item)
 			{
 				if(!ijf.jiraEditMeta.hasOwnProperty(item.key))
 				{
-					ijf.jiraEditMeta[item.key] = ijfUtils.getJiraIssueMetaSync(item.key);
+					//this must proxy as well, if the form is proxy
+					if(thisForm.formProxy=="true")
+					{
+						//proxy auth
+						ijf.jiraEditMeta[item.key] = ijfUtils.getProxyApiCallSync('/rest/api/2/issue/'+item.key+'/editmeta',thisForm.formSet.id);
+						ijfUtils.footLog('Item edit meta aquired with proxy auth');
+					}
+					else
+					{
+						//normal
+						ijf.jiraEditMeta[item.key] = ijfUtils.getJiraIssueMetaSync(item.key);
+					}
+
 					ijf.jiraEditMetaKeyed[item.key] = [];
 					Object.keys(ijf.jiraEditMeta[item.key].fields).forEach(function(f)
 					{
@@ -608,6 +660,7 @@ function saveForm(onSuccess, inFields, inForm, item)
     if(!ijf.main.isFormValid())
     {
 		ijfUtils.hideProgress();
+		if(ijf.main.gPopupFormHandle) ijf.main.gPopupFormHandle.unmask();
         ijfUtils.modalDialogMessage("Information", "The form has invalid fields and cannot be saved.  <br><br>Please provide values for all errored fields and save again.");
         return;
     }
@@ -662,13 +715,15 @@ function saveBatch(onSuccess,inFields,inForm, item)
             var thisCnt = ijf.main.saveQueueBatch[i];
             if((thisCnt.field.controlType=="attachmentupload") || (thisCnt.field.controlType=="attachmentmanaged"))
             {
-				attachment = thisCnt;
+				if(!attachment) attachment=[];
+				attachment.push(thisCnt);
 				continue;
 			}
             var thisSect = thisCnt.batchSaveSection;
 			fields[thisSect.jiraField.id]=thisCnt.newVal;
         }
     }
+    ijf.main.saveQueueBatch = [];
 
 
     //send the update batchRaw
@@ -796,44 +851,61 @@ function saveBatch(onSuccess,inFields,inForm, item)
 	var uploadResult = "OK";
 	if(attachment)
 	{
-		attachmentOk = false;
+		attachmentOk = true;
+		var errorMessages="";
 		//upload attachment...
-		var uForm = attachment.control.form;
-
-        //var uploadFormId = attachment.id.replace(",","_")+"UploadFormId";
-		if(uForm.isValid())
+		for(var fi=0;fi<attachment.length;fi++)
 		{
-			var fd = new FormData(); //(jQuery(uploadFormId)[0]);
-			var fcontainer = document.getElementById("attachmentUploadFileId");
-			var files = fcontainer.files;
-
-			for(var i=0;i<files.length;i++)
+			var uForm = attachment[fi].control.form;
+			var uploadFormId = attachment[fi].id.replace(",","_")+"UploadFileId";
+			if(uForm.isValid())
 			{
-				fd.append('file', files[i]);
-			};
+				var fd = new FormData(); //(jQuery(uploadFormId)[0]);
+				var fcontainer = document.getElementById(uploadFormId);
+				var files = fcontainer.files;
 
-			//fd.append("CustomField", "This is some extra data");
-			jQuery.ajax({
-				url: g_root + "/rest/api/2/issue/"+item.key+"/attachments",
-				type: 'POST',
-				headers: {"X-Atlassian-Token": "no-check"},
-				data: fd,
-					success: function(fp, o) {
-						onSuccess();
-					},
-					failure: function(e, r) {
-						ijfUtils.hideProgress();
-						ijfUtils.modalDialogMessage("Error","Sorry, the file failed to save:<br><br>" + r.response.responseText);
-					},
-				cache: false,
-				contentType: false,
-				processData: false
-			});
+				for(var i=0;i<files.length;i++)
+				{
+					fd.append('file', files[i]);
+				};
+
+				//fd.append("CustomField", "This is some extra data");
+				jQuery.ajax({
+					url: g_root + "/rest/api/2/issue/"+item.key+"/attachments",
+					type: 'POST',
+					async: false,
+					headers: {"X-Atlassian-Token": "no-check"},
+					data: fd,
+						success: function(fp, o) {
+							errorMessages += uploadFormId + " is OK";
+						},
+						failure: function(e, r) {
+							attachmentOk = false;
+							errorMessages +=  "ERROR: " + r.response.responseText;
+						},
+					cache: false,
+					contentType: false,
+					processData: false
+				});
+			}
+			else
+			{
+				attachment = null;
+				ijfUtils.hideProgress();
+				ijfUtils.modalDialogMessage("Error","The upload field has an error and cannot be processed.");
+				return;
+			}
+		}
+		if(attachmentOk)
+		{
+			attachment = null;
+			onSuccess();
 		}
 		else
 		{
+			attachment = null;
 			ijfUtils.hideProgress();
-			ijfUtils.modalDialogMessage("Error","The upload field has an error and cannot be processed.");
+			ijfUtils.modalDialogMessage("Error","The upload field has an error and cannot be processed. " + errorMessages);
 			return;
 		}
 	}

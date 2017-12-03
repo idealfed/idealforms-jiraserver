@@ -9,12 +9,12 @@ ijf.admin = {
 helpLink:function(inLabel, inCaller)
 {
 
-
 	//get the named control type
 	if(inCaller)
 	{
  		var iList = Ext.getCmp(inCaller).up();
-		var cType = iList.items.items[1].getValue();
+ 		//id of the controlType field
+		var cType = iList.items.items[3].getValue();
 
 		if(!cType)
 		{
@@ -1631,7 +1631,7 @@ addEditForm:function (sRow)
 																			if(!record.data.role) return;
 																			if(!cPermState) return;
 																			var newRole=record.data.role;
-																			ijf.admin.cwfAdmin_thisField.permissions.states[cPermState].edit=ijf.admin.cwfAdmin_form.permissions.states[cPermState].edit.filter(function(item){
+																			ijf.admin.cwfAdmin_thisField.permissions.states[cPermState].edit=ijf.admin.cwfAdmin_thisField.permissions.states[cPermState].edit.filter(function(item){
 																				return item !== newRole;
 																			});
 																			updateTables(cPermState,ijf.admin.cwfAdmin_thisField);
@@ -1693,7 +1693,7 @@ addEditForm:function (sRow)
 																					if(!record.data.role) return;
 																					if(!cPermState) return;
 																					var newRole=record.data.role;
-																					ijf.admin.cwfAdmin_thisField.permissions.states[cPermState].view=ijf.admin.cwfAdmin_form.permissions.states[cPermState].edit.filter(function(item){
+																					ijf.admin.cwfAdmin_thisField.permissions.states[cPermState].view=ijf.admin.cwfAdmin_thisField.permissions.states[cPermState].edit.filter(function(item){
 																						return item !== newRole;
 																					});
 																					updateTables(cPermState,ijf.admin.cwfAdmin_thisField);

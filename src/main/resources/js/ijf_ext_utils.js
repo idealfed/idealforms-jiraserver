@@ -786,6 +786,8 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
     {
         canDelete=true;
     }
+	if(!perms.canEdit) canDelete=false;
+
 
 	var l_Height = 300;
     var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
@@ -1002,19 +1004,17 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
+	rOnly=false;
+	if(!perms.canEdit) rOnly=true;
+
+
 	//end permissions
 
-	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_ctr_'+inField.formCell.replace(",","_")+"' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+inField.dataSource+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+inField.dataSource+"');}\"></form>";
+	//var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_ctr_'+inField.formCell.replace(",","_")+"' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+inField.dataSource+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+inField.dataSource+"');}\"></form>";
+	//id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId'
+    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+inField.dataSource+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+inField.dataSource+"');}\"></form>";
 
-    var pnl = new Ext.FormPanel({
-        labelAlign: 'left',
-        border:false,
-        hidden: hideField,
-        bodyStyle: l_Style,
-        items: [{
-		       header:{
-						titlePosition: 1,
-						items:[{
+    var headerItems = [{
 							xtype:'panel',
 							html: "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId'>File: " + inField.dataSource + "<br> uploaded by " + currentAttachment.author.displayName + " on " + moment(currentAttachment.created).format('lll') + "</div>",
 							bodyStyle: 'background:transparent;color:white;width:100px'
@@ -1150,19 +1150,34 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 							   // render a local version
 							   if(currentAttachment) window.open(currentAttachment.content);
 							}
-						 },
-						 {
-							xtype:'button',
-							text:"Upload",
-								listeners: {
-									click: function(f,n,o){
-										var clickKey = '#'+inFormKey+'_ctr_'+inField.formCell.replace(",","_");
-										jQuery(clickKey).val("");
-										jQuery(clickKey).trigger('click');
-									}
-							    }
+						 }];
 
-						 }]
+					if(!rOnly)
+					{
+						headerItems.push({
+											xtype:'button',
+											text:"Upload",
+												listeners: {
+													click: function(f,n,o){
+														var clickKey = "#"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId";
+														jQuery(clickKey).val("");
+														jQuery(clickKey).trigger('click');
+													}
+												}
+
+										 });
+					}
+
+
+    var pnl = new Ext.FormPanel({
+        labelAlign: 'left',
+        border:false,
+        hidden: hideField,
+        bodyStyle: l_Style,
+        items: [{
+		       header:{
+						titlePosition: 1,
+						items: headerItems
 					 },
 			//title: "Attachment: " + inField.dataSource + " uploaded by " + currentAttachment.author.displayName + " on " + moment(currentAttachment.created).format('lll'),
 			collapsible: true,
@@ -1292,6 +1307,16 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 			hidden: (!perms.canEdit),
 			style: inField.fieldStyle,
 			handler: function(){
+				if(ijf.snippets.hasOwnProperty(inField["event"]))
+				{
+					var fValFail = ijf.snippets[inField["event"]]();
+					if(!fValFail)
+					{
+						ijfUtils.footLog("form failed validation");
+						return;
+					}
+				}
+
 				if(inField.dataReference)
 				{
 					ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference,item);
@@ -1463,6 +1488,19 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 				//if you are saving and ADD form it can only save ONE time
 				//then it has to shift to an edit mode....
 
+				//perform form validation
+
+				if(ijf.snippets.hasOwnProperty(inField["event"]))
+				{
+					var fValFail = ijf.snippets[inField["event"]]();
+					if(!fValFail)
+					{
+						ijfUtils.footLog("form failed validation");
+						return;
+					}
+				}
+
+
 				if(inField.dataReference)
 				{
 					ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference,item);
@@ -1512,6 +1550,17 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
                     ijf.main.gPopupFormHandle=null;
                     return;
 				}
+
+				if(ijf.snippets.hasOwnProperty(inField["event"]))
+				{
+					var fValFail = ijf.snippets[inField["event"]]();
+					if(!fValFail)
+					{
+						ijfUtils.footLog("form failed validation");
+						return;
+					}
+				}
+
 				if(inField.dataReference)
 				{
 					ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference,item);
@@ -1763,7 +1812,7 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
 	if(rOnly) l_fieldStyle="background:lightgray";
 
     var ocf =  ijfUtils.getEvent(inField);
-	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='attachmentUploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('attachmentFileDisplayId').update(ijfUtils.getFileInputName(this,'attachmentFileDisplayId')); multiple></form>";
+	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('attachmentFileDisplayId').update(ijfUtils.getFileInputName(this,'attachmentFileDisplayId')); multiple></form>";
     var simple = new Ext.FormPanel({
         border:false,
         hidden: hideField,
@@ -1781,8 +1830,8 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
             id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
             listeners: {
                 click: function(f,n,o){
-					jQuery('#attachmentUploadFileId').val("");
-					jQuery('#attachmentUploadFileId').trigger('click');
+					jQuery("#"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId").val("");
+					jQuery("#"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId").trigger('click');
                 }
             }
         },{
@@ -1892,7 +1941,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
 	{
 		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
-    console.log(JSON.stringify(perms));
+    //console.log(JSON.stringify(perms));
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -4899,11 +4948,15 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				  retStr=inStr.replace(tmpStr,"");
 				  //now look for and and
 				  retStr = retStr.replace(/and *and/i,"and");
-				  //look for and and order
+				  //look for and order
 				  retStr = retStr.replace(/and *order/i,"order");
 				  //and leading and
 				  if(retStr.substr(0,5).toUpperCase()==" AND ")
 				  	retStr = retStr.substr(5,retStr.length);
+				  //and trailing and
+				  retStr=retStr.trim();
+				  if(retStr.substr(retStr.length-4,4).toUpperCase() == " AND")
+				  	retStr = retStr.substr(0,retStr.length-4);
 			  }
 		   }
 		   return retStr;
@@ -4927,9 +4980,23 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 	       inField.dataSource=lds;
 	   }
 
-       var tSearch = "jql="+lds+"&maxResults=1&fields="+translateFields;
-	   tSearch = ijfUtils.replaceKeyValues(tSearch,item);
-	   var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
+	  //debug, write jql to console
+	  //console.log(lds);
+
+        var tSearch = "jql="+lds+"&maxResults=1&fields="+translateFields;
+ 	    tSearch = ijfUtils.replaceKeyValues(tSearch,item);
+		var aUrl = '/rest/api/2/search?'+tSearch;
+
+        if(inField.form.formProxy=="true")
+        {
+			aUrl=aUrl.replace(/ /g,"%20");
+ 	   		var rawList = ijfUtils.getProxyApiCallSync(aUrl, inField.form.formSet.id);
+	    }
+	    else
+	    {
+		    var rawList = ijfUtils.jiraApiSync('GET',aUrl, null);
+		}
+
        rawList.issues.forEach(function(i){
 			translateFields.split(",").forEach(function(f){
 				var thisField = f.trim();
@@ -5191,13 +5258,27 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 		tSearch = ijfUtils.replaceKeyValues(tSearch,item);
 		//var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
 
+  	    var aUrl = '/rest/api/2/search?'+tSearch;
+  	    var xtraParams = {};
+        if(inField.form.formProxy=="true")
+        {
+			//aUrl = aUrl.replace(/ /g,"%20");
+		    xtraParams = {
+				"ijfAction":"proxyApiCall",
+				"url": encodeURI(aUrl.replace(/ /g,"%20")),
+				"formSetId":inField.form.formSet.id
+			}
+		    aUrl=g_root + "/plugins/servlet/iforms";
+		    //?ijfAction=proxyApiCall&formSetId="+inField.form.formSet.id+"&url="+encodeURI(aUrl);
+	    }
 
         var store = Ext.create('Ext.data.Store', {
             model: inField.dataSource + inField.formCell.replace(",",""),
 	        pageSize: itemsPerPage,
         	proxy: {
 			        type: 'ajax',
-			        url: '/rest/api/2/search?'+tSearch,
+			        url: aUrl,
+			        extraParams: xtraParams,
 			        reader: {
 			            type: 'json',
 			            rootProperty: 'issues',
@@ -5222,7 +5303,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 											retObj.iid=i.key;
 											return retObj;
 										});
-								//if(ijf.snippets.hasOwnProperty(inField.referenceFilter)) dataItems = ijf.snippets[inField.referenceFilter](dataItems);
+								if(ijf.snippets.hasOwnProperty(inField.referenceFilter)) dataItems = ijf.snippets[inField.referenceFilter](dataItems);
 								data.issues=dataItems;
 								return data;
 			            }

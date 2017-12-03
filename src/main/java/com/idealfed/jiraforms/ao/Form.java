@@ -23,6 +23,9 @@ public interface Form extends Entity
     String getFormAnon();
     void setFormAnon(String name);
 
+    String getFormProxy();
+    void setFormProxy(String name);
+
     String getFormType();
     void setFormType(String name);
 

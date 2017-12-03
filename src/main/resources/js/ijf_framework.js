@@ -94,6 +94,7 @@ setup:function (setup)
 				thisF.formType = f.formType;
 				(f.testIssue=="~") ? thisF.testIssue="": thisF.testIssue = f.testIssue;
 				thisF.formAnon = f.formAnon;
+				thisF.formProxy = f.formProxy;
 				thisF.issueType = f.issueType;
 				thisF.id = f.id;
 				if(f.hasOwnProperty("settings")) thisF.rawSettings = JSON.parse(f.settings);

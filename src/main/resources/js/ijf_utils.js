@@ -307,35 +307,31 @@ var ijfUtils = {
 			});
 			return retVal;
 		},
-     getProxyApiCall:function(inUrl,inMethod,inData,formSetId,inSuccess,inError){
+     getProxyApiCall:function(inUrl,formSetId,inSuccess,inError){
 			jQuery.ajax({
 				async: true,
-				type: 'POST',
+				type: 'GET',
 				url: g_root + '/plugins/servlet/iforms',
 				data: {
 					url: encodeURI(inUrl),
-					method: inMethod,
-					data: inData,
 					formSetId: formSetId,
-					action: 'proxyApiCall'
+					ijfAction: 'proxyApiCall'
 				},
 				timeout: 60000,
 				success: inSuccess,
 				error: inError
 			});
 		},
-     getProxyApiCallSync:function(inUrl,inMethod,inData,formSetId){
+     getProxyApiCallSync:function(inUrl,formSetId){
 			var retVal = "";
 			jQuery.ajax({
 				async: false,
-				type: 'POST',
+				type: 'GET',
 				url: g_root + '/plugins/servlet/iforms',
 				data: {
 					url: encodeURI(inUrl),
-					method: inMethod,
-					data: inData,
 					formSetId: formSetId,
-					action: 'proxyApiCall'
+					ijfAction: 'proxyApiCall'
 				},
 				timeout: 60000,
 				success: function(data) {
@@ -404,7 +400,14 @@ var ijfUtils = {
                  else
                  {
                      ijfUtils.footLog("Failed data post: " + " "  + e.statusText);
-                     retVal="Failed data put: " + e.statusText;
+                     if(e.status==403)
+                     {
+	                     retVal="You do not have permission to edit.";
+					 }
+					 else
+					 {
+	                     retVal="Failed data put: " + e.statusText;
+					 }
                  }
              }
         });

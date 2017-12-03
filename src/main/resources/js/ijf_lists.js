@@ -799,6 +799,7 @@ addEditForm:function (inFrmId)
 		thisF.testIssue = "";
 		thisF.issueType = "";
 		thisF.formAnon= "false";
+		thisF.formProxy= "false";
 		thisF.id = 0;
 		thisF.settings=[];
 	    thisF.fields=[];
@@ -961,6 +962,24 @@ addEditForm:function (inFrmId)
 						change: function(f, n, o){
 							thisF.formAnon = n;
 				}}
+			},
+			{
+				xtype: 'combobox',
+				labelAlign: 'left',
+				forceSelection: true,
+				store: ["true","false"],
+				forceSelection: true,
+				labelWidth: 100,
+				margin: '4 0 0 10',
+				fieldLabel: "Proxy Auth",
+				labelStyle: "color:darkblue",
+				triggerAction: 'all',
+				width: 200,
+				value: thisF.formProxy,
+				listeners: {
+						change: function(f, n, o){
+							thisF.formProxy = n;
+				}}
 			}
 
         ],
@@ -985,6 +1004,7 @@ addEditForm:function (inFrmId)
 							formName: thisForm.name,
 							issueType: thisForm.issueType,
 							formAnon: thisForm.formAnon,
+							formProxy: thisForm.formProxy,
 							formSetId: formSet.id
 				};
 				var jdata = JSON.stringify(jOut);
@@ -1072,6 +1092,7 @@ copyForm: function(inFrmId)
 							formType: thisForm.formType,
 							formName: newFormName,
 							formAnon: thisForm.formAnon,
+							formProxy: thisForm.formProxy,
 							formSetId: formSet.id,
 							fields: JSON.stringify(JSON.stringify(fieldsOut)),
 							formSettings: JSON.stringify(JSON.stringify(settingsOut))
@@ -1386,61 +1407,61 @@ addEditFormSet:function (inFrmId)
 					}
 				}
             },
-			//{
-			//		xtype: 'textfield',
-			//		labelAlign: 'left',
-			//		fieldLabel: 'Proxy Username',
-			//		labelWidth: 100,
-			//		labelStyle: "color:darkblue",
-			//		margin: '4 0 0 10',
-			//		width: 400,
-			//		value: thisF.settings["proxyUsername"],
-			//		listeners: {
-			//		afterrender: function(f)
-			//		{
-			//			this.validate();
-			//		},
-			//		change: function(f,n,o){
-			//				thisF.settings["proxyUsername"] = n;
-			//			}
-			//		}
-            //},            {
-			//	xtype: 'textfield',
-			//	labelAlign: 'left',
-			//	fieldLabel: 'Proxy Password',
-			//	labelWidth: 100,
-			//	labelStyle: "color:darkblue",
-			//	margin: '4 0 0 10',
-			//	width: 400,
-			//	value: thisF.settings["proxyPassword"],
-			//	listeners: {
-			//	afterrender: function(f)
-			//	{
-			//		this.validate();
-			//	},
-			//	change: function(f,n,o){
-			//			thisF.settings["proxyPassword"] = n;
-			//		}
-			//	}
-            //},          {
-			//	xtype: 'textfield',
-			//	labelAlign: 'left',
-			//	fieldLabel: 'Proxy Server',
-			//	labelWidth: 100,
-			//	labelStyle: "color:darkblue",
-			//	margin: '4 0 0 10',
-			//	width: 400,
-			//	value: thisF.settings["proxyServer"],
-			//	listeners: {
-			//	afterrender: function(f)
-			//	{
-			//		this.validate();
-			//	},
-			//	change: function(f,n,o){
-			//			thisF.settings["proxyServer"] = n;
-			//		}
-			//	}
-            //},
+			{
+					xtype: 'textfield',
+					labelAlign: 'left',
+					fieldLabel: 'Proxy Username',
+					labelWidth: 100,
+					labelStyle: "color:darkblue",
+					margin: '4 0 0 10',
+					width: 400,
+					value: thisF.settings["proxyUsername"],
+					listeners: {
+					afterrender: function(f)
+					{
+						this.validate();
+					},
+					change: function(f,n,o){
+							thisF.settings["proxyUsername"] = n;
+						}
+					}
+            },            {
+				xtype: 'textfield',
+				labelAlign: 'left',
+				fieldLabel: 'Proxy Password',
+				labelWidth: 100,
+				labelStyle: "color:darkblue",
+				margin: '4 0 0 10',
+				width: 400,
+				value: thisF.settings["proxyPassword"],
+				listeners: {
+				afterrender: function(f)
+				{
+					this.validate();
+				},
+				change: function(f,n,o){
+						thisF.settings["proxyPassword"] = n;
+					}
+				}
+            },          {
+				xtype: 'textfield',
+				labelAlign: 'left',
+				fieldLabel: 'Proxy Server',
+				labelWidth: 100,
+				labelStyle: "color:darkblue",
+				margin: '4 0 0 10',
+				width: 400,
+				value: thisF.settings["proxyServer"],
+				listeners: {
+				afterrender: function(f)
+				{
+					this.validate();
+				},
+				change: function(f,n,o){
+						thisF.settings["proxyServer"] = n;
+					}
+				}
+            }
 			,{
 				xtype: 'combobox',
 				labelAlign: 'left',
@@ -1613,6 +1634,7 @@ addEditCustomType:function (inFrmId)
         title: "IJF Custom Types",
         width: 800,
         height:520,
+        scrollable:true,
         closable: true,
         items: [typeListView],
         buttons:[{
