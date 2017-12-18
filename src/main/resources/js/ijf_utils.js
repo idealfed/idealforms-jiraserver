@@ -1522,6 +1522,12 @@ loadConfig:function(onSuccess, onError)
 		var retCnt = Object.keys(ijf.main.controlSet).reduce(function(inObj,c){if(ijf.main.controlSet[c].field.dataSource==inDataSource) inObj=ijf.main.controlSet[c];return inObj;},null);
 		return retCnt;
 	},
+    getControlByKey: function(inKey)
+    {
+		var retCnt = null;
+		if(ijf.main.controlSet.hasOwnProperty(inKey)) retCnt = ijf.main.controlSet[inKey];
+		return retCnt;
+	},
 	getFieldValue:function(controlKey)
 	{
 		var retVal = null;
@@ -2073,7 +2079,7 @@ CSVtoArray:function (strData, strDelimiter ){
 	Data Reference
 	**********************/
 
-	getReferenceDataByName:function(refName, keyIndex){
+	getReferenceDataByName:function(refName, keyIndex, asArray){
 		var retRef = [];
 
 		var thisT = {};
@@ -2129,11 +2135,17 @@ CSVtoArray:function (strData, strDelimiter ){
 								return true;
 							}
 						});
-
-						retRef = Ext.create('Ext.data.Store', {
-						  fields: sFields,
-						  data: lookup
-						});
+						if(asArray)
+						{
+							retRef=lookup;
+						}
+						else
+						{
+							retRef = Ext.create('Ext.data.Store', {
+							  fields: sFields,
+							  data: lookup
+							});
+						}
 					}
 					else if(retRef[0].indexOf(",")>-1)
 					{
@@ -2150,20 +2162,35 @@ CSVtoArray:function (strData, strDelimiter ){
 						var uniqueVals = {};
 						lookup = lookup.filter(function(r){if(uniqueVals.hasOwnProperty(r[keyIndex])) return false; uniqueVals[r[keyIndex]]=true; return true;});
 
-						retRef = Ext.create('Ext.data.Store', {
-						  fields: sFields,
-						  data: lookup
-						});
+						if(asArray)
+						{
+							retRef=lookup;
+						}
+						else
+						{
+							retRef = Ext.create('Ext.data.Store', {
+							  fields: sFields,
+							  data: lookup
+							});
+						}
+
 					}
 					else{
 						var lookup = retRef.map(function(r)
 						{
 							return {"0":r};
 						});
-						retRef = Ext.create('Ext.data.Store', {
-						  fields: ["0"],
-						  data: lookup
-						});
+						if(asArray)
+						{
+							retRef=lookup;
+						}
+						else
+						{
+							retRef = Ext.create('Ext.data.Store', {
+							  fields: ["0"],
+							  data: lookup
+							});
+					    }
 					};
 				}
 			}

@@ -1392,17 +1392,25 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 					return;
 				}
 
+				//12/5/2017 - changing to reset item to null unless persist item  true...
+				var tarItem = item;
+				if(inField.referenceFilter != "persistItem")
+				{
+					tarItem=null;
+					window.g_itemId=null;
+				}
+
                 if(window.onbeforeunload==null)
                 {
 					window.g_formId=tForm;
-                    ijf.main.renderForm("ijfContent", tForm, false, item);
+                    ijf.main.renderForm("ijfContent", tForm, false, tarItem);
                 }
                 else
                 {
                     var dFunc = function(){
                         window.onbeforeunload= null;
                         window.g_formId=tForm;
-	                    ijf.main.renderForm("ijfContent", tForm, false, item);
+	                    ijf.main.renderForm("ijfContent", tForm, false, tarItem);
                     };
                     ijfUtils.modalDialog("Warning",ijf.main.gNavigateOnChange,dFunc);
                 }
@@ -2293,34 +2301,45 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
- renderDropdown:function(inFormKey,item, inField, inContainer)
+renderDropdown:function(inFormKey,item, inField, inContainer)
 {
-
     inContainer.title = inField.toolTip;
 
-    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=item.fields[jfFieldDef.id];
-    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
-
-	//if status, the transitions are the field meta...
-	if(jfFieldDef.schema.type=='status')
+	if(inField.dataSource=="session")
 	{
-		//cache this?
-		if(!item.transitions)
-		{
-			item.transitions= ijfUtils.jiraApiSync('GET','/rest/api/2/issue/'+item.key+'/transitions', null);
-		}
-		var jfFieldMeta = item.transitions;
-	}
+		  var jfFieldMeta = {};
+		  if(inField.dataReference!="ijfReference") jfFieldMeta.allowedValues = JSON.parse(inField.dataReference);
+		  var jfFieldDef = {};
+		  jfFieldDef.id=inField.formCell;
+		  jfFieldDef.schema={};
+		  jfFieldDef.schema.type="option";
+		  var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+		  if(!data) data=inField.dataReference2;	}
 	else
 	{
-		var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+		var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+		var jf=item.fields[jfFieldDef.id];
+		var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+
+		//if status, the transitions are the field meta...
+		if(jfFieldDef.schema.type=='status')
+		{
+			//cache this?
+			if(!item.transitions)
+			{
+				item.transitions= ijfUtils.jiraApiSync('GET','/rest/api/2/issue/'+item.key+'/transitions', null);
+			}
+			var jfFieldMeta = item.transitions;
+		}
+		else
+		{
+			var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+		}
 	}
 
     var lAllowBlank = true;
     if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
         if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
-
 
     //manage cases for the lookups
     //case one, simple collect constraint
@@ -2357,8 +2376,6 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
     {
         limitList=false;
     }
-
-
 
     var ocf =  ijfUtils.getEvent(inField);
 
@@ -2405,11 +2422,21 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 								},
 								select: function(f,n,o){
 
-									ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+									if(inField.dataSource=="session")
+									{
+										ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+									}
+									else
+									{
+										ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+									}
 									ocf(f,n,o);
 								}
 							};
-			if(ijf.fw.CustomTypes.find(function(t){return (t.name==inField.referenceFilter);}))
+
+			var refCheck = 	ijf.fw.CustomTypes.reduce(function(inObj,t){if(t.name==inField.referenceFilter) inObj=t; return inObj;},null);
+
+			if(refCheck)
 			{
 				lookup = ijfUtils.getReferenceDataByName(inField.referenceFilter,"0");
 			}
@@ -2435,6 +2462,8 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 										var cValue = 'novaluetofilterwith';
 
 										var ctl = ijfUtils.getControlByDataSource(f.fieldName);
+										if(!ctl) ctl = ijfUtils.getControlByKey(f.fieldName);
+
 										if(ctl) cValue = ctl.control.items.items[0].getValue();
 										f.value=cValue;
 									});
@@ -2450,9 +2479,20 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 						{
 								childFields.forEach(function(f){
 									var ctl = ijfUtils.getControlByDataSource(f);
+									if(!ctl) ctl = ijfUtils.getControlByKey(f);
+
 									if(ctl) cValue = ctl.control.items.items[0].setValue(null);
 								});
-								ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+
+								if(inField.dataSource=="session")
+								{
+									ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+								}
+								else
+								{
+									ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+								}
+								ocf(f,n,o);
 						};
 					}
 				}
@@ -2536,13 +2576,19 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 					this.validate();
 				},
 				change: function(f,n,o){
-					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					if(inField.dataSource=="session")
+					{
+						ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+					}
+					else
+					{
+						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					}
 					ocf(f,n,o);
 				}
 			}};
 			break;
     }
-
 
 
     var simple = new Ext.FormPanel({
@@ -2585,7 +2631,7 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
             var ref = JSON.parse(inField.referenceFilter);
             //value only for now...
             if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
-            var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
+            var lookup = ijfUtils.getReferenceDataByName(ref.name,ref.index);
             break;
         default:
 			var lookup = jfFieldMeta.allowedValues.map(function(e)
@@ -2812,7 +2858,7 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
             var ref = JSON.parse(inField.referenceFilter);
             //value only for now...
             if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
-            var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
+            var lookup =  ijfUtils.getReferenceDataByName(ref.name,ref.index);
             break;
         default:
 
@@ -2996,7 +3042,7 @@ renderUserMultiselect:function(inFormKey,item, inField, inContainer)
             var ref = JSON.parse(inField.referenceFilter);
             //value only for now...
             if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
-            var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
+            var lookup =  ijfUtils.getReferenceDataByName(ref.name,ref.index);
             break;
         default:
 
@@ -3171,7 +3217,7 @@ renderGroupPicker:function(inFormKey,item, inField, inContainer)
             var ref = JSON.parse(inField.referenceFilter);
             //value only for now...
             if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
-            var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
+            var lookup =  ijfUtils.getReferenceDataByName(ref.name,ref.index);
             break;
         default:
 
@@ -3335,7 +3381,7 @@ renderGroupMultiselect:function(inFormKey,item, inField, inContainer)
             var ref = JSON.parse(inField.referenceFilter);
             //value only for now...
             if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
-            var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
+            var lookup =  ijfUtils.getReferenceDataByName(ref.name,ref.index);
             break;
         default:
 
@@ -3487,10 +3533,25 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
 
     inContainer.title = inField.toolTip;
 
-	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
-    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=item.fields[jfFieldDef.id];
-    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+	if(inField.dataSource=="session")
+	{
+		  var jfFieldMeta = {};
+		  if(inField.dataReference!="ijfReference") jfFieldMeta.allowedValues = JSON.parse(inField.dataReference);
+		  var jfFieldDef = {};
+		  jfFieldDef.id=inField.formCell;
+		  jfFieldDef.schema={};
+		  jfFieldDef.schema.type="option";
+		  var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+		  if(data) data = data.map(function(v){return {"id":v};});
+		  if(!data) data=inField.dataReference2;	}
+	else
+	{
+		var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+		var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+		var jf=item.fields[jfFieldDef.id];
+		var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+	}
+
 
     var lAllowBlank = true;
     if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
@@ -3500,13 +3561,117 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
     //manage cases for the lookups
     //case one, simple collect constraint
     //case two reference lookup
+    var lookup = [];
+	var cListener = {
+						afterrender: function(f)
+						{
+							this.validate();
+						},
+						change: function(f,n,o){
+
+							if(inField.dataSource=="session")
+							{
+								ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+							}
+							else
+							{
+								ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+							}
+							ocf(f,n,o);
+						}
+					};
     switch (inField.dataReference)
     {
         case "ijfReference":
-            var ref = JSON.parse(inField.referenceFilter);
-            //value only for now...
-            if((ref.filter) && (ref.filter!="")) ref.filter.value = ijfUtils.replaceKeyValues(ref.filter.value,item);
-            var lookup = fw.getReferenceItemsAsSimpleArray(ref.entity,ref.field,ref.filter);
+
+		   //The lookup may be simple 1D array or part of a complex cascade.  The syntax of co.reference tells
+			var cLookupDef = {"index":"0"};
+
+			var refCheck = 	ijf.fw.CustomTypes.reduce(function(inObj,t){if(t.name==inField.referenceFilter) inObj=t; return inObj;},null);
+			if(refCheck)
+			{
+				lookup = ijfUtils.getReferenceDataByName(inField.referenceFilter,"0",true);
+				var cLookupDef = {"index":"0"};
+			}
+			else
+			{
+                var cLookupDef = JSON.parse(inField.referenceFilter);
+                //value only for now...
+        	    lookup =  ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index,true);
+			}
+            var lId = 0;
+            //look for filter key, parent id that is, if exists, then add a filter to this animal
+
+			if(cLookupDef.parent)
+			{
+				//yes filter....
+				lookup = lookup.map(function(e)
+				{
+					return {id: lId++, show: e[cLookupDef.index], filterField:e[cLookupDef.parent.dataIndex]};
+				});
+				//switch the data value to the ID of the row containing, IF data is from jira and not session
+				if(data)
+				{
+					if((typeof data)=="string")
+					{
+						data = JSON.parse(data);
+						data = data.map(function(v){
+							var valKey = lookup.reduce(function(inV,av){if(v==av.show) inV=av.id;return inV;},null);
+							return {"id":valKey};
+						});
+					}
+			    }
+
+				var cFilters = [{"property":"filterField", "value":"tbd", "fieldName":cLookupDef.parent.fieldName}];
+
+				cListener["beforeQuery"] = function(query) {
+							cFilters.forEach(function(f){
+								//for each filter param, we need to get the correct value...
+								var cValue = 'novaluetofilterwith';
+
+								var ctl = ijfUtils.getControlByDataSource(f.fieldName);
+								if(!ctl) ctl = ijfUtils.getControlByKey(f.fieldName);
+
+								if(ctl) cValue = ctl.control.items.items[0].getValue();
+								f.value=cValue;
+							});
+							this.store.clearFilter();
+							this.store.filter(cFilters);
+						};
+	            var cValue = [];
+				if(data) cValue = data.map(function(cv){return cv.id});
+				var shows = Ext.create('Ext.data.Store', {
+				  fields: ['id','show','filterField'],
+				  data: lookup
+				});
+			}
+			else
+			{
+				//no filter
+				lookup = lookup.map(function(e)
+				{
+					return {id: lId++, show: e[cLookupDef.index]};
+				});
+				//switch the data value to the ID of the row containing, IF data is from jira and not session
+				if(data)
+				{
+					if((typeof data)=="string")
+					{
+						data = JSON.parse(data);
+						data = data.map(function(v){
+							var valKey = lookup.reduce(function(inV,av){if(v==av.show) inV=av.id;return inV;},null);
+							return {"id":valKey};
+						});
+					}
+			    }
+	            var cValue = [];
+				if(data) cValue = data.map(function(cv){return cv.id});
+				var shows = Ext.create('Ext.data.Store', {
+				  fields: ['id','show'],
+				  data: lookup
+				});
+			}
+
             break;
         default:
 
@@ -3540,6 +3705,8 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
 			}
      		break;
     }
+
+    inField.ijfLookup = lookup;
 
     var hideField = ijfUtils.renderIfShowField(data,inField);
     var hideLabel = false;
@@ -3623,16 +3790,8 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
 			emptyText:'Please select...',
 			selectOnFocus:true,
 			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
-			listeners: {
-				afterrender: function(f)
-				{
-					this.validate();
-				},
-				change: function(f,n,o){
-					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
-					ocf(f,n,o);
-				}
-			}}]
+			listeners: cListener
+		}]
     });
     //before render....
     if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple, inFormKey,item, inField, inContainer);
@@ -5991,7 +6150,9 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 		]});
 
 	//alter tree menue to only show order options if "taskOrder" exists in query
-	if(Object.keys(colMeta).find(function(c){if(colMeta[c].name=="taskOrder") return true; return false}))
+
+	var refCheck = 	Object.keys(colMeta).reduce(function(inV,c){if(colMeta[c].name=="taskOrder") inV=true; return inV;},false);
+	if(refCheck)
 	{
 		treeMenu.add({  text: 'Move Up', handler: function()  {
 					var rId = tree.selection.data.iid
@@ -6488,7 +6649,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 											this.validate();
 										}
 									};
-					if(ijf.fw.CustomTypes.find(function(t){return (t.name==col.reference);}))
+					if(ijf.fw.CustomTypes.reduce(function(inObj,t){if(t.name==col.reference) inObj=t; return inObj;},null))
 					{
 						lookups[col.columnName] = ijfUtils.getReferenceDataByName(col.reference,"0");
 					}

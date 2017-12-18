@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "2.1.2";
+    window.g_version = "2.1.3";
 
     ijfUtils.showProgress();
 
@@ -407,7 +407,9 @@ function renderForm(inContainerId, inFormId, isNested, item)
 		ijf.jiraMetaKeyed=[];
 
 		//look to see if an Add type.  If so, null out the Item.
-		if(thisForm.formType=="Add") item=null;
+		//12/5/17 ---taking this line out to allow editing directly after adding off of
+		//add.
+		//if(thisForm.formType=="Add") item=null;
 
 		if(item)
 		{

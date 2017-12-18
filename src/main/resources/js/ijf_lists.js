@@ -2117,10 +2117,10 @@ addEditCustomTypeReference:function (inTypeId)
 					{
 						ijfUtils.modalDialogMessage("Save Error","Sorry, something went wrong with the save: " + sStat);
 					}
-					else
-					{
-						ijfUtils.modalDialogMessage("Information","Saved");
-					}
+					//else
+					//{
+					//	ijfUtils.modalDialogMessage("Information","Saved");
+					//}
             }},
             {
                 text:'Close',
@@ -2270,7 +2270,7 @@ addEditCustomFileReference:function (inTypeId)
 					}
 					else
 					{
-						ijfUtils.modalDialogMessage("Information","Saved");
+						//ijfUtils.modalDialogMessage("Information","Saved");
 						fileEncoded=false;
 						ijf.lists.dWin2.close();
                         ijf.lists.dWin.focus();

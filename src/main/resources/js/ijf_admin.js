@@ -2407,7 +2407,7 @@ addEditForm:function (sRow)
 		var initResp = "";
 
 		var sStat = ijfUtils.saveJiraFormSync(jdata,"saveFormConfig");
-		if(sStat="OK")
+		if(sStat=="OK")
 		{
 			ijfUtils.modalDialogMessage("Information Message","Settings saved. You must refresh other pages to see changes.");
 		}
@@ -2694,6 +2694,7 @@ addEditForm:function (sRow)
 						var widths = rawColumnWidths.split(";");
 						var newWidths = [];
 						widths.forEach(function(s){
+							if(s=="") return;
 							var spanParts = s.split(":");
 							var w = spanParts[0]/1;
 							if(w>colNum) w=w-1;

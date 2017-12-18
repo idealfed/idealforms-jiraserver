@@ -614,7 +614,27 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				break;
 			case 'string':
 				//std text value
-				this.newVal = this.control.items.items[0].getValue();
+				//in cases where a multiselect control with ijfReference i need special handling for this
+				if(this.field.controlType=="multiselect")
+				{
+					//value is array.  get the array, switch to actual array values from ijfReference, save a json
+					var vArr = this.control.items.items[0].getValue();
+					var saveVal = [];
+					//need the ijfReference data used for lookup. - it's stored in this.ijfLookup
+					var lookups = this.field.ijfLookup;
+					if(lookups)
+					{
+						vArr.forEach(function(v){
+							var addVal = lookups.reduce(function(inV,av){if(v==av.id) inV=av.show;return inV;},null);
+							if(addVal) saveVal.push(addVal);
+						});
+					}
+					this.newVal = JSON.stringify(saveVal);
+				}
+				else
+				{
+					this.newVal = this.control.items.items[0].getValue();
+				}
 				break;
 			case 'grid':
 				//std text value
