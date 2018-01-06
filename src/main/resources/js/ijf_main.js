@@ -45,7 +45,17 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "2.1.3";
+    window.g_version = "2.1.5";
+
+    console.log("Initializing IJF version: " + window.g_version);
+    //prevent double initializing....
+    if(ijf.initialized)
+    {
+		console.log("Double Initialization");
+		return;
+	}
+	ijf.initialized=true;
+
 
     ijfUtils.showProgress();
 
@@ -942,7 +952,9 @@ function setAllClean()
         if((!ijf.main.controlSet.hasOwnProperty(i)) || (i.indexOf("_fld_")<0)) continue;
 
         var cnt =ijf.main.controlSet[i];
-        cnt.container.style = {};
+        if(cnt.dirty==false) continue;
+        //cnt.container.style = {};
+        cnt.container.style.cssText="";
         cnt.dirty=false;
         window.onbeforeunload= null;
 

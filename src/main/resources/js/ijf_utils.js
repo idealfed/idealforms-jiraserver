@@ -1747,6 +1747,9 @@ loadConfig:function(onSuccess, onError)
 			case "comments-page":
 			    return "";
 			    break;
+			case "project":
+			    if(forDisplay) return inField.name;
+			    if(inField) return inField.key;
 			default:
 				return "unknown type";
 		}
@@ -2145,6 +2148,8 @@ CSVtoArray:function (strData, strDelimiter ){
 							  fields: sFields,
 							  data: lookup
 							});
+							//sort by the keyIndex
+							retRef.sort(keyIndex);
 						}
 					}
 					else if(retRef[0].indexOf(",")>-1)
@@ -2172,6 +2177,8 @@ CSVtoArray:function (strData, strDelimiter ){
 							  fields: sFields,
 							  data: lookup
 							});
+							//sort by the keyIndex
+							retRef.sort(keyIndex);
 						}
 
 					}
@@ -2190,6 +2197,8 @@ CSVtoArray:function (strData, strDelimiter ){
 							  fields: ["0"],
 							  data: lookup
 							});
+							//sort by the keyIndex
+							retRef.sort("0");
 					    }
 					};
 				}

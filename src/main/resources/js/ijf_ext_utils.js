@@ -1343,7 +1343,7 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 					}
 					Ext.getBody().mask("Saving...");
 					var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,inField.form,item)};
-					window.setTimeout(saveIt,10);
+					window.setTimeout(saveIt,50);
 			}});
 
     }
@@ -1878,6 +1878,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
     if(inField.dataSource=="session")
     {
 		var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+		if(!data) data=inField.dataReference2;
 	}
 	else
 	{
@@ -2143,15 +2144,22 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 {
 
     inContainer.title = inField.toolTip;
-
-	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
-    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=item.fields[jfFieldDef.id];
-    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
-
-	    var lAllowBlank = true;
+	var lAllowBlank = true;
+    if(inField.dataSource=="session")
+    {
+		var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+		if(!data) data=inField.dataReference2;
+	}
+	else
+	{
+		var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+		var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+		var jf=item.fields[jfFieldDef.id];
+		var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 	    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
         if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
+	}
+
 
 	    var lValidator = function(v){return true};
 	    var lRegex =  inField.regEx;
@@ -2283,7 +2291,15 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
                     if(!inField.toolTip) inContainer.title = f.getErrors().join();
                 },
                 change: function(f,n,o){
-                    ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					if(inField.dataSource=="session")
+					{
+						ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+					}
+					else
+					{
+						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					}
+
                     if(f.isValid())
                     {
                         ocf(f,n,o);
@@ -4495,7 +4511,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 
 					//add special values:  key, status
 					itemData["key"]=ijf.currentItem.key;
-					itemData["status"]=ijf.currentItem.status.name;
+					itemData["status"]=ijf.currentItem.fields.status.name;
 
 					//add ocf hook to alter data
 					ocf(itemData);
@@ -4930,6 +4946,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 			  var vStart = 0;
 			  var vEnd = 0;
 			  var vStartFound=false;
+			  var inQuote = false;
 			  for(var i=startKey;i<inStr.length;i++)
 			  {
 				  if(!vStartFound)
@@ -4979,6 +4996,19 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 			      }
 				  if((vStart>0) && (i<inStr.length-4))
 				  {
+					if(inStr[i]=="\"")
+					{
+						if(inQuote==true)
+						{
+							inQuote=false;
+						}
+						else
+						{
+							inQuote=true;
+						}
+					}
+					if(inQuote) continue;
+
 					if((inStr.substr(i,4).toUpperCase()==" AND") || (inStr.substr(i,4).toUpperCase()==" ORD"))
 					{
 						vEnd=i;
@@ -4999,11 +5029,16 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 		   else
 		   {
 			//it's an add
+
 			if(value.toUpperCase().indexOf("NOT IN")>-1)
 			{
 				retStr = key + " " + value + " and " + inStr;
 			}
 			else if((value.toUpperCase().indexOf("IN(")>-1) || (value.toUpperCase().indexOf("IN (")>-1))
+			{
+				retStr = key + " " + value + " and " + inStr;
+			}
+			else if(value.toUpperCase().indexOf("LINKED")>-1)
 			{
 				retStr = key + " " + value + " and " + inStr;
 			}
@@ -5043,6 +5078,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 			  var vStart = 0;
 			  var vEnd = 0;
 			  var vStartFound=false;
+			  var inQuote = false;
 			  for(var i=startKey;i<inStr.length;i++)
 			  {
 				  if(!vStartFound)
@@ -5076,6 +5112,12 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 							vStart=i-1;
 							vStartFound=true;
 						}
+						//where LINKED
+						if(inStr.substr(i,7).toUpperCase()==" LINKED")
+						{
+							vStart=i-1;
+							vStartFound=true;
+						}
 						//where IS
 						if(inStr.substr(i,3).toUpperCase()==" IS")
 						{
@@ -5092,6 +5134,18 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 			      }
 				  if((vStart>0) && (i<inStr.length-4))
 				  {
+					if(inStr[i]=="\"")
+					{
+						if(inQuote==true)
+						{
+							inQuote=false;
+						}
+						else
+						{
+							inQuote=true;
+						}
+					}
+					if(inQuote) continue;
 					if((inStr.substr(i,4).toUpperCase()==" AND") || (inStr.substr(i,4).toUpperCase()==" ORD"))
 					{
 						vEnd=i;
