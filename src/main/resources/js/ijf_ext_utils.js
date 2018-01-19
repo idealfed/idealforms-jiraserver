@@ -1497,7 +1497,6 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 				//then it has to shift to an edit mode....
 
 				//perform form validation
-
 				if(ijf.snippets.hasOwnProperty(inField["event"]))
 				{
 					var fValFail = ijf.snippets[inField["event"]]();
@@ -1552,12 +1551,6 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 			margin: '0 4 0 0',
 			inField: inField,
             handler: function(){
-				if(ijf.main.allControlsClean())
-				{
-					ijf.main.gPopupFormHandle.close();
-                    ijf.main.gPopupFormHandle=null;
-                    return;
-				}
 
 				if(ijf.snippets.hasOwnProperty(inField["event"]))
 				{
@@ -1567,6 +1560,13 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 						ijfUtils.footLog("form failed validation");
 						return;
 					}
+				}
+
+				if(ijf.main.allControlsClean())
+				{
+					ijf.main.gPopupFormHandle.close();
+                    ijf.main.gPopupFormHandle=null;
+                    return;
 				}
 
 				if(inField.dataReference)
@@ -1878,7 +1878,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
     if(inField.dataSource=="session")
     {
 		var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
-		if(!data) data=inField.dataReference2;
+		if((!data) && (inField.style.indexOf('query:true')<0)) data=inField.dataReference2;
 	}
 	else
 	{
@@ -4464,39 +4464,6 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
                 handler: function(){
 					ijf.main.gEventControl=this.up().jField;
 
-					//get custom type, then load file detail, generate output, download
-					var thisT = {};
-					for(var tF in ijf.fw.CustomTypes){
-						if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
-						if(ijf.fw.CustomTypes[tF].name==inField.dataSource) thisT=ijf.fw.CustomTypes[tF];
-					}
-					if(thisT.customType!="FILE")
-					{
-						ijfUtils.modalDialogMessage("Error","Unable to get report file from types");
-						return;
-					}
-
-					var fileDetailRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisT.id, null);
-
-					var cleanDoubleDouble = fileDetailRaw.replace(/\"\"/g,"\"");
-					cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
-					cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
-
-					var fileType = JSON.parse(cleanDoubleDouble);
-					var fileDetail = {};
-					//thisT.settings...
-					var fileInfoString = "No file loaded yet";
-					try
-					{
-						var fileDetail = JSON.parse(fileType.settings);
-						fileInfoString = fileDetail.fileInfoString;
-					}
-					catch(e)
-					{
-						ijfUtils.modalDialogMessage("Error","Unable to get parse file from type");
-						return;
-					}
-					var decodedFile = ijfUtils.Base64Binary.base64ToArrayBuffer(fileDetail.file);
 					//prep data
 					var itemData={};
 					Object.keys(ijf.jiraMeta.fields).forEach(function(k)
@@ -4508,7 +4475,6 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 							itemData[ijf.jiraMeta.fields[k].name]=v;
 						}
 					});
-
 					//add special values:  key, status
 					itemData["key"]=ijf.currentItem.key;
 					itemData["status"]=ijf.currentItem.fields.status.name;
@@ -4516,32 +4482,21 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 					//add ocf hook to alter data
 					ocf(itemData);
 
-					//Process the file:
-					var zip = new JSZip(decodedFile);
-					var doc=new Docxtemplater();
-					doc.includeTags=false;
-					doc.loadZip(zip);
-					doc.setData(itemData);
-					doc.render(); //apply them (replace all occurences of {first_name} by Hipp, ...)
-					//mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-					out=doc.getZip().generate({
-						type:"blob",
-						mimeType: "application/octet-stream",
-					});
-
-				   //name is the name
-				   var fParts = fileDetail.fileInfoString.split("\\");
-				   if(fParts.length==1)
-				   {
-					   var fName = fileDetail.fileInfoString;
-				   }
-				   else
-				   {
-					   var fName = fParts[fParts.length-1];
-				   }
-					//var blob = new Blob([decodedFile], {type: "application/octet-stream"});
-					saveAs(out,fName);
-
+					//get custom type, then load file detail, generate output, download
+					var thisT = {};
+					for(var tF in ijf.fw.CustomTypes){
+						if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+						if(ijf.fw.CustomTypes[tF].name==inField.dataSource) thisT=ijf.fw.CustomTypes[tF];
+					}
+					if(thisT.customType!="FILE")
+					{
+						ijfUtils.modalDialogMessage("Error","Unable to get report file from types");
+						return;
+					}
+					//you have prepped data AND you have file type...call generateCustomeFile
+					var gRep = function(){ijfUtils.generateWordFile(itemData,thisT);}
+					Ext.getBody().mask("Creating");
+					window.setTimeout(gRep,100);
                 }
             }
         });

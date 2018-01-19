@@ -406,7 +406,7 @@ var ijfUtils = {
 					 }
 					 else
 					 {
-	                     retVal="Failed data put: " + e.statusText;
+	                     retVal="Failed data put: " + e.statusText + " " + e.responseText;
 					 }
                  }
              }
@@ -1148,7 +1148,34 @@ loadConfig:function(onSuccess, onError)
     });
 },
 
+replaceWordChars:function(text) {
 
+    var s = text;
+    // smart single quotes and apostrophe
+    s = s.replace(/[\u2018\u2019\u201A]/g, "\'");
+    // smart double quotes
+    s = s.replace(/[\u201C\u201D\u201E]/g, "\"");
+    // ellipsis
+    s = s.replace(/\u2026/g, "...");
+    // dashes
+    s = s.replace(/[\u2013\u2014]/g, "-");
+    // circumflex
+    s = s.replace(/\u02C6/g, "^");
+    // open angle bracket
+    s = s.replace(/\u2039/g, "<");
+    // close angle bracket
+    s = s.replace(/\u203A/g, ">");
+    // spaces
+    s = s.replace(/[\u02DC\u00A0]/g, " ");
+
+    //worry on amp when combined with chars
+    //if(s.match(/\S\&\s|\S\&\S|\s\&\S/)) s=s.replace("&", " & ");
+    s = s.replace("&","&amp;");
+    //sledge hammer
+    s = unescape(encodeURIComponent(s));
+
+    return s;
+},
 
 	resetTimeout:function()
 	{
@@ -1528,6 +1555,16 @@ loadConfig:function(onSuccess, onError)
 		if(ijf.main.controlSet.hasOwnProperty(inKey)) retCnt = ijf.main.controlSet[inKey];
 		return retCnt;
 	},
+	getField: function(inName)
+	   {
+		var thisField=null;
+		if(ijf.main.controlSet.hasOwnProperty(inName)){
+			thisField = ijf.main.controlSet[inName];
+		}else{
+			thisField = Object.keys(ijf.main.controlSet).reduce(function(inS, s){if(ijf.main.controlSet[s].field.dataSource==inName)inS=ijf.main.controlSet[s]; return inS;},null);
+		}
+		return thisField;
+    },
 	getFieldValue:function(controlKey)
 	{
 		var retVal = null;
@@ -1771,7 +1808,23 @@ loadConfig:function(onSuccess, onError)
 		});
 		return raVal.join(",");
 	},
-
+    translateJiraFieldsToObjs:function(inCsv)
+    {
+		var fields = inCsv.split(",");
+		var raVal = [];
+		fields.forEach(function(f){
+			var tf = f.trim();
+			if(ijf.jiraFieldsKeyed.hasOwnProperty(tf))
+			{
+				raVal.push({"id":ijf.jiraFieldsKeyed[tf].id,"name":f});
+			}
+			else
+			{
+				raVal.push({"id":f,"name":f});
+			}
+		});
+		return raVal;
+	},
     getJiraFieldById:function(inId)
     {
 		var retVal ={};
@@ -2076,6 +2129,128 @@ CSVtoArray:function (strData, strDelimiter ){
 
 	replaceAll:function(string, find, replace) {
 		return string.replace(new RegExp(escapeRegExp(find), 'g'), replace);
+	},
+    generateWordFile:function(itemData,thisT)
+    {
+			var fileDetailRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisT.id, null);
+
+			var cleanDoubleDouble = fileDetailRaw.replace(/\"\"/g,"\"");
+			cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
+			cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
+
+			var fileType = JSON.parse(cleanDoubleDouble);
+			var fileDetail = {};
+			//thisT.settings...
+			var fileInfoString = "No file loaded yet";
+			try
+			{
+				var fileDetail = JSON.parse(fileType.settings);
+				fileInfoString = fileDetail.fileInfoString;
+			}
+			catch(e)
+			{
+				ijfUtils.modalDialogMessage("Error","Unable to get parse file from type");
+				ijfUtils.hideProgress();
+				return;
+			}
+			var decodedFile = ijfUtils.Base64Binary.base64ToArrayBuffer(fileDetail.file);
+
+			//now augment the data with nested data from the default jql query
+			if(fileDetail.jql)
+			{
+				try
+				{
+					  var jql = fileDetail.jql;
+					  var varBindings = jql.split("$").reduce(function(inKeys, p){
+						  //must walk forward and end on ", ) or space
+						  var i=0;
+						  while(i<p.length) {
+							  if((p[i]=="\"") || (p[i]==" ") || (p[i]==")") || (p[i]=="'")) break;
+							  i++;
+						  }
+						  var key = p.substring(0,i);
+						  inKeys.push(key);
+						  return inKeys;
+					  },[]);
+					  varBindings=varBindings.slice(1);
+
+					  varBindings.forEach(function(b)
+					  {
+						 var newVal = itemData[b];
+						 if(newVal) jql=jql.replace("$"+b,newVal);
+					  });
+					  var flds = fileDetail.fields;
+					  var translateFields = ijfUtils.translateJiraFieldsToIds(flds);
+
+					  var suffix = "";
+					  if(flds) suffix = "&fields=" + translateFields;
+					   var aUrl = '/rest/api/2/search?jql='+jql + suffix;
+					   var rawList = ijfUtils.jiraApiSync('GET',aUrl, null);
+					   var newVals=[];
+					   rawList.issues.forEach(function(i){
+							var itemData={};
+							if(i.fields)
+							{
+								var fieldMap = ijfUtils.translateJiraFieldsToObjs(flds);
+								fieldMap.forEach(function(f){
+									if(ijf.jiraFieldsKeyed.hasOwnProperty(f.name))
+									{
+										var v = ijfUtils.handleJiraFieldType(ijf.jiraFieldsKeyed[f.name],i.fields[f.id],true,true);
+										itemData["issues." + f.name]=v;
+									}
+									else
+									{
+										itemData["issues." + f.id]= i.fields[f.id];
+									}
+								});
+							}
+							itemData["issues.key"]=i.key;
+							itemData["issues.id"]=i.id;
+							itemData["issues.self"]=i.self;
+							newVals.push(itemData);
+					   });
+					   if(fileDetail.snippet)
+					   {
+						   if(ijf.snippets.hasOwnProperty(action.snippet)) newVals = ijf.snippets[fileDetail.snippet](newVals);
+					   }
+					   itemData["issues"] = newVals;
+				}
+				catch(e)
+				{
+					//default jql failed to load
+					ijfUtils.footLog("Failed to load default JQL for report: " + fileDetail.jql);
+					ijfUtils.hideProgress();
+					return;
+				}
+			}
+
+			//Process the file:
+			var zip = new JSZip(decodedFile);
+			var doc=new Docxtemplater();
+			doc.includeTags=false;
+			if(fileDetail.debugMode=="true") doc.includeTags=true;
+			doc.loadZip(zip);
+			doc.setData(itemData);
+			doc.render(); //apply them (replace all occurences of {first_name} by Hipp, ...)
+			//mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+			out=doc.getZip().generate({
+				type:"blob",
+				mimeType: "application/octet-stream",
+			});
+
+		   //name is the name
+		   var fParts = fileDetail.fileInfoString.split("\\");
+		   if(fParts.length==1)
+		   {
+			   var fName = fileDetail.fileInfoString;
+		   }
+		   else
+		   {
+			   var fName = fParts[fParts.length-1];
+		   }
+			//var blob = new Blob([decodedFile], {type: "application/octet-stream"});
+			saveAs(out,fName);
+			ijfUtils.hideProgress();
 	},
 
 	/*********************

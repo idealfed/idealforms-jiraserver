@@ -693,7 +693,7 @@ public class Craft extends HttpServlet
     private void cleanVersions(int keepNum)
     {
     	int ctr=0;
-		for (Version v : ao.find(Version.class, Query.select().order("id DESC")))
+		for (Version v : ao.find(Version.class, Query.select().order("\"ID\" DESC")))
         {
 			ctr++;
 			if(ctr > keepNum)

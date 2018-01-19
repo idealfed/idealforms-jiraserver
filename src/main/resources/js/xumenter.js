@@ -8,7 +8,7 @@ var expressions = require("angular-expressions");
 //var JSZip = require("jszip");
 window.expressions = expressions;
 
-},{"../js/docxtemplater.js":3,"angular-expressions":19}],2:[function(require,module,exports){
+},{"../js/docxtemplater.js":3,"angular-expressions":20}],2:[function(require,module,exports){
 "use strict";
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -202,7 +202,7 @@ DocUtils.getLeft = function (parsed, element, index) {
 module.exports = DocUtils;
 
 DocUtils.traits = require("./traits");
-},{"./errors":4,"./memoize":7,"./traits":16,"xmldom":21}],3:[function(require,module,exports){
+},{"./errors":4,"./memoize":8,"./traits":17,"xmldom":22}],3:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -449,7 +449,7 @@ Docxtemplater.XmlTemplater = require("./xml-templater");
 Docxtemplater.FileTypeConfig = require("./file-type-config");
 Docxtemplater.XmlMatcher = require("./xml-matcher");
 module.exports = Docxtemplater;
-},{"./doc-utils":2,"./errors":4,"./file-type-config":5,"./xml-matcher":17,"./xml-templater":18}],4:[function(require,module,exports){
+},{"./doc-utils":2,"./errors":4,"./file-type-config":5,"./xml-matcher":18,"./xml-templater":19}],4:[function(require,module,exports){
 "use strict";
 
 function XTError(message) {
@@ -584,7 +584,16 @@ module.exports = {
 	commentFile: DocXCommentsFileConfig,
 	xlsx: XlsXFileTypeConfig
 };
-},{"./modules/expand-pair-trait":9,"./modules/loop":10,"./modules/rawxml":11,"./modules/space-preserve":12}],6:[function(require,module,exports){
+},{"./modules/expand-pair-trait":10,"./modules/loop":11,"./modules/rawxml":12,"./modules/space-preserve":13}],6:[function(require,module,exports){
+"use strict";
+
+//ijfXumUtils
+
+function ijfQueryData(inAction, inContext, inDebug) {
+	var tbd = "new";
+	return false;
+}
+},{}],7:[function(require,module,exports){
 "use strict";
 
 var Errors = require("./errors");
@@ -826,7 +835,7 @@ module.exports = {
 		return parsed;
 	}
 };
-},{"./errors":4}],7:[function(require,module,exports){
+},{"./errors":4}],8:[function(require,module,exports){
 "use strict";
 
 function memoize(func) {
@@ -840,7 +849,7 @@ function memoize(func) {
 }
 
 module.exports = memoize;
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 "use strict";
 
 function getMinFromArrays(arrays, state) {
@@ -884,7 +893,7 @@ module.exports = function (arrays) {
 
 	return resultArray;
 };
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 "use strict";
 
 var traitName = "expandPair";
@@ -1014,7 +1023,7 @@ var expandPairTrait = {
 };
 
 module.exports = expandPairTrait;
-},{"../doc-utils":2,"../errors":4,"../mergesort":8,"../traits":16}],10:[function(require,module,exports){
+},{"../doc-utils":2,"../errors":4,"../mergesort":9,"../traits":17}],11:[function(require,module,exports){
 "use strict";
 
 var DocUtils = require("../doc-utils");
@@ -1076,7 +1085,7 @@ var loopModule = {
 };
 
 module.exports = loopModule;
-},{"../doc-utils":2}],11:[function(require,module,exports){
+},{"../doc-utils":2}],12:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1162,7 +1171,7 @@ var rawXmlModule = function () {
 }();
 
 module.exports = rawXmlModule;
-},{"../doc-utils":2,"../errors":4}],12:[function(require,module,exports){
+},{"../doc-utils":2,"../errors":4}],13:[function(require,module,exports){
 "use strict";
 
 var spacePreserve = {
@@ -1195,7 +1204,7 @@ var spacePreserve = {
 	}
 };
 module.exports = spacePreserve;
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 
 var DocUtils = require("./doc-utils");
@@ -1277,11 +1286,12 @@ var parser = {
 };
 
 module.exports = parser;
-},{"./doc-utils":2}],14:[function(require,module,exports){
+},{"./doc-utils":2}],15:[function(require,module,exports){
 "use strict";
 
 var ScopeManager = require("./scope-manager");
 var DocUtils = require("./doc-utils");
+var ijfXumUtils = require("./ijfXumUtils");
 
 function moduleRender(part, options) {
 	var moduleRendered = void 0;
@@ -1299,6 +1309,89 @@ function moduleRender(part, options) {
 }
 
 function render(options) {
+
+	//*****************local IJF Functions
+	function ijfQueryData(inAction, options, inDebug) {
+		if (inDebug) {
+			inContext["debug"] = [{ "name": "Tom" }, { "name": "Dick" }, { "name": "Harry" }];
+			return;
+		}
+		//parse inAction
+		//{action:query, jql:"project=DJP", fields:"summary,duedate", path:"issues", snippet:""}
+		var tStr = "{" + inAction + "}";
+		var action = JSON.parse(tStr);
+
+		var jql = action.jql;
+
+		var varBindings = jql.split("$").reduce(function (inKeys, p) {
+			//must walk forward and end on ", ) or space
+			var i = 0;
+			while (i < p.length) {
+				if (p[i] == "\"" || p[i] == " " || p[i] == ")" || p[i] == "'") break;
+				i++;
+			}
+			var key = p.substring(0, i);
+			inKeys.push(key);
+			return inKeys;
+		}, []);
+		varBindings = varBindings.slice(1);
+		varBindings.forEach(function (b) {
+			var newVal = options.scopeManager.getValue(b);
+			if (newVal) jql = jql.replace("$" + b, newVal);
+		});
+
+		var flds = action.fields;
+		//need to translate fields to custom fields....
+		if (!ijf.jiraFields) {
+			ijf.jiraFields = ijfUtils.getJiraFieldsSync();
+			ijf.jiraFieldsKeyed = [];
+			ijf.jiraFields.forEach(function (f) {
+				ijf.jiraFieldsKeyed[f.name] = f;
+			});
+		}
+		var translateFields = ijfUtils.translateJiraFieldsToIds(flds);
+
+		var suffix = "";
+		if (flds) suffix = "&fields=" + translateFields;
+
+		var aUrl = '/rest/api/2/search?jql=' + jql + suffix;
+		var rawList = ijfUtils.jiraApiSync('GET', aUrl, null);
+		var newVals = [];
+		rawList.issues.forEach(function (i) {
+			var itemData = {};
+
+			if (i.fields) {
+				var fieldMap = ijfUtils.translateJiraFieldsToObjs(flds);
+				fieldMap.forEach(function (f) {
+					if (ijf.jiraFieldsKeyed.hasOwnProperty(f.name)) {
+						var v = ijfUtils.handleJiraFieldType(ijf.jiraFieldsKeyed[f.name], i.fields[f.id], true, true);
+						itemData[action.path + "." + f.name] = v;
+					} else {
+						itemData[action.path + "." + f.id] = i.fields[f.id];
+					}
+				});
+			}
+			itemData[action.path + "." + "key"] = i.key;
+			itemData[action.path + "." + "id"] = i.id;
+			itemData[action.path + "." + "self"] = i.self;
+			newVals.push(itemData);
+		});
+		if (action.snippet) {
+			if (ijf.snippets.hasOwnProperty(action.snippet)) newVals = ijf.snippets[action.snippet](newVals);
+		}
+		options.scopeManager.scopeList[options.scopeManager.scopeList.length - 1][action.path] = newVals;
+	}
+
+	function ijfLog(inMessage) {
+		if (ijfUtils) {
+			ijfUtils.footLog(inMessage);
+		} else {
+			console.info(inMessage);
+		}
+	}
+
+	//*******************end local IJF Functions
+
 	options.render = render;
 	options.modules = options.modules;
 	if (!options.scopeManager) {
@@ -1314,15 +1407,33 @@ function render(options) {
 			if (value == null) {
 				value = options.nullGetter(part);
 			}
-			if (options.includeTags) {
-				//var cId = "5";
-				//options.commentRanges.push({"commentId":cId,"commentText": part.value});
-				//return "Hello</w:t><w:commentRangeStart w:id=\""+cId+"\"/><w:t xml:space=\"preserve\">" + DocUtils.utf8ToWord(value) + "</w:t><w:commentRangeEnd w:id=\""+cId+"\"/><w:t xml:space=\"preserve\">World";
-				//return "{" + part.value + "}" + DocUtils.utf8ToWord(value.replace("\n","<w:br/>")) + "{/" + part.value + "}";
-				return "{" + part.value + "}" + value.replace("\n", "<w:br/>") + "{/" + part.value + "}";
+
+			//special handling for altering data model and extending data dynamically
+			//syntax:
+			//{action:query, jql:"", fields:"", path:"pathtojsonlocationtosave", snippet:"snippet that alters data optionally"}
+			//console.info("About to process: " + part.value);
+			var cleanWordChars = ijfUtils.replaceWordChars(part.value);
+			if (cleanWordChars.indexOf("\"action\":") > -1) {
+				//console.info("Processing action: " + part.value); //query is only real one now...
+				try {
+					ijfQueryData(cleanWordChars, options);
+				} catch (e) {
+					//failed to update data
+					ijfLog("Failed inline word action: " + JSON.stringify(e));
+					return "Failed inline word action: " + JSON.stringify(e);
+				}
+				return "";
 			} else {
-				//return DocUtils.utf8ToWord(value.replace("\n","<w:br/>"));
-				return value.replace("\n", "<w:br/>");
+				if (value == "undefined") {
+					if (options.includeTags) return "NOVALUE-" + part.value + "-FORTAG";
+					return "";
+				}
+
+				if (typeof value == "string") {
+					var cleanWordChars = ijfUtils.replaceWordChars(value);
+					return cleanWordChars.replace("\n", "<w:br/>");
+				}
+				return value;
 			}
 		}
 		if (part.type === "content" || part.type === "tag") {
@@ -1335,7 +1446,7 @@ function render(options) {
 }
 
 module.exports = render;
-},{"./doc-utils":2,"./scope-manager":15}],15:[function(require,module,exports){
+},{"./doc-utils":2,"./ijfXumUtils":6,"./scope-manager":16}],16:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1462,7 +1573,7 @@ ScopeManager.createBaseScopeManager = function (_ref) {
 };
 
 module.exports = ScopeManager;
-},{"./errors":4}],16:[function(require,module,exports){
+},{"./errors":4}],17:[function(require,module,exports){
 "use strict";
 
 var DocUtils = require("./doc-utils");
@@ -1576,7 +1687,7 @@ module.exports = {
 	expandToOne: expandToOne,
 	getExpandToDefault: getExpandToDefault
 };
-},{"./doc-utils":2,"./errors":4}],17:[function(require,module,exports){
+},{"./doc-utils":2,"./errors":4}],18:[function(require,module,exports){
 "use strict";
 // res class responsibility is to parse the XML.
 
@@ -1654,7 +1765,7 @@ var memoized = memoize(xmlMatcher);
 module.exports = function (content, tagsXmlArray) {
 	return DocUtils.cloneDeep(memoized(content, tagsXmlArray));
 };
-},{"./doc-utils":2,"./memoize":7}],18:[function(require,module,exports){
+},{"./doc-utils":2,"./memoize":8}],19:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -1878,7 +1989,7 @@ module.exports = function () {
 
 	return XmlTemplater;
 }();
-},{"./doc-utils":2,"./errors":4,"./lexer":6,"./parser.js":13,"./render.js":14,"./scope-manager":15,"./xml-matcher":17}],19:[function(require,module,exports){
+},{"./doc-utils":2,"./errors":4,"./lexer":7,"./parser.js":14,"./render.js":15,"./scope-manager":16,"./xml-matcher":18}],20:[function(require,module,exports){
 "use strict";
 
 var parse = require("./parse.js");
@@ -1938,7 +2049,7 @@ exports.Lexer = Lexer;
 exports.Parser = Parser;
 exports.compile = compile;
 exports.filters = filters;
-},{"./parse.js":20}],20:[function(require,module,exports){
+},{"./parse.js":21}],21:[function(require,module,exports){
 "use strict";
 
 // Angular environment stuff
@@ -2942,7 +3053,7 @@ function getterFn(path, options, fullExp) {
 
 exports.Lexer = Lexer;
 exports.Parser = Parser;
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 function DOMParser(options){
 	this.options = options ||{locator:{}};
 	
@@ -3195,7 +3306,7 @@ function appendElement (hander,node) {
 	exports.DOMParser = DOMParser;
 //}
 
-},{"./dom":22,"./sax":23}],22:[function(require,module,exports){
+},{"./dom":23,"./sax":24}],23:[function(require,module,exports){
 /*
  * DOM Level 2
  * Object DOMException
@@ -4441,7 +4552,7 @@ try{
 	exports.XMLSerializer = XMLSerializer;
 //}
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 //[4]   	NameStartChar	   ::=   	":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
 //[4a]   	NameChar	   ::=   	NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
 //[5]   	Name	   ::=   	NameStartChar (NameChar)*

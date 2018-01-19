@@ -2158,6 +2158,7 @@ addEditCustomFileReference:function (inTypeId)
 	var fileType = JSON.parse(cleanDoubleDouble);
 	var fileDetail = {};
     //thisT.settings...
+
     var fileInfoString = "No file loaded yet";
 	try
 	{
@@ -2168,7 +2169,8 @@ addEditCustomFileReference:function (inTypeId)
 	{
 		fileInfoString = "No file loaded";
 	}
-
+    //reset file detail to object if it is NULL
+    if(Object.keys(fileDetail).length==0) fileDetail={};
     var cts = null;
 
     //file read handler
@@ -2188,14 +2190,97 @@ addEditCustomFileReference:function (inTypeId)
     ijf.lists.dWin2 = new Ext.Window({
         layout: 'vbox',
         title: "IJF Custom Type File",
-        width: 400,
-        height:200,
+        width: 800,
+        height:400,
         closable: true,
+        header:{
+						titlePosition: 0,
+						items:[{
+							xtype:'button',
+							text:"Field Reference",
+							handler: function(){
+								if(!ijf.jiraFields)
+										{
+											ijf.jiraFields = ijfUtils.getJiraFieldsSync();
+											ijf.jiraFieldsKeyed = [];
+											ijf.jiraFields.forEach(function(f)
+											{
+												ijf.jiraFieldsKeyed[f.name]=f;
+											});
+										}
+					   			var headStyle =  " style='background:lightgray;border-bottom:solid blue 2px' ";
+								var htmlOut = "<table cellspacing=0 width=100%><tr><td"+headStyle+">Field Name</td><td"+headStyle+">JIRA ID</td><td"+headStyle+">Type</td><td"+headStyle+">Forms Reference</td></tr>";
+								var outFieldRef = [];
+								Object.keys(ijf.jiraFieldsKeyed).forEach(function(f){
+									var field = ijf.jiraFieldsKeyed[f];
+									var fRef = "#{"+f+"}";
+									if(field.schema)
+									{
+										if(field.schema.type=="array") fRef="na";
+										if(field.schema.customId) fId = "customfield_" +field.schema.customId;
+									}
+									else
+									{
+										field["schema"]={};
+										field.schema["type"]="unknown";
+									}
+									if(field.name=="comment") fRef="na";
+									outFieldRef.push([f,"<tr><td>"+f+"</td><td>"+fId+"</td><td>"+field.schema.type+"</td><td>"+fRef+"</td></tr>"]);
+								});
+								outFieldRef = outFieldRef.sort(function(a, b)
+								{
+									return a[0]<b[0] ? -1 : a[0]>b[0] ? 1 : 0;
+								});
+								outFieldRef.forEach(function(f){
+									htmlOut += f[1];
+								});
+								htmlOut += "</table>";
+
+								var fieldRefWin = new Ext.Window({
+								layout: 'vbox',
+								title: "Field Reference",
+								width: 550,
+								height:600,
+								scrollable: true,
+								closable: true,
+								header:{
+											titlePosition: 0,
+											items:[{
+												xtype:'button',
+												text:"Pop into Tab",
+												handler: function(btn){
+												   // render a local version
+												 var win = window.open("","ijfFieldReference");
+												 win.document.body.innerHTML = htmlOut;
+												 win.document.title = "IJF Field Reference";
+												}
+											}]},
+								items: [{
+											xtype: 'panel',
+											html: htmlOut,
+											width: '100%'
+											//height: '100%'
+											//maxHeight: 580
+										}],
+								modal: true
+								});
+								fieldRefWin.show();
+							}
+						}]
+			},
         items: [{
+				html:  "This dialog configures a binary file for use by Forms.  Typical uses are for MSWord reports that 'mail-merge' field values.  <br>The default JQL and Fields are used to augment data available to the report.",
+				frame: false,
+				hidden: false,
+				margin: '5 0 5 20',
+				border: false,
+			    xtype: "panel"},
+			    {
 				html:  fileInfoString,
 				frame: false,
 				id: "typeFileInformationId",
 				hidden: false,
+				margin: '5 0 5 20',
 				border: false,
 			    xtype: "panel"},
 			    {
@@ -2238,19 +2323,169 @@ addEditCustomFileReference:function (inTypeId)
 				   		var blob = new Blob([decodedFile], {type: "application/octet-stream"});
 						saveAs(blob,fName);
 					}
+				},
+				{
+				xtype: 'textfield',
+				labelAlign: 'left',
+				fieldLabel: 'Default JQL',
+				labelWidth: 100,
+				labelStyle: "color:darkblue",
+				margin: '4 0 0 20',
+				width: 650,
+				value: fileDetail.jql,
+				listeners: {
+				    change: function(f,n,o){
+						fileDetail.jql = n;
+					}
 				}
+            },
+				{
+				xtype: 'textfield',
+				labelAlign: 'left',
+				fieldLabel: 'Default Fields',
+				labelWidth: 100,
+				labelStyle: "color:darkblue",
+				margin: '4 0 0 20',
+				width: 650,
+				value: fileDetail.fields,
+				listeners: {
+				    change: function(f,n,o){
+						fileDetail.fields = n;
+					}
+				}
+            },
+            {
+				xtype: 'combobox',
+				labelAlign: 'left',
+				forceSelection: true,
+				store: ["true","false"],
+				forceSelection: true,
+				labelWidth: 100,
+				margin: '4 0 0 20',
+				fieldLabel: "Debug Mode",
+				labelStyle: "color:darkblue",
+				triggerAction: 'all',
+				width: 200,
+				value: fileDetail.debugMode,
+				listeners: {
+						change: function(f, n, o){
+							fileDetail.debugMode = n;
+				}}
+			},
+						{
+							xtype: 'button',
+							text: 'Test Query',
+							margin: '4 0 0 20',
+							handler: function(){
+								if(!ijf.jiraFields)
+										{
+											ijf.jiraFields = ijfUtils.getJiraFieldsSync();
+											ijf.jiraFieldsKeyed = [];
+											ijf.jiraFields.forEach(function(f)
+											{
+												ijf.jiraFieldsKeyed[f.name]=f;
+											});
+										}
+								  var jql = fileDetail.jql;
+								  var flds = fileDetail.fields;
+								  var translateFields = ijfUtils.translateJiraFieldsToIds(flds);
+								  var suffix = "";
+								  if(flds) suffix = "&fields=" + translateFields;
+								  var aUrl = '/rest/api/2/search?jql='+jql + suffix;
+								  var rawList = ijfUtils.jiraApiSync('GET',aUrl, null);
+
+								  var fieldMap = ijfUtils.translateJiraFieldsToObjs(flds);
+								  if(rawList.issues)
+								  {
+									var outStr = "<table><tr>";
+									fieldMap.forEach(function(f){
+										outStr += "<td style='background:lightblue'>"+f.name+"</td>";
+									});
+									outStr+="</tr>"
+									rawList.issues.forEach(function(i)
+									{
+										outStr += "<tr>";
+										fieldMap.forEach(function(f){
+											if(f.id.toLowerCase()=="key")
+											{
+												outStr += "<td>"+i.key+"</td>";
+												return;
+											}
+											if(ijf.jiraFieldsKeyed.hasOwnProperty(f.name))
+											{
+												outStr += "<td>"+ijfUtils.handleJiraFieldType(ijf.jiraFieldsKeyed[f.name],i.fields[f.id],true)+"</td>";
+											}
+											else
+											{
+												outStr += "<td>"+i.fields[f.id]+"</td>";
+											}
+
+
+										});
+										outStr+="</tr>"
+									});
+									outStr+="</table>"
+								    //Ext.MessageBox.show({"title":"Query Result","message":outStr,scrollable:true,width:1200,height:600});
+
+								    var qWin = new Ext.Window({
+									        layout: 'vbox',
+									        title: "Query Result",
+									        width: 1100,
+									        height:800,
+									        scrollable:true,
+									        closable: true,
+											header:{
+											titlePosition: 0,
+											items:[{
+												xtype:'button',
+												text:"Pop into Tab",
+												handler: function(btn){
+												   // render a local version
+												 var win = window.open("","ijfQueryReference");
+												 win.document.body.innerHTML = outStr;
+												 win.document.title = "IJF Query Reference";
+												}
+											}]},
+									        items: [
+									            {
+									                xtype: 'panel',
+									                html: outStr,
+									  				margin: '4 0 0 10',
+									                width: '100%',
+									                height: '100%',
+            									}
+            									]
+										});
+										qWin.show();
+							      }
+							      else
+							      {
+									Ext.MessageBox.show({"title":"Query Error","message":rawList,width:400,height:300});
+								  }
+
+
+							}
+            }
+
         ],
         buttons:[ {
                 text:'Save',
                 handler: function(){
 
-					if(!fileEncoded)
+					/*if(!fileEncoded)
 					{
 						ijfUtils.modalDialogMessage("Error","Sorry, please select a file to save.");
 						return;
 					}
+					*/
 
-					ijf.lists.thisTypeSpec.settings = JSON.stringify(cts);
+					if(cts)
+					{
+						//file encoded...
+						fileDetail.fileInfoString = cts.fileInfoString;
+						fileDetail.file = cts.file;
+					}
+					ijf.lists.thisTypeSpec.settings = JSON.stringify(fileDetail);
 
 					var jOut = {
 								customTypeId: ijf.lists.thisTypeSpec.id,

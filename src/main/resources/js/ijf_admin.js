@@ -2045,14 +2045,21 @@ addEditForm:function (sRow)
 							handler: function(){
 					   			var headStyle =  " style='background:lightgray;border-bottom:solid blue 2px' ";
 								var htmlOut = "<table cellspacing=0 width=100%><tr><td"+headStyle+">Field Name</td><td"+headStyle+">JIRA ID</td><td"+headStyle+">Type</td><td"+headStyle+">Forms Reference</td></tr>";
+								var outFieldRef = [];
 								Object.keys(ijf.jiraMetaKeyed).forEach(function(f){
 									var field = ijf.jiraMetaKeyed[f];
 									var fRef = "#{"+f+"}";
-									var fId = field.schema.system;
 									if(field.schema.type=="array") fRef="na";
 									if(fId=="comment") fRef="na";
 									if(field.schema.customId) fId = "customfield_" +field.schema.customId;
-									htmlOut += "<tr><td>"+f+"</td><td>"+fId+"</td><td>"+field.schema.type+"</td><td>"+fRef+"</td></tr>";
+									outFieldRef.push([f,"<tr><td>"+f+"</td><td>"+fId+"</td><td>"+field.schema.type+"</td><td>"+fRef+"</td></tr>"]);
+								});
+								outFieldRef = outFieldRef.sort(function(a, b)
+								{
+									return a[0]<b[0] ? -1 : a[0]>b[0] ? 1 : 0;
+								});
+								outFieldRef.forEach(function(f){
+									htmlOut += f[1];
 								});
 								htmlOut += "</table>";
 
@@ -2061,13 +2068,26 @@ addEditForm:function (sRow)
 								title: "Field Reference: " + thisForm.testIssue,
 								width: 550,
 								height:600,
+								scrollable: true,
 								closable: true,
+								header:{
+											titlePosition: 0,
+											items:[{
+												xtype:'button',
+												text:"Pop into Tab",
+												handler: function(btn){
+												   // render a local version
+												 var win = window.open("","ijfFieldReference");
+												 win.document.body.innerHTML = htmlOut;
+												 win.document.title = "IJF Field Reference";
+												}
+											}]},
 								items: [{
 											xtype: 'panel',
 											html: htmlOut,
-											width: '100%',
-											scrollable: true,
-											maxHeight: 580
+											width: '100%'
+											//height: '100%'
+											//maxHeight: 580
 										}],
 								modal: true
 								});

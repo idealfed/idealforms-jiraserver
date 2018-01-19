@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "2.1.6";
+    window.g_version = "2.2.1";
 
     console.log("Initializing IJF version: " + window.g_version);
     //prevent double initializing....
@@ -54,6 +54,7 @@ function init(inConfigVersion)
 	//	console.log("Double Initialization");
 	//	return;
 	//}
+
 	ijf.initialized=true;
 
 
