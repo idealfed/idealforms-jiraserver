@@ -63,17 +63,21 @@
      <entity>com.idealfed.jiraforms.ao.CustomType</entity>     
    </ao>
   
- <web-section key="ijf_Forms_Section" name="IJF Forms Section" location="system.admin" weight="50">
-    <label>Ideal Forms</label>
-    <description>IJF Administration</description>
-    <tooltip>Click to open IJF Section</tooltip>
+ <web-section key="ijf_web_section" name="IJF Section" location="admin_plugins_menu" weight="16">
+    <label>Ideal Utilities</label>
+    <description>IJF Administration</description>    
 </web-section>
   
-  <web-item key="ijf_links_link" name="Link on IJF Links Main Section" section="system.admin/ijf_Forms_Section" weight="10">
+  <web-item key="ijf_links_link" name="Link on IJF Links Main Section" section="admin_plugins_menu/ijf_web_section" weight="10">
     <label>Ideal Forms Admin</label>
     <link linkId="ijfFormsAdminId">/plugins/servlet/iforms?decorator=admin</link>
   </web-item>
   
+  <web-item key="ijf_links_link2" name="Reports on IJF Links Main Section" section="admin_plugins_menu/ijf_web_section" weight="15">
+    <label>Ideal Reports Admin</label>
+    <link linkId="ijfReportsAdminId">/plugins/servlet/iforms?decorator=admin&amp;mode=reports</link>
+  </web-item>
+
     
   <!-- import from the product container -->
   <component-import key="ao" name="Active Objects service" interface="com.atlassian.activeobjects.external.ActiveObjects">

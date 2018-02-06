@@ -693,7 +693,7 @@ public class Craft extends HttpServlet
     private void cleanVersions(int keepNum)
     {
     	int ctr=0;
-		for (Version v : ao.find(Version.class, Query.select().order("\"ID\" DESC")))
+		for (Version v : ao.find(Version.class, Query.select().order(" \"ID\" DESC")))
         {
 			ctr++;
 			if(ctr > keepNum)
@@ -701,9 +701,7 @@ public class Craft extends HttpServlet
 				ao.delete(v);
 			}
         }
-
     }
-
 
 	@Override
     protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
@@ -733,15 +731,23 @@ public class Craft extends HttpServlet
 				String targetUrl = java.net.URLDecoder.decode(req.getParameter("url"));
 				String targetMethod = req.getParameter("method");
 				String targetData = req.getParameter("data");
+				String contentType = req.getParameter("contenttype");
+
 				//plog.error("Have params");
 
 				URL url = new URL(targetUrl);
 				HttpURLConnection con = (HttpURLConnection) url.openConnection();
+
+				if(contentType!=null)
+				{
+					con.setRequestProperty("Content-Type", contentType);
+				}
+
 				con.setRequestMethod(targetMethod);
 
 				if((targetMethod.equals("POST")) || (targetMethod.equals("PUT")))
 				{
-					targetData="data="+targetData;
+					targetData=targetData;
 					con.setDoOutput(true);
 					DataOutputStream out = new DataOutputStream(con.getOutputStream());
 					out.writeBytes(targetData);
@@ -891,7 +897,7 @@ public class Craft extends HttpServlet
     		v.setAuthor(userManager.getRemoteUsername(req));
     		v.setConfig(cConfig.toString());
     		v.save();
-    		cleanVersions(20);
+    		cleanVersions(50);
 
     		//formset exists.  And, form exists...so, use the get by ID and update the values....
     		try
@@ -1240,7 +1246,7 @@ public class Craft extends HttpServlet
         		v.setAuthor(userManager.getRemoteUsername(req));
         		v.setConfig(cConfig.toString());
         		v.save();
-        		cleanVersions(20);
+        		cleanVersions(50);
 
     			//clear current configuration
     			boolean loaded = false;
@@ -1385,7 +1391,7 @@ public class Craft extends HttpServlet
         		v.setAuthor(userManager.getRemoteUsername(req));
         		v.setConfig(cConfig.toString());
         		v.save();
-        		cleanVersions(20);
+        		cleanVersions(50);
 
         		///todo:  add clear function to remove versions > some count...
 

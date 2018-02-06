@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "2.2.1";
+    window.g_version = "3.0.4";
 
     console.log("Initializing IJF version: " + window.g_version);
     //prevent double initializing....
@@ -210,7 +210,20 @@ function processSetup(inContainerId)
     if ((ijf.main.itemId=='') && (window.g_formId==""))
     {
 		ijfUtils.renderAdminButtons(inContainerId);
-		ijf.lists.renderItemList_Borderlayout(inContainerId);
+		//look for report mode...else forms
+
+		if(window.location.search.indexOf("mode=reports")>-1)
+		{
+			ijf.lists.renderReportList_Borderlayout(inContainerId);
+		}
+		else if(window.location.search.indexOf("mode=report")>-1)
+		{
+			ijf.lists.renderReport_noforms(inContainerId);
+		}
+		else
+		{
+			ijf.lists.renderItemList_Borderlayout(inContainerId);
+		}
 		return;
 	}
 
@@ -219,15 +232,7 @@ function processSetup(inContainerId)
     {
     	//There is a form but not item.
     	//will need fields....
-		if(!ijf.jiraFields)
-		{
-			ijf.jiraFields = ijfUtils.getJiraFieldsSync();
-			ijf.jiraFieldsKeyed = [];
-			ijf.jiraFields.forEach(function(f)
-			{
-				ijf.jiraFieldsKeyed[f.name]=f;
-			});
-		}
+		ijfUtils.loadJiraFields();
         ijf.main.renderForm(inContainerId, window.g_formId, false, null);
         ijfUtils.renderAdminButtons(inContainerId);
     }
@@ -282,16 +287,7 @@ function loadItem(inContainerId)
 
 			//load fields and editMeta
 			//todo:  switch the add and edit meta based on type of form
-
-			if(!ijf.jiraFields)
-			{
-				ijf.jiraFields = ijfUtils.getJiraFieldsSync();
-				ijf.jiraFieldsKeyed = [];
-				ijf.jiraFields.forEach(function(f)
-				{
-					ijf.jiraFieldsKeyed[f.name]=f;
-				});
-			}
+			ijfUtils.loadJiraFields();
 
 			ijfUtils.hideProgress(true);
 
@@ -332,7 +328,7 @@ function loadItem(inContainerId)
 
 
 
-function renderForm(inContainerId, inFormId, isNested, item)
+function renderForm(inContainerId, inFormId, isNested, item, afterRender)
 {
 
 	if(!isNested)
@@ -616,6 +612,9 @@ function renderForm(inContainerId, inFormId, isNested, item)
             ijfUtils.onLoadHandler(onLoadFunction);
         }
     }
+
+    if(afterRender) afterRender();
+
 }
 
 
@@ -783,7 +782,7 @@ function saveBatch(onSuccess,inFields,inForm, item)
 					var addTarget = inForm.settings["additionalSave"];
 					var onAddSuccess = function(d){ijfUtils.footLog("Additional Save Success");};
 					var onAddError = function(e){ijfUtils.footLog("Additional Save Failed: " + JSON.stringify(e));};
-					ijfUtils.getProxyCall(addTarget,"POST",jData,onAddSuccess,onAddError);
+					ijfUtils.getProxyCall(addTarget,"POST",jData,'application/json',onAddSuccess,onAddError);
 				}
 			}
 		}
@@ -813,7 +812,7 @@ function saveBatch(onSuccess,inFields,inForm, item)
 						var addTarget = inForm.settings["additionalSave"];
 						var onAddSuccess = function(d){ijfUtils.footLog("Additional Save Success");};
 					    var onAddError = function(e){ijfUtils.footLog("Additional Save Failed: " + JSON.stringify(e));};
-						ijfUtils.getProxyCall(addTarget,"POST",jData,onAddSuccess,onAddError);
+						ijfUtils.getProxyCall(addTarget,"POST",jData,'application/json',onAddSuccess,onAddError);
 					}
 				}
 				else

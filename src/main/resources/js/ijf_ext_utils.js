@@ -1495,7 +1495,6 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 
 				//if you are saving and ADD form it can only save ONE time
 				//then it has to shift to an edit mode....
-
 				//perform form validation
 				if(ijf.snippets.hasOwnProperty(inField["event"]))
 				{
@@ -1538,7 +1537,7 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 				var kForm = this.inField.form;
 				Ext.getBody().mask("Saving...");
 				ijf.main.gPopupFormHandle.mask("Saving...");
-				var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,kForm,item)};
+				var saveIt = function(){ijf.main.saveForm(onSuccessSave,fields,kForm,item)};
 				window.setTimeout(saveIt,10);
 
 			}});
@@ -1597,7 +1596,7 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 				var kForm = this.inField.form;
 				//Ext.getBody().mask("Saving...");
 				ijf.main.gPopupFormHandle.mask("Saving...");
-				var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,kForm,item)};
+				var saveIt = function(){ijf.main.saveForm(onSuccessSave,fields,kForm,item)};
 				window.setTimeout(saveIt,10);
 			}});
     }
@@ -1608,11 +1607,26 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
             xtype:'button',
 			margin: '0 4 0 0',
             handler: function(){
-                if(ijf.main.gPopupFormHandle)
-                {
-                    ijf.main.gPopupFormHandle.close();
-                    ijf.main.gPopupFormHandle=null;
-                }
+				if(window.onbeforeunload==null)
+				{
+					if(ijf.main.gPopupFormHandle)
+					{
+						ijf.main.gPopupFormHandle.close();
+						ijf.main.gPopupFormHandle=null;
+					}
+				}
+				else
+				{
+					var closeThis = function()
+					{
+						if(ijf.main.gPopupFormHandle)
+						{
+							ijf.main.gPopupFormHandle.close();
+							ijf.main.gPopupFormHandle=null;
+						}
+					}
+					ijfUtils.modalDialog("Warning","There are unsaved entries on this form, are you sure you want to close?",closeThis);
+				}
             }});
     }
     var l_labelStyle = inField.labelStyle;
@@ -5649,7 +5663,8 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
    	   var dataItems =[];
 
 	    var translateFields = ijfUtils.translateJiraFieldsToIds(inField.dataReference);
-		var tSearch = "jql="+inField.dataSource+"&fields="+translateFields+",issuelinks";
+	    var lJql = ijfUtils.replaceKeyValues(inField.dataSource,item);
+		var tSearch = "jql="+lJql+"&fields="+translateFields+",issuelinks";
 
 		var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
 		//bail if dataItems not
@@ -6008,7 +6023,16 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 					putObj["fields"]={};
 					putObj["fields"]["summary"]="new item";
         			putObj.fields.project = {"key":inField.form.formSet.projectId};
-        			putObj.fields.issuetype = {"name":inField.form.issueType};
+
+        			//Parent ID and Issue Type must be set
+        			if(!inField.referenceFilter)
+					{
+						ijfUtils.modalDialogMessage("Error","Field Reference Filter must be valid issue 'subtype'");
+						return;
+					}
+        			putObj.fields.issuetype = {"name":inField.referenceFilter};
+        			putObj["fields"]["parent"]={"key":ijf.currentItem.key};
+
 					var jData = JSON.stringify(putObj);
 					var tApi = "/rest/api/2/issue";
 					saveRes = ijfUtils.jiraApiSync("POST",tApi,jData);
@@ -6065,7 +6089,15 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 					putObj["fields"]={};
 					putObj["fields"]["summary"]="new item";
         			putObj.fields.project = {"key":inField.form.formSet.projectId};
-        			putObj.fields.issuetype = {"name":inField.form.issueType};
+        			//Parent ID and Issue Type must be set
+        			if(!inField.referenceFilter)
+					{
+						ijfUtils.modalDialogMessage("Error","Field Reference Filter must be valid issue 'subtype'");
+						return;
+					}
+        			putObj.fields.issuetype = {"name":inField.referenceFilter};
+        			putObj["fields"]["parent"]={"key":ijf.currentItem.key};
+
 					var jData = JSON.stringify(putObj);
 					var tApi = "/rest/api/2/issue";
 					saveRes = ijfUtils.jiraApiSync("POST",tApi,jData);
@@ -6100,12 +6132,17 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 									return;
 								}
 						    }
+						   var resetForm = function(){   ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);};
+						   window.setTimeout(resetForm,50);
+						   return;
+							/*
 							var rec = Ext.create(tree.store.model);
 							rec.data.iid=saveRes.key;
 							rec.data.text=saveRes.key;
 							rec.data.summary= "new item";
 							//refresh the grid....
 							pNode.appendChild(rec);
+							*/
 						}
 						else
 						{
@@ -6115,6 +6152,46 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 					catch(e)
 					{
 						ijfUtils.modalDialogMessage("Error","Sorry, there was an error with the add: " + e.message);
+					}
+				} },
+                { text: 'Add Root Task', handler: function()  {
+
+					//add the issue with "new item" summary and insert into grid no refresh...
+					var putObj = {};
+					putObj["fields"]={};
+					putObj["fields"]["summary"]="new item";
+        			putObj.fields.project = {"key":inField.form.formSet.projectId};
+        			//Parent ID and Issue Type must be set
+        			if(!inField.referenceFilter)
+					{
+						ijfUtils.modalDialogMessage("Error","Field Reference Filter must be valid issue 'subtype'");
+						return;
+					}
+        			putObj.fields.issuetype = {"name":inField.referenceFilter};
+        			putObj["fields"]["parent"]={"key":ijf.currentItem.key};
+
+					var jData = JSON.stringify(putObj);
+					var tApi = "/rest/api/2/issue";
+					saveRes = ijfUtils.jiraApiSync("POST",tApi,jData);
+					//saveRes is the Key of the new issue if successfull,
+					if(saveRes.key)
+					{
+						//reload the current form....
+					   var resetForm = function(){   ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);};
+					   window.setTimeout(resetForm,50);
+					   return;
+						/*
+						var rec = Ext.create(tree.store.model);
+						rec.data.iid=saveRes.key;
+						rec.data.text=saveRes.key;
+						rec.data.summary= "new item";
+						//refresh the grid....
+						tree.store.root.appendChild(rec);
+						*/
+					}
+					else
+					{
+						ijfUtils.modalDialogMessage("Error","Sorry, there was an error with the add: " + saveRes);
 					}
 				} },
  				{text: 'Delete Task', handler: function()  {
@@ -6134,12 +6211,9 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 							{
 								if(delRes=="OK")
 								{
-									var rec = tree.store.findBy(function(r)
-									{
-										if(r.data.iid==k)return true;
-										return false;
-									});
-									if(rec) tree.store.removeAt(rec);
+								   var resetForm = function(){   ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);};
+								   window.setTimeout(resetForm,50);
+								   return;
 								}
 								else
 								{

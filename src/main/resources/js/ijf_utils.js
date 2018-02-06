@@ -265,7 +265,7 @@ var ijfUtils = {
 			});
 			return retVal;
 		},
-     getProxyCall:function(inUrl,inMethod,inData,inSuccess,inError){
+     getProxyCall:function(inUrl,inMethod,inData,inContentType,inSuccess,inError){
 			jQuery.ajax({
 				async: true,
 				type: 'POST',
@@ -274,6 +274,7 @@ var ijfUtils = {
 					url: encodeURI(inUrl),
 					method: inMethod,
 					data: inData,
+					contenttype: inContentType,
 					action: 'proxyCall'
 				},
 				timeout: 60000,
@@ -281,7 +282,7 @@ var ijfUtils = {
 				error: inError
 			});
 		},
-     getProxyCallSync:function(inUrl,inMethod,inData){
+     getProxyCallSync:function(inUrl,inMethod,inData,inContentType){
 			var retVal = "";
 			jQuery.ajax({
 				async: false,
@@ -291,6 +292,7 @@ var ijfUtils = {
 					url: encodeURI(inUrl),
 					method: inMethod,
 					data: inData,
+					contenttype: inContentType,
 					action: 'proxyCall'
 				},
 				timeout: 60000,
@@ -446,6 +448,22 @@ loadIssueTypeDetails:function(projectKey)
 			});
 			ijf.jiraAddMetaKeyed[projectKey][it.name]=fieldsKeyed;
 		});
+	}
+},
+loadJiraFields:function()
+{
+	if(!ijf.jiraFields)
+	{
+		ijf.jiraFields = ijfUtils.getJiraFieldsSync();
+		ijf.jiraFieldsKeyed = [];
+		ijf.jiraFieldsIdKeyed = [];
+		ijf.jiraFields.forEach(function(f)
+		{
+			ijf.jiraFieldsKeyed[f.name]=f;
+			ijf.jiraFieldsIdKeyed[f.id]=f;
+		});
+		ijf.jiraFieldsKeyed["Parent"]={"id":"parent","name":"Parent","schema":{"type":"parent"}};
+		ijf.jiraFieldsIdKeyed["parent"]={"id":"parent","name":"Parent","schema":{"type":"parent"}};
 	}
 },
 ///////////END JIRA UTILS
@@ -1736,6 +1754,10 @@ replaceWordChars:function(text) {
 			case "number":
 			    return inField;
 			    break;
+			case "parent":
+				if(forDisplay) inField.key;
+				return inField;
+			    break;
 			case "string":
 			    if(noSanitize)
 			    {
@@ -1766,7 +1788,34 @@ replaceWordChars:function(text) {
  				 return inField;
 				break;
 		    case "array":
-		        if(forDisplay) return inField.reduce(function(inStr,e){inStr+= e.value + " "; return inStr;},"");
+		        if(forDisplay)
+		        {
+					if(inField.worklogs) return inField.worklogs.length;
+
+					return inField.reduce(function(inStr,e)
+					{
+
+						if(e.value)
+						{
+							inStr+= e.value + " ";
+						}
+						else if(e.name)
+						{
+							inStr+= e.name + " ";
+						}
+						else if(e.filename)
+						{
+							inStr+= e.filename + " ";
+						}
+						else
+						{
+							inStr+= JSON.stringify(e) + " ";
+						}
+
+						return inStr;
+					},"");
+				}
+				if(inField.worklogs) return inField.worklogs;
 			    return inField;
 				break;
 			case "securitylevel":
@@ -2130,28 +2179,38 @@ CSVtoArray:function (strData, strDelimiter ){
 	replaceAll:function(string, find, replace) {
 		return string.replace(new RegExp(escapeRegExp(find), 'g'), replace);
 	},
-    generateWordFile:function(itemData,thisT)
+    generateWordFile:function(itemData,thisT,whenDone)
     {
-			var fileDetailRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisT.id, null);
 
-			var cleanDoubleDouble = fileDetailRaw.replace(/\"\"/g,"\"");
-			cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
-			cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
+		    if(!thisT.fileDetail)
+		    {
+				var fileDetailRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisT.id, null);
 
-			var fileType = JSON.parse(cleanDoubleDouble);
-			var fileDetail = {};
-			//thisT.settings...
-			var fileInfoString = "No file loaded yet";
-			try
-			{
-				var fileDetail = JSON.parse(fileType.settings);
-				fileInfoString = fileDetail.fileInfoString;
-			}
-			catch(e)
-			{
-				ijfUtils.modalDialogMessage("Error","Unable to get parse file from type");
-				ijfUtils.hideProgress();
-				return;
+				var cleanDoubleDouble = fileDetailRaw.replace(/\"\"/g,"\"");
+				cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
+				cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
+
+				var fileType = JSON.parse(cleanDoubleDouble);
+				var fileDetail = {};
+				//thisT.settings...
+				var fileInfoString = "No file loaded yet";
+				try
+				{
+					var fileDetail = JSON.parse(fileType.settings);
+					fileInfoString = fileDetail.fileInfoString;
+				}
+				catch(e)
+				{
+					ijfUtils.modalDialogMessage("Error","Unable to get parse file from type");
+					if(whenDone) whenDone();
+					ijfUtils.hideProgress();
+					return;
+				}
+		    }
+		    else
+		    {
+				var fileType = thisT;
+				var fileDetail = thisT.fileDetail;
 			}
 			var decodedFile = ijfUtils.Base64Binary.base64ToArrayBuffer(fileDetail.file);
 
@@ -2211,19 +2270,20 @@ CSVtoArray:function (strData, strDelimiter ){
 					   });
 					   if(fileDetail.snippet)
 					   {
-						   if(ijf.snippets.hasOwnProperty(action.snippet)) newVals = ijf.snippets[fileDetail.snippet](newVals);
+						   if(ijf.snippets.hasOwnProperty(fileDetail.snippet)) newVals = ijf.snippets[fileDetail.snippet](newVals);
 					   }
 					   itemData["issues"] = newVals;
 				}
 				catch(e)
 				{
 					//default jql failed to load
-					ijfUtils.footLog("Failed to load default JQL for report: " + fileDetail.jql);
+					ijfUtils.footLog("Failed to load default JQL for report: " + e.message);
 					ijfUtils.hideProgress();
+					if(whenDone) whenDone();
+					ijfUtils.modalDialogMessage("Error","Failed to load default JQL for report: " + e.message);
 					return;
 				}
 			}
-
 			//Process the file:
 			var zip = new JSZip(decodedFile);
 			var doc=new Docxtemplater();
@@ -2250,6 +2310,7 @@ CSVtoArray:function (strData, strDelimiter ){
 		   }
 			//var blob = new Blob([decodedFile], {type: "application/octet-stream"});
 			saveAs(out,fName);
+			if(whenDone) whenDone();
 			ijfUtils.hideProgress();
 	},
 

@@ -135,7 +135,381 @@ openForm:function()
 			}
 			window.open(tUrl);
 },
+renderReport_noforms:function(inContainerId)
+{
+	//this is the default runtime report generator
+	document.title = "IJF Report";
+	var colSpans = {};
+    ijfUtils.setContent(inContainerId,1,1,colSpans,false,colSpans);
 
+    var getUrlPart = function(inUrl,param)
+    {
+		var retStr = "";
+		if(inUrl.indexOf(param+"=")>-1)
+		{
+			var parts = inUrl.split(param+"=");
+			var parts2 = parts[1].split("&");
+			retStr=parts2[0];
+		}
+		return retStr;
+	}
+
+    //need: issue, jql, customType
+    var rMessage = "Generating";
+    var cUrlQuery = decodeURIComponent(window.location.search);
+    var lJql = getUrlPart(cUrlQuery,"jql");
+    var lFields = getUrlPart(cUrlQuery,"fields");
+    var lIssue = getUrlPart(cUrlQuery,"issue");
+    var lReport = getUrlPart(cUrlQuery,"report");
+
+    var thisType = ijf.fw.CustomTypes.reduce(function(inTp,ct){
+			if(ct.customType!="FILE") return inTp;
+			if(ct.name==lReport) inTp=ct;
+			return inTp;
+		},null);
+
+	if(!thisType)
+	{
+		rMessage="Cannot find report by name: " + lReport;
+	}
+	else
+	{
+		//need to load into memory now...
+		var fileDetailRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisType.id, null);
+		var cleanDoubleDouble = fileDetailRaw.replace(/\"\"/g,"\"");
+		cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
+		cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
+		var fileType = JSON.parse(cleanDoubleDouble);
+		var fileDetail = {};
+		//thisT.settings...
+		var fileInfoString = "No file loaded yet";
+		try
+		{
+			var fileDetail = JSON.parse(fileType.settings);
+		}
+		catch(e)
+		{
+			rMessage = "Failed to load the fild detail: " + e.message;
+		}
+	}
+
+
+    var generateFile = function()
+    {
+			//load item if exists...
+			ijfUtils.loadJiraFields();
+			var iKey = fileDetail.key;
+			if(lIssue) iKey=lIssue;
+			if(iKey)
+			{
+					var thisIssue = ijfUtils.getJiraIssueSync(iKey);
+			}
+			//set local jql and fields
+			if(lJql) fileDetail.jql=lJql;
+			if(lFields) fileDetail.fields=lFields;
+
+			var itemData={};
+			if(thisIssue)
+			{
+				if(thisIssue.fields)
+				{
+					Object.keys(thisIssue.fields).forEach(function(f)
+					{
+						if(thisIssue.fields[f])
+						{
+							itemData[ijf.jiraFieldsIdKeyed[f].name]=ijfUtils.handleJiraFieldType(ijf.jiraFieldsIdKeyed[f],thisIssue.fields[f],true);
+						}
+
+					});
+					itemData["status"]=thisIssue.fields.status.name;
+				}
+				//add special values:  key, status
+				itemData["key"]=thisIssue.key;
+			}
+
+			var thisT = fileType;
+			//in memory file
+
+			thisT.fileDetail = fileDetail;
+			//you have prepped data AND you have file type...call generateCustomeFile
+			var gRep = function(){ijfUtils.generateWordFile(itemData,thisT);}
+			Ext.getBody().mask("Creating");
+			window.setTimeout(gRep,100);
+	}
+
+	var pnl = new Ext.Panel({
+		html: rMessage,
+		width: 400,
+		height:40,
+		bodyStyle: 'margin: 10 0 0 10;background:transparent',
+        id: 'cwfReportPanelId',
+        listeners: {
+			'render':function(){
+				generateFile();
+			}
+		}
+	});
+    var tElement = document.getElementById(inContainerId+"_1_1");
+    pnl.render(tElement);
+    ijf.main.controlSet[tElement.id] =   new itemControl(tElement.id, null, null, pnl, null);
+
+},
+renderReportList_Borderlayout:function(inContainerId)
+{
+	document.title = "IJF Reports";
+	var colSpans = {};
+    ijfUtils.setContent(inContainerId,1,1,colSpans,false,colSpans);
+
+    //what to show....
+    var listColumns = [];
+    var tFields = [];
+    tFields.push({name: 'iid',  type: 'string'});
+
+    listColumns.push({
+        header: 'ID',
+        width:'0%',
+        hidden: true,
+        dataIndex: 'iid'
+    });
+
+    tFields.push({name: 'iTypeName', type: 'string'});
+    tFields.push({name: 'iTypeType', type: 'string'});
+    tFields.push({name: 'iInstances', type: 'string'});
+
+    listColumns.push({
+            header: 'Name',
+            sortable: true,
+            hidden: false,
+            width: '70%',
+            dataIndex: 'iTypeName',
+            filter: {
+                type: 'string'
+            }
+    });
+    listColumns.push({
+		            header: 'Type',
+		            width:'28%',
+		            sortable: true,
+		            hidden: false,
+		            dataIndex: 'iTypeType',
+		            filter: {
+		                type: 'string'
+		            }
+    });
+    listColumns.push({
+            header: 'Field Store',
+            width:'0%',
+            sortable: true,
+            hidden: true,
+            dataIndex: 'iInstances',
+            filter: {
+                type: 'string'
+            }
+    });
+
+    if(!Ext.ClassManager.isCreated('typeGridFieldArray'))
+    {
+        Ext.define('typeGridFieldArray', {
+            extend: 'Ext.data.Model',
+            fields: tFields
+        });
+    }
+    if(!this.typeStore)
+    {
+		this.typeStore = new Ext.data.Store({
+			model: 'typeGridFieldArray'
+		});
+    }
+
+
+    if(Ext.getCmp('typeReportListViewId')) Ext.getCmp('typeReportListViewId').destroy();
+
+   var refreshList = function()
+   {
+		var cts = new Array();
+		ijf.fw.CustomTypes.forEach(function(ct){
+			if(ct.customType!="FILE") return;
+			//cts.push([ct.id, ct.name, ct.customType, ct.fieldName]);
+			cts.push([ct.id, ct.name, "MS Word", ct.fieldName]);
+		});
+		ijf.lists.typeStore.removeAll();
+		ijf.lists.typeStore.loadData(cts);
+		var focusOnList = function()
+		{
+			var c = Ext.getCmp('typeReportListViewId')
+	    	c.focus();
+		}
+		window.setTimeout(focusOnList,200);
+    }
+
+    var typeListView = new Ext.grid.GridPanel({
+        store: this.typeStore,
+        height:'100%',
+        width:'100%',
+        plugins: 'gridfilters',
+        id: "typeReportListViewId",
+        columns: listColumns,
+        listeners: {
+          rowdblclick: function(grid,rowIndex,e) {
+              var tId = rowIndex.data.iid;
+              if(!tId) return;
+			  ijf.lists.addEditCustomFileReference(tId,true);
+            },
+			focusenter: function(f)
+			{
+				refreshList();
+			},
+			render: function(f)
+			{
+				refreshList();
+			}
+		}
+    });
+
+    ijf.lists.refreshList=refreshList;
+
+    var reportPnl = new Ext.Panel({
+        layout: 'vbox',
+        title: "IJF Reports and Queries",
+        width: '100%',
+        height:'100%',
+        scrollable:true,
+        items: [typeListView],
+        buttons:[{
+			text:'Export',
+				handler: function(f,i,n){
+						if(!reportPnl.items.items[0].selection) return;
+						var thisId = reportPnl.items.items[0].selection.data.iid;
+						var thisT = null;
+						for(var tF in ijf.fw.CustomTypes){
+								if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+								if(ijf.fw.CustomTypes[tF].id==thisId) thisT=ijf.fw.CustomTypes[tF];
+						}
+						if(!thisT) return;
+						ijfUtils.writeCustomType(thisT);
+			}},
+			{
+				html:  "<form enctype='multipart/form-data' id='typeUploadFormId'><input id='typeUploadFileId' type='file' name='file' onchange='ijfUtils.readTypeConfigFile(event);'></form>",
+				frame: false,
+				hidden: true,
+				border: false,
+			    xtype: "panel"},
+			{
+				xtype:'button',
+				text:"Import",
+				margin: '0 200 0 0',
+				handler: function(){
+				   //need the formset ID...
+				   var uploadTypeFunction = function(){
+					   jQuery('#typeUploadFileId').val("");
+					   jQuery('#typeUploadFileId').trigger('click');
+				   };
+				   ijfUtils.modalDialog("Warning","You are about to upload a type configuration file.  If the same Type exists by name, this will overwrite that Type.",uploadTypeFunction);
+				}
+			},
+            {text:'Add',
+            handler: function(f,i,n){
+				 ijf.lists.addEditType(0,true);
+			}},{
+            text:'Edit',
+            handler: function(f,i,n){
+				if(!reportPnl.items.items[0].selection) return;
+				var thisId = reportPnl.items.items[0].selection.data.iid;
+				ijf.lists.addEditType(thisId,true);
+			}},
+			{
+            text:'Edit Details',
+            handler: function(f,i,n){
+				if(!reportPnl.items.items[0].selection) return;
+				var thisId = reportPnl.items.items[0].selection.data.iid;
+				var thisT = ijf.fw.CustomTypes.reduce(function(inT, ct){if(ct.id==thisId) inT=ct; return inT;},null);
+				if(!thisT) return;
+				ijf.lists.addEditCustomFileReference(thisId,true);
+
+			}},{
+            text:'Delete',
+            handler: function(f,i,n){
+				if(!reportPnl.items.items[0].selection) return;
+				var thisId = reportPnl.items.items[0].selection.data.iid;
+				ijf.lists.deleteCustomType(thisId);
+			}}
+        ],
+        modal: true
+    });
+    var cButtons = [];
+    cButtons.push({
+		text:'NOT USED',
+		xtype: 'button',
+		margin: '0 3 0 3',
+		handler: function(){
+			ijf.lists.addEditForm(ijf.lists.itemId);
+            }});
+
+    var selButtons = new Ext.FormPanel({
+        //labelAlign: 'left',
+        //title: "hey",
+        //frame:true,
+        //layout: 'fit',
+        border:false,
+        frame:false,
+        bodyStyle: 'margin-left:250px;background:transparent',
+        items: cButtons
+    })
+	var bArray = [selButtons];
+
+     var pnl = new Ext.Panel({
+
+         width: 1000,
+         height: 600,
+        //title: 'Search Form',
+        id: 'cwfListPanelId',
+        //frame: true,
+        //border: true,
+        layout: 'border',
+        items: [{
+            title: 'Ideal Reports for JIRA Administration',
+            region: 'north',     // position for region
+            frame: false,
+            bodyStyle: 'background-color:#3892d4',
+            split: false,         // enable resizing
+
+            margins: '0 5 5 5',
+           // id: 'itemsNorth',
+           header: {
+			   titlePosition: 0,
+			   items: [{
+			text:'JQL Help',
+			xtype: 'button',
+			style: 'margin:0 0 0 10px',
+			handler: function(){
+				   window.open("https://confluence.atlassian.com/jiracoreserver073/advanced-searching-861257209.html");
+			}},
+			{
+				xtype:'button',
+				style: 'margin:0 0 0 10px',
+				text:"Reports Help",
+				handler: function(){
+				   window.open("http://www.idealfed.com/reports.html");
+			}}
+			]}
+        },{
+            title: 'Center Region',
+            region: 'center',     // center region is required, no width/height specified
+            //id: 'itemsCenter',
+            frame: true,
+            xtype: 'container',
+            layout: 'fit',
+            margins: '5 5 0 0',
+            items: [reportPnl]
+        }]
+    });
+
+
+    var tElement = document.getElementById(inContainerId+"_1_1");
+    pnl.render(tElement);
+    ijf.main.controlSet[tElement.id] =   new itemControl(tElement.id, null, null, pnl, null);
+
+},
 renderItemList_Borderlayout:function(inContainerId)
 {
     //state is no item, so display selected or default item selector....
@@ -1229,7 +1603,8 @@ deleteCustomType: function(inCtId)
 						if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
 						if(ijf.fw.CustomTypes[tF].id==sStat) delete ijf.fw.CustomTypes[tF];
 					}
-					ijf.lists.dWin.focus();
+					if(ijf.lists.dWin) ijf.lists.dWin.focus();
+					if(ijf.lists.refreshList) ijf.lists.refreshList();
 				}
 	    };
 
@@ -1623,7 +1998,7 @@ addEditCustomType:function (inFrmId)
               if(rowIndex.data.iTypeType=="GRID")
               	ijf.lists.addEditCustomTypeDetails(tId);
 	 		  else if(rowIndex.data.iTypeType=="FILE")
-					ijf.lists.addEditCustomFileReference(tId);
+					ijf.lists.addEditCustomFileReference(tId,false);
               else
               	ijf.lists.addEditCustomTypeReference(tId);
             }}
@@ -1632,7 +2007,7 @@ addEditCustomType:function (inFrmId)
     ijf.lists.dWin = new Ext.Window({
         layout: 'vbox',
         title: "IJF Custom Types",
-        width: 800,
+        width: 850,
         height:520,
         scrollable:true,
         closable: true,
@@ -1690,7 +2065,7 @@ addEditCustomType:function (inFrmId)
 				if(thisT.customType=="GRID")
 					ijf.lists.addEditCustomTypeDetails(thisId);
 				else if(thisT.customType=="FILE")
-					ijf.lists.addEditCustomFileReference(thisId);
+					ijf.lists.addEditCustomFileReference(thisId,false);
 				else
 					ijf.lists.addEditCustomTypeReference(thisId);
 			}},{
@@ -2029,7 +2404,7 @@ addEditCustomTypeDetails:function (inTypeId)
                 text:'Close',
                 handler: function(){
                     ijf.lists.dWin2.close();
-                    ijf.lists.dWin.focus();
+                    if(ijf.lists.dWin) ijf.lists.dWin.focus();
             }}
         ],
         modal: true
@@ -2126,7 +2501,7 @@ addEditCustomTypeReference:function (inTypeId)
                 text:'Close',
                 handler: function(){
                     ijf.lists.dWin2.close();
-                    ijf.lists.dWin.focus();
+                    if(ijf.lists.dWin) ijf.lists.dWin.focus();
             }}
         ],
         modal: true
@@ -2134,7 +2509,7 @@ addEditCustomTypeReference:function (inTypeId)
     ijf.lists.dWin2.show();
 }
 ,
-addEditCustomFileReference:function (inTypeId)
+addEditCustomFileReference:function (inTypeId,isReportView)
 {
     ijf.lists.thisTypeSpec = {};
 	var thisT = ijf.lists.thisTypeSpec;
@@ -2163,12 +2538,23 @@ addEditCustomFileReference:function (inTypeId)
 	try
 	{
 		var fileDetail = JSON.parse(fileType.settings);
-    	fileInfoString = fileDetail.fileInfoString;
+		var fParts = fileDetail.fileInfoString.split("\\");
+		   if(fParts.length==1)
+		   {
+			   var fName = fileDetail.fileInfoString;
+		   }
+		   else
+		   {
+			   var fName = fParts[fParts.length-1];
+		   }
+		   fileInfoString = "File Management: " + fName;
 	}
 	catch(e)
 	{
-		fileInfoString = "No file loaded";
+		fileInfoString = "File Management: No file loaded";
 	}
+	fileType["details"]=fileDetail;
+
     //reset file detail to object if it is NULL
     if(Object.keys(fileDetail).length==0) fileDetail={};
     var cts = null;
@@ -2187,11 +2573,74 @@ addEditCustomFileReference:function (inTypeId)
 	ijf.main.callbacks["onLoadHandler"]=onLoadHandler;
 
 
+	//set up field picker
+	var gridFieldNameArray=[{name: "value", type: "string"}];
+	var colSettingsArray=[{
+				header: "Field Name",
+				width: 'auto',
+				dataIndex: "value",
+				width: "100%",
+				sortable: true,
+				filter: {
+				  type: 'string'
+	            }
+			}];
+		if(!Ext.ClassManager.isCreated("fieldPickerModel"))
+		{
+			Ext.define("fieldPickerModel", {
+				extend: 'Ext.data.Model',
+				fields: gridFieldNameArray
+			});
+		}
+	 	var fLookupStore = Ext.create('Ext.data.Store', {
+			model: "fieldPickerModel",
+			proxy: {
+				type: 'memory',
+				reader: {
+					type: 'json'
+				}},
+				autoLoad: false});
+		ijfUtils.loadJiraFields();
+
+		var jFields = ijf.jiraFields.map(function(e){
+			return e.name;
+		});
+	    jFields = jFields.sort();
+		var fLookup = jFields.map(function(e){
+			return {"id":e,"value":e};
+		});
+		fLookupStore.proxy.data=fLookup;
+		fLookupStore.load();
+		var fieldNameGrid= new Ext.grid.GridPanel({
+			store: fLookupStore,
+			plugins: 'gridfilters',
+			//style: l_panelStyle,
+			frame: false,
+			title: "Field Picker",
+			border: false,
+			height: '100%',
+			width: '100%',
+			columns: colSettingsArray,
+			selModel: {selType: 'rowmodel', mode: 'SINGLE'},
+			listeners: {
+				'beforeitemdblclick': function(selMod, record, something ){
+					var nVal = record.data.value;
+					var fCtl = Ext.getCmp('jqlFieldsId');
+					var cVal = fCtl.getValue();
+					if(cVal) fCtl.setValue(cVal + "," +nVal)
+						else
+						 fCtl.setValue(nVal)
+				}
+			}
+		});
+
+
+
     ijf.lists.dWin2 = new Ext.Window({
         layout: 'vbox',
-        title: "IJF Custom Type File",
-        width: 800,
-        height:400,
+        title: "IJF Report Builder: " + thisT.name,
+        width: 1100,
+        height:800,
         closable: true,
         header:{
 						titlePosition: 0,
@@ -2199,21 +2648,14 @@ addEditCustomFileReference:function (inTypeId)
 							xtype:'button',
 							text:"Field Reference",
 							handler: function(){
-								if(!ijf.jiraFields)
-										{
-											ijf.jiraFields = ijfUtils.getJiraFieldsSync();
-											ijf.jiraFieldsKeyed = [];
-											ijf.jiraFields.forEach(function(f)
-											{
-												ijf.jiraFieldsKeyed[f.name]=f;
-											});
-										}
+								ijfUtils.loadJiraFields();
 					   			var headStyle =  " style='background:lightgray;border-bottom:solid blue 2px' ";
 								var htmlOut = "<table cellspacing=0 width=100%><tr><td"+headStyle+">Field Name</td><td"+headStyle+">JIRA ID</td><td"+headStyle+">Type</td><td"+headStyle+">Forms Reference</td></tr>";
 								var outFieldRef = [];
 								Object.keys(ijf.jiraFieldsKeyed).forEach(function(f){
 									var field = ijf.jiraFieldsKeyed[f];
 									var fRef = "#{"+f+"}";
+									var fId="";
 									if(field.schema)
 									{
 										if(field.schema.type=="array") fRef="na";
@@ -2239,8 +2681,8 @@ addEditCustomFileReference:function (inTypeId)
 								var fieldRefWin = new Ext.Window({
 								layout: 'vbox',
 								title: "Field Reference",
-								width: 550,
-								height:600,
+								width: 1100,
+								height: 800,
 								scrollable: true,
 								closable: true,
 								header:{
@@ -2266,206 +2708,469 @@ addEditCustomFileReference:function (inTypeId)
 								});
 								fieldRefWin.show();
 							}
-						}]
+						},
+						 {
+								text:'JQL Help',
+								xtype: 'button',
+								style: 'margin:0 0 0 10px',
+								handler: function(){
+									   window.open("https://confluence.atlassian.com/jiracoreserver073/advanced-searching-861257209.html");
+								}},
+								{
+									xtype:'button',
+									style: 'margin:0 0 0 10px',
+									text:"Reports Help",
+									handler: function(){
+									   window.open("http://www.idealfed.com/reports.html");
+								}}
+						]
 			},
         items: [{
-				html:  "This dialog configures a binary file for use by Forms.  Typical uses are for MSWord reports that 'mail-merge' field values.  <br>The default JQL and Fields are used to augment data available to the report.",
-				frame: false,
-				hidden: false,
-				margin: '5 0 5 20',
-				border: false,
-			    xtype: "panel"},
-			    {
-				html:  fileInfoString,
-				frame: false,
-				id: "typeFileInformationId",
-				hidden: false,
-				margin: '5 0 5 20',
-				border: false,
-			    xtype: "panel"},
-			    {
-				html:  "<form enctype='multipart/form-data' id='typeUploadBinFormId'><input id='typeUploadBinFileId' type='file' name='file' onchange='ijfUtils.readBinaryFile(event,\"onLoadHandler\");'></form>",
-				frame: false,
-				hidden: true,
-				border: false,
-			    xtype: "panel"},
-			  	{
-					xtype:'button',
-					text:"Upload",
-					margin: '0 0 5 20',
-					handler: function(){
-					   //need the formset ID...
-					   var uploadTypeFunction = function(){
-						   fileEncoded = false;
-						   jQuery('#typeUploadBinFileId').val("");
-						   jQuery('#typeUploadBinFileId').trigger('click');
-					   };
-					   ijfUtils.modalDialog("Warning","You are about to upload a file, this will overwrite the existing file.",uploadTypeFunction);
-					}
-				},
-				{
-					xtype:'button',
-					text:"Download",
-					margin: '0 0 0 20',
-					handler: function(){
-					   //open file details local
-					   var decodedFile = ijfUtils.Base64Binary.base64ToArrayBuffer(fileDetail.file);
-					   //name is the name
-					   var fParts = fileDetail.fileInfoString.split("\\");
-					   if(fParts.length==1)
-					   {
-						   var fName = fileDetail.fileInfoString;
-					   }
-					   else
-					   {
-						   var fName = fParts[fParts.length-1];
-					   }
-				   		var blob = new Blob([decodedFile], {type: "application/octet-stream"});
-						saveAs(blob,fName);
-					}
-				},
-				{
-				xtype: 'textfield',
-				labelAlign: 'left',
-				fieldLabel: 'Default JQL',
-				labelWidth: 100,
-				labelStyle: "color:darkblue",
-				margin: '4 0 0 20',
-				width: 650,
-				value: fileDetail.jql,
-				listeners: {
-				    change: function(f,n,o){
-						fileDetail.jql = n;
-					}
-				}
-            },
-				{
-				xtype: 'textfield',
-				labelAlign: 'left',
-				fieldLabel: 'Default Fields',
-				labelWidth: 100,
-				labelStyle: "color:darkblue",
-				margin: '4 0 0 20',
-				width: 650,
-				value: fileDetail.fields,
-				listeners: {
-				    change: function(f,n,o){
-						fileDetail.fields = n;
-					}
-				}
-            },
-            {
-				xtype: 'combobox',
-				labelAlign: 'left',
-				forceSelection: true,
-				store: ["true","false"],
-				forceSelection: true,
-				labelWidth: 100,
-				margin: '4 0 0 20',
-				fieldLabel: "Debug Mode",
-				labelStyle: "color:darkblue",
-				triggerAction: 'all',
-				width: 200,
-				value: fileDetail.debugMode,
-				listeners: {
-						change: function(f, n, o){
-							fileDetail.debugMode = n;
-				}}
-			},
-						{
-							xtype: 'button',
-							text: 'Test Query',
-							margin: '4 0 0 20',
-							handler: function(){
-								if(!ijf.jiraFields)
+					frame: false,
+					layout: 'hbox',
+					hidden: false,
+					margin: '0 0 0 0',
+					border: false,
+				    xtype: "panel",
+				    items:[
+							{
+								frame: false,
+								layout: 'vbox',
+								hidden: false,
+								margin: '0 0 0 0',
+								border: false,
+								xtype: "panel",
+								items:[
 										{
-											ijf.jiraFields = ijfUtils.getJiraFieldsSync();
-											ijf.jiraFieldsKeyed = [];
-											ijf.jiraFields.forEach(function(f)
-											{
-												ijf.jiraFieldsKeyed[f.name]=f;
-											});
-										}
-								  var jql = fileDetail.jql;
-								  var flds = fileDetail.fields;
-								  var translateFields = ijfUtils.translateJiraFieldsToIds(flds);
-								  var suffix = "";
-								  if(flds) suffix = "&fields=" + translateFields;
-								  var aUrl = '/rest/api/2/search?jql='+jql + suffix;
-								  var rawList = ijfUtils.jiraApiSync('GET',aUrl, null);
+										html:  "This dialog configures a query and optionally, a file for output.  Files are for MSWord reports that 'mail-merge' field values.  <br>The Issue Key, JQL and Fields are used to provide data available to the report. <br>The debug flag if true will ouput 'no data found' for null values in the word file.",
+										frame: false,
+										hidden: false,
+										margin: '5 0 5 20',
+										border: false,
+										xtype: "panel"},
+										{
+											frame: false,
+											layout: 'hbox',
+											hidden: false,
+											margin: '5 0 5 20',
+											border: false,
+											xtype: "panel",
+											items: [{
+													html:  fileInfoString,
+													frame: false,
+													id: "typeFileInformationId",
+													hidden: false,
+													margin: '5 0 5 20',
+													border: false,
+													xtype: "panel"},
+													{
+													html:  "<form enctype='multipart/form-data' id='typeUploadBinFormId'><input id='typeUploadBinFileId' type='file' accept='.docx' name='file' onchange='ijfUtils.readBinaryFile(event,\"onLoadHandler\");'></form>",
+													frame: false,
+													hidden: true,
+													border: false,
+													xtype: "panel"},
+													{
+														xtype:'button',
+														text:"Upload",
+														margin: '0 0 5 20',
+														handler: function(){
+														   //need the formset ID...
+														   var uploadTypeFunction = function(){
+															   fileEncoded = false;
+															   jQuery('#typeUploadBinFileId').val("");
+															   jQuery('#typeUploadBinFileId').trigger('click');
+														   };
+														   ijfUtils.modalDialog("Warning","You are about to upload a file, this will overwrite the existing file.",uploadTypeFunction);
+														}
+													},
+													{
+														xtype:'button',
+														text:"Download",
+														margin: '0 0 0 20',
+														handler: function(){
+														   //open file details local
+														   var decodedFile = ijfUtils.Base64Binary.base64ToArrayBuffer(fileDetail.file);
+														   //name is the name
+														   var fParts = fileDetail.fileInfoString.split("\\");
+														   if(fParts.length==1)
+														   {
+															   var fName = fileDetail.fileInfoString;
+														   }
+														   else
+														   {
+															   var fName = fParts[fParts.length-1];
+														   }
+															var blob = new Blob([decodedFile], {type: "application/octet-stream"});
+															saveAs(blob,fName);
+														}
+													}
 
-								  var fieldMap = ijfUtils.translateJiraFieldsToObjs(flds);
-								  if(rawList.issues)
-								  {
-									var outStr = "<table><tr>";
-									fieldMap.forEach(function(f){
-										outStr += "<td style='background:lightblue'>"+f.name+"</td>";
-									});
-									outStr+="</tr>"
-									rawList.issues.forEach(function(i)
-									{
-										outStr += "<tr>";
-										fieldMap.forEach(function(f){
-											if(f.id.toLowerCase()=="key")
-											{
-												outStr += "<td>"+i.key+"</td>";
-												return;
+											]},
+										{
+										xtype: 'textfield',
+										labelAlign: 'left',
+										fieldLabel: 'Default Issue Key',
+										labelWidth: 120,
+										labelStyle: "color:darkblue",
+										margin: '4 0 0 20',
+										width: 230,
+										value: fileDetail.key,
+										listeners: {
+											change: function(f,n,o){
+												fileDetail.key = n;
+												}
 											}
-											if(ijf.jiraFieldsKeyed.hasOwnProperty(f.name))
+										},
+										{
+										xtype: 'textfield',
+										labelAlign: 'left',
+										fieldLabel: 'Default JQL',
+										labelWidth: 120,
+										labelStyle: "color:darkblue",
+										margin: '4 0 0 20',
+										width: 800,
+										value: fileDetail.jql,
+										listeners: {
+											change: function(f,n,o){
+												fileDetail.jql = n;
+											}
+										}
+										},
+										{
+										xtype: 'textfield',
+										labelAlign: 'left',
+										fieldLabel: 'Default Fields',
+										labelWidth: 120,
+										labelStyle: "color:darkblue",
+										margin: '4 0 0 20',
+										width: 800,
+										id: 'jqlFieldsId',
+										value: fileDetail.fields,
+										listeners: {
+											change: function(f,n,o){
+												fileDetail.fields = n;
+											}
+										}
+									},
+									{
+										xtype: 'combobox',
+										labelAlign: 'left',
+										forceSelection: true,
+										store: ["true","false"],
+										forceSelection: true,
+										labelWidth: 120,
+										margin: '4 0 0 20',
+										fieldLabel: "Debug Mode",
+										labelStyle: "color:darkblue",
+										triggerAction: 'all',
+										width: 200,
+										value: fileDetail.debugMode,
+										listeners: {
+												change: function(f, n, o){
+													fileDetail.debugMode = n;
+										}}
+									}
+								]
+							},
+							{
+								frame: false,
+								layout: 'vbox',
+								hidden: false,
+								margin: '10 10 0 10',
+								border: false,
+								bodyStyle: 'border:solid lightgray 2px !important',
+								width: 220,
+								height:240,
+								xtype: "panel",
+								items:[
+										fieldNameGrid
+								]
+							}
+				    ]
+				},
+				{
+					frame: false,
+					layout: 'hbox',
+					hidden: false,
+					margin: '0 0 0 0',
+					border: false,
+				    xtype: "panel",
+				    items:[
+						{
+									xtype: 'button',
+									text: 'Test Query',
+									margin: '4 0 0 20',
+									handler: function(){
+
+
+										//JQL processing
+										ijfUtils.loadJiraFields();
+
+										  //issue processing
+										  var iKey = fileDetail.key;
+										  var iOutput = "--------------No Issue Defined--------------";
+										  if(iKey)
+										  {
+											var thisIssue = ijfUtils.getJiraIssueSync(iKey);
+											if(thisIssue)
 											{
-												outStr += "<td>"+ijfUtils.handleJiraFieldType(ijf.jiraFieldsKeyed[f.name],i.fields[f.id],true)+"</td>";
+												iOutput = "<br><br>------------Issue Results "+iKey+"------------------<br><table><tr>";
+													iOutput += "<td style='background:lightblue'>Field</td>";
+													iOutput += "<td style='background:lightblue'>Name</td>";
+													iOutput += "<td style='background:lightblue'>Value</td>";
+
+												if(thisIssue.fields)
+												{
+													Object.keys(thisIssue.fields).forEach(function(f)
+													{
+														if(thisIssue.fields[f])
+														iOutput +="<tr><td>"+f+"</td><td>"+ijf.jiraFieldsIdKeyed[f].name+"</td><td>"+ijfUtils.handleJiraFieldType(ijf.jiraFieldsIdKeyed[f],thisIssue.fields[f],true)+"</td></tr>"
+													});
+													iOutput+="</table>"
+												}
+												else
+												{
+													iOutput+="<tr><td colspan=3>No fields in result</td></tr>"
+													iOutput+="</table>"
+												}
 											}
 											else
 											{
-												outStr += "<td>"+i.fields[f.id]+"</td>";
+											  var iOutput = "-----------------UNABLE to LOAD "+iKey+"----------------";
 											}
+										  }
 
 
-										});
-										outStr+="</tr>"
-									});
-									outStr+="</table>"
-								    //Ext.MessageBox.show({"title":"Query Result","message":outStr,scrollable:true,width:1200,height:600});
+										  //JQL processing
 
-								    var qWin = new Ext.Window({
-									        layout: 'vbox',
-									        title: "Query Result",
-									        width: 1100,
-									        height:800,
-									        scrollable:true,
-									        closable: true,
-											header:{
-											titlePosition: 0,
-											items:[{
-												xtype:'button',
-												text:"Pop into Tab",
-												handler: function(btn){
-												   // render a local version
-												 var win = window.open("","ijfQueryReference");
-												 win.document.body.innerHTML = outStr;
-												 win.document.title = "IJF Query Reference";
+										  var jql = fileDetail.jql;
+										  var flds = fileDetail.fields;
+
+										  var outStr = "--------------No JQL Defined----------------<br>"
+										  if((jql) && (flds))
+										  {
+											  var translateFields = ijfUtils.translateJiraFieldsToIds(flds);
+											  var suffix = "";
+											  if(flds) suffix = "&fields=" + translateFields;
+											  var aUrl = '/rest/api/2/search?jql='+jql + suffix;
+											  var rawList = null;
+											  try
+											  {
+												  rawList = ijfUtils.jiraApiSync('GET',aUrl, null);
+											  }
+											  catch(e)
+											  {
+												  rawList = "JQL Query Error: " + e.message;
+											  }
+
+											  var fieldMap = ijfUtils.translateJiraFieldsToObjs(flds);
+											  if(rawList.issues)
+											  {
+												outStr = "------------JQL Results: "+jql+"------------------<br><table><tr>";
+												fieldMap.forEach(function(f){
+													outStr += "<td style='background:lightblue'>"+f.name+"</td>";
+												});
+												outStr+="</tr>"
+												rawList.issues.forEach(function(i)
+												{
+													outStr += "<tr>";
+													fieldMap.forEach(function(f){
+														if(f.id.toLowerCase()=="key")
+														{
+															outStr += "<td>"+i.key+"</td>";
+															return;
+														}
+														if(ijf.jiraFieldsKeyed.hasOwnProperty(f.name))
+														{
+															outStr += "<td>"+ijfUtils.handleJiraFieldType(ijf.jiraFieldsKeyed[f.name],i.fields[f.id],true)+"</td>";
+														}
+														else
+														{
+															if(i.fields)
+															{
+																outStr += "<td>"+i.fields[f.id]+"</td>";
+															}
+															else
+															{
+																outStr += "<td>undefined</td>";
+															}
+														}
+
+
+													});
+													outStr+="</tr>"
+												});
+												outStr+="</table>"
+												//Ext.MessageBox.show({"title":"Query Result","message":outStr,scrollable:true,width:1200,height:600});
 												}
-											}]},
-									        items: [
-									            {
-									                xtype: 'panel',
-									                html: outStr,
-									  				margin: '4 0 0 10',
-									                width: '100%',
-									                height: '100%',
-            									}
-            									]
-										});
-										qWin.show();
-							      }
-							      else
-							      {
-									Ext.MessageBox.show({"title":"Query Error","message":rawList,width:400,height:300});
-								  }
+												else
+												{
+													outStr = "<br><br>------------JQL RAN but no results!----------------<br><br>" + rawList;
+												}
+											}
+											var qPanel = new Ext.Panel({
+													layout: 'vbox',
+													title: "Query Result",
+													width: '100%',
+													height:465,
+													margin: '10 0 0 0',
+													header:{
+													titlePosition: 0,
+													items:[{
+														xtype:'button',
+														text:"Pop into Tab",
+														handler: function(btn){
+														   // render a local version
+														 var win = window.open("","ijfQueryReference");
+														 win.document.body.innerHTML = outStr + iOutput;
+														 win.document.title = "IJF Query Reference";
+														}
+													}]},
+													items: [
+														{
+															xtype: 'panel',
+															html: outStr + iOutput,
+															scrollable:true,
+															margin: '4 0 0 10',
+															width: '100%',
+															height: '100%',
+														}
+														]
+												});
+												var tPanel = Ext.getCmp('queryContainerPanelId');
+												tPanel.removeAll();
+												tPanel.add(qPanel);
+									}
+					},
+					{
+							xtype: 'button',
+							text: 'Generate Report',
+							margin: '4 0 0 20',
+							handler: function(){
+									//prep data
 
+									if(!fileDetail.file)
+									{
+										ijfUtils.modalDialogMessage("Information","Sorry, you have not uploaded a file for generating.");
+										return;
+									}
+									ijfUtils.loadJiraFields();
+									//load item if exists...
+									var iKey = fileDetail.key;
+									if(iKey)
+									{
+											var thisIssue = ijfUtils.getJiraIssueSync(iKey);
+									}
+									var itemData={};
+									if(thisIssue)
+									{
+										if(thisIssue.fields)
+										{
+											Object.keys(thisIssue.fields).forEach(function(f)
+											{
+												if(thisIssue.fields[f])
+												{
+													itemData[ijf.jiraFieldsIdKeyed[f].name]=ijfUtils.handleJiraFieldType(ijf.jiraFieldsIdKeyed[f],thisIssue.fields[f],true);
+												}
+
+											});
+											itemData["status"]=thisIssue.fields.status.name;
+										}
+										//add special values:  key, status
+										itemData["key"]=thisIssue.key;
+   			 					    }
+
+									//add ocf hook to alter data
+									//ocf(itemData);
+
+									//get custom type, then load file detail, generate output, download
+									var thisT = fileType;
+									//in memory file
+									if(cts)
+									{
+										if(cts.file) fileDetail.file=cts.file;
+									}
+									thisT.fileDetail = fileDetail;
+									//you have prepped data AND you have file type...call generateCustomeFile
+									var whenDone = function(){ijf.lists.dWin2.unmask();};
+									var gRep = function(){ijfUtils.generateWordFile(itemData,thisT,whenDone);}
+									ijf.lists.dWin2.mask("Creating");
+									window.setTimeout(gRep,100);
+							}
+					},
+					{
+							xtype: 'button',
+							text: 'Report URLs',
+							margin: '4 0 0 20',
+							handler: function(){
+
+							var urlWin = new Ext.Window({
+										layout: 'vbox',
+										title: "Report Links",
+										width: 1050,
+										height:250,
+										closable: true,
+										items: [{
+											html: "The following urls can be used to run this report:",
+											border: false,
+											width: 580,
+											margin: '4 0 0 10',
+											frame: false,
+											xtype: "panel"},
+											{
+												xtype: 'textfield',
+												labelAlign: 'left',
+												fieldLabel: 'Direct URL',
+												labelWidth: 100,
+												labelStyle: "color:darkblue",
+												margin: '4 0 0 10',
+												width: 900,
+												value: window.location.origin + "/plugins/servlet/iforms?mode=report&reportName="+thisT.name,
+												allowBlank:false
+											},{
+											html: "This URL will run with the default jql etc, saved in the report",
+											border: false,
+											width: 580,
+											margin: '5 0 10 120',
+											frame: false,
+											xtype: "panel"},{
+												xtype: 'textfield',
+												labelAlign: 'left',
+												fieldLabel: 'Explicit URL',
+												labelWidth: 100,
+												labelStyle: "color:darkblue",
+												margin: '4 0 0 10',
+												width: 900,
+												value: window.location.origin + "/plugins/servlet/iforms?mode=report&reportName="+thisT.name + "&issue="+fileDetail.key + "&jql="+fileDetail.jql + "&fields="+fileDetail.fields,
+												allowBlank:false
+											},{
+											html: "This URL will run using params in the URL, any are optional",
+											border: false,
+											width: 580,
+											margin: '5 0 10 120',
+											frame: false,
+											xtype: "panel"},
+											{
+											html: "Lastly, you can dynamically insert issue and jql using scriptrunner and JIRA utilities.  Please see help page for more.",
+											border: false,
+											width: 580,
+											margin: '5 0 0 120',
+											frame: false,
+											xtype: "panel"}]
+									});
+								urlWin.show();
 
 							}
-            }
+					}
+				]
+			}
+            ,
+			{
+				xtype: 'panel',
+				id: 'queryContainerPanelId',
+				width: '100%',
+				html: "<hr>"
+			}
 
         ],
         buttons:[ {
@@ -2507,16 +3212,24 @@ addEditCustomFileReference:function (inTypeId)
 					{
 						//ijfUtils.modalDialogMessage("Information","Saved");
 						fileEncoded=false;
-						ijf.lists.dWin2.close();
-                        ijf.lists.dWin.focus();
-						//Ext.getCmp('typeFileInformationId').update(jQuery('#typeUploadBinFileId').val());
+						ijfUtils.modalDialogMessage("Info","Saved");
+						var fParts = cts.fileInfoString.split("\\");
+					   if(fParts.length==1)
+					   {
+						   var fName = fileDetail.fileInfoString;
+					   }
+					   else
+					   {
+						   var fName = fParts[fParts.length-1];
+					   }
+						Ext.getCmp('typeFileInformationId').update(fName);
 					}
             }},
             {
                 text:'Close',
                 handler: function(){
                     ijf.lists.dWin2.close();
-                    ijf.lists.dWin.focus();
+                    if(ijf.lists.dWin) ijf.lists.dWin.focus();
             }}
         ],
         modal: true
@@ -2524,7 +3237,7 @@ addEditCustomFileReference:function (inTypeId)
     ijf.lists.dWin2.show();
 }
 ,
-addEditType:function (inTypeId)
+addEditType:function (inTypeId,isReportView)
 {
 
 	var editForm = false;
@@ -2548,25 +3261,27 @@ addEditType:function (inTypeId)
 		thisT.customType = "";
 		thisT.fieldName = "";
 		thisT.id = 0;
+		if(isReportView)
+		{
+			thisT.customType = "FILE";
+		}
 		thisT.settings=JSON.stringify([]);
 	}
+
 
     var dMes = "Adding a new custom control type, this creates";
     dMes+=" a control type you can use in your forms.  Please note:";
     dMes+="<ul><li>JIRA Field is the storage location for this item for reporting</li>";
-    dMes+="<ul><li>JIRA Field is not applicable for REFERENCE types</li>";
+    dMes+="<li>JIRA Field is not applicable for REFERENCE types</li></ul>";
+    if(isReportView)
+    {
+		dMes="Adding a new report.  Please note:";
+		dMes+="<ul><li>Once created, select and choose Edit Details to create and test query.</li>";
+	}
 
     var fieldLookup = [];
 
-	if(!ijf.jiraFields)
-	{
-		ijf.jiraFields = ijfUtils.getJiraFieldsSync();
-		ijf.jiraFieldsKeyed = [];
-		ijf.jiraFields.forEach(function(f)
-		{
-			ijf.jiraFieldsKeyed[f.name]=f;
-		});
-	}
+    ijfUtils.loadJiraFields();
 
 	fieldLookup = ijf.jiraFields.reduce(function(inArr, f){
 		if(f.custom) inArr.push([f.name,f.name]);
@@ -2577,9 +3292,12 @@ addEditType:function (inTypeId)
 
     var typeLookup = ["GRID","REFERENCE","FILE"];
 
+    var tit = "IJF Custom Type Settings";
+    if(isReportView) tit = "IJF Report Settings";
+
     ijf.lists.dWin2 = new Ext.Window({
         layout: 'vbox',
-        title: "IJF Custom Type Settings",
+        title: tit,
         width: 525,
         height:350,
         closable: true,
@@ -2644,6 +3362,7 @@ addEditType:function (inTypeId)
 				allowBlank:false,
 				labelStyle: "color:darkblue",
 				triggerAction: 'all',
+				hidden: isReportView,
 				width: 400,
 				value: thisT.customType,
 				listeners: {
@@ -2666,6 +3385,7 @@ addEditType:function (inTypeId)
 				fieldLabel: "JIRA Field",
 				labelStyle: "color:darkblue",
 				triggerAction: 'all',
+				hidden: isReportView,
 				width: 400,
 				value: thisT.fieldName,
 				listeners: {
@@ -2722,7 +3442,7 @@ addEditType:function (inTypeId)
 						ijf.fw.CustomTypes.push(ijf.lists.thisType);
 					}
 					ijf.lists.dWin2.close();
-					ijf.lists.dWin.focus();
+					if(ijf.lists.dWin) ijf.lists.dWin.focus();
 				}
 
             }},
