@@ -369,7 +369,9 @@ var ijfUtils = {
    jiraApiSync:function(inMethod, inApi, inData){
 
      	var retVal="tbd";
+
      	jQuery.ajax({
+			     headers: {Accept: "application/json"},
                  async: false,
                  type: inMethod,
                  contentType:"application/json; charset=utf-8",
@@ -609,11 +611,17 @@ gridUploadCsvFile: function(event, inGridId, inControlId)
 			grid.store.ijfCols.forEach(function(col){
 				if(!r[i])
 				{
-					newRecord[col.columnName]=col["default"];
+					if(col.columnName)
+						newRecord[col.columnName]=col["default"];
+					else
+						newRecord[col] = "";
 				}
 				else
 				{
-					newRecord[col.columnName] = r[i];
+					if(col.columnName)
+						newRecord[col.columnName] = r[i];
+					else
+						newRecord[col] = r[i];
 				}
 				i++;
 			});
@@ -945,6 +953,7 @@ getConfigJson:function(inFormSet)
 },
 clearAll:function()
 {
+     ijfUtils.clearExt();
 
     jQuery('#ijfHead').html('');
     jQuery('#ijfContent').html('');
@@ -1375,7 +1384,7 @@ replaceWordChars:function(text) {
 				   }
 				   if (ijf.main.controlSet[c].control) {
 					Ext.destroy(ijf.main.controlSet[c].control);
-					}
+				   }
 			   }
 			}
 		}
@@ -1697,6 +1706,8 @@ replaceWordChars:function(text) {
 
 		if(!item.key) return retText;
 
+		if(item.fields) if(item.fields.parent) retText = retText.replace(/\#\{parent.key\}/g,item.fields.parent.key);
+
 		retText = retText.replace(/\#\{key\}/g,item.key);
 		retText = retText.replace(/\#\{summary\}/g,item.fields.summary);
 		retText = retText.replace(/\#\{status\}/g,item.fields.status.name);
@@ -1744,7 +1755,18 @@ replaceWordChars:function(text) {
 		}
 		return retText;
 	},
-
+    getJiraFieldValue:function(inName, inIssue, forDisplay, noSanitize)
+    {
+		if(!inIssue.fields) return null;
+		if(ijf.jiraFieldsKeyed.hasOwnProperty(inName))
+		{
+			var f = ijf.jiraFieldsKeyed[inName];
+			var issF = inIssue.fields[f.id];
+			if(!issF) return;
+			return this.handleJiraFieldType(f, issF, forDisplay, noSanitize)
+		}
+		return null;
+	},
 	handleJiraFieldType:function(inType, inField, forDisplay,noSanitize)
 	{
 		if(!inField) return null;
@@ -2317,7 +2339,6 @@ CSVtoArray:function (strData, strDelimiter ){
 	/*********************
 	Data Reference
 	**********************/
-
 	getReferenceDataByName:function(refName, keyIndex, asArray){
 		var retRef = [];
 
@@ -2436,6 +2457,66 @@ CSVtoArray:function (strData, strDelimiter ){
 							//sort by the keyIndex
 							retRef.sort("0");
 					    }
+					};
+				}
+			}
+			catch(e)
+			{
+				//not json split as \n, then \t
+				retRef = thisT.settings.split("\n");
+			}
+		}
+		return retRef;
+	},
+	getReferenceDataRaw:function(refName){
+		var retRef = [];
+
+		var thisT = {};
+		ijf.fw.CustomTypes.forEach(function(t){if(t.name==refName) thisT=t;});
+
+		if(thisT)
+		{
+			//data may be crlf list, crlf list of tab delimited, JSON
+			//try json first...
+			try
+			{
+				retRef = JSON.parse(thisT.settings);
+				//try again, if it parses, return it. else
+				try
+				{
+					retRef =JSON.parse(retRef);
+				}
+				catch(ee)
+				{
+					retRef = retRef.split("\n");
+					//look for CSV....
+					if(retRef[0].indexOf("\t")>-1)
+					{
+						var i = 0;
+
+						var lookup = retRef.map(function(r)
+						{
+							i=0;
+							return r.split("\t").reduce(function(inObj, c){ inObj[i.toString()]=c.trim();i++;return inObj;},{});
+						});
+						retRef=lookup;
+					}
+					else if(retRef[0].indexOf(",")>-1)
+					{
+						var i = 0;
+						var lookup = retRef.map(function(r)
+						{
+							i=0;
+							return r.split(",").reduce(function(inObj, c){ inObj[i.toString()]=c.trim();i++;return inObj;},{});
+						});
+						retRef=lookup;
+					}
+					else{
+						var lookup = retRef.map(function(r)
+						{
+							return {"0":r};
+						});
+						retRef=lookup;
 					};
 				}
 			}

@@ -17,6 +17,9 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.ArrayList;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
@@ -162,6 +165,8 @@ public class Craft extends HttpServlet
     	if(decorator==null) decorator="";
     	String gVersionNum = request.getParameter("version");
     	if(gVersionNum==null) gVersionNum="0";
+    	String themeFlag = request.getParameter("theme");
+    	if(themeFlag==null) themeFlag="";
 
 		//XSS cleans
     	remote=sanitize(remote);
@@ -225,6 +230,11 @@ public class Craft extends HttpServlet
 			outTemplate+="_remote";
 		}
 		outTemplate+=".vm";
+
+		if(themeFlag.equals("crisp"))
+		{
+			outTemplate="maincrisp.vm";
+		}
 
 
     	//you need to know if this is an anonymous call, if so, it can run....
@@ -690,11 +700,30 @@ public class Craft extends HttpServlet
 	  }
 	}
 
+    public int compareVersions(Version lhs, Version rhs) {
+					// -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
+					return lhs.getID() > rhs.getID() ? -1 : (lhs.getID() < rhs.getID()) ? 1 : 0;
+ 	}
     private void cleanVersions(int keepNum)
     {
+        ArrayList versions = new ArrayList();
     	int ctr=0;
-		for (Version v : ao.find(Version.class, Query.select().order(" \"ID\" DESC")))
+		for (Version v : ao.find(Version.class, Query.select()))
         {
+			versions.add(v);
+        }
+
+		Collections.sort(versions, new Comparator<Version>() {
+				public int compare(Version lhs, Version rhs) {
+								// -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
+								return lhs.getID() > rhs.getID() ? -1 : (lhs.getID() < rhs.getID()) ? 1 : 0;
+				}
+		});
+
+		//iterate them
+		for(int i=0;i<versions.size();i++)
+		{
+			Version v = (Version) versions.get(i);
 			ctr++;
 			if(ctr > keepNum)
 			{
@@ -811,10 +840,64 @@ public class Craft extends HttpServlet
 				return;
 			}
 		}
-		//end public POST methods
 
 
     	String inJson = req.getParameter("jsonConfig");
+		if(iwfAction.equals("saveCustomType"))
+		{
+			//formset exists.  And, form exists...so, use the get by ID and update the values....
+
+			//TODO:  add group filter that indicates who can edit what custom type references
+
+			try
+			{
+				JSONObject inType = new JSONObject(inJson);
+
+				CustomType ct;
+
+				int ctId = new Integer(inType.getString("customTypeId")).intValue();
+				if(ctId==0)
+				{
+					//formSet must exist by ID and we need it....
+					//OK, now get the object by ID
+
+					ct =  ao.create(CustomType.class);
+				}
+				else
+				{
+					//OK, now get the object by ID
+					ct = ao.get(CustomType.class, ctId);
+				}
+
+				ct.setName(inType.getString("name"));
+				ct.setDescription(inType.getString("description"));
+				ct.setCustomType(inType.getString("customType"));
+				ct.setFieldName(inType.getString("fieldName"));
+				ct.setSettings(inType.getString("settings"));
+				ct.save();
+				final PrintWriter w = res.getWriter();
+				w.printf("{\"status\":\"OK\",\"result\":\""+ct.getID()+"\"}");
+				w.close();
+				return;
+
+			}
+			catch(JSONException e)
+			{
+				//failed json read
+				plog.error("Failed to save custom type" + e.getMessage());
+				final PrintWriter w = res.getWriter();
+				w.printf("{\"status\":\"FAIL\",message:\""+e.getMessage()+"\"}");
+				w.close();
+				return;
+			}
+    	}
+
+
+
+		//end public POST methods
+
+
+
     	if (!userManager.isSystemAdmin(username))
     	{
 				final PrintWriter w = res.getWriter();
@@ -1038,52 +1121,6 @@ public class Craft extends HttpServlet
     		{
     			//failed json read
     			plog.error("Failed to save form set config" + e.getMessage());
-	    		final PrintWriter w = res.getWriter();
-	    		w.printf("{\"status\":\"FAIL\",message:\""+e.getMessage()+"\"}");
-	    		w.close();
-	    		return;
-    		}
-    	}
-    	else if(iwfAction.equals("saveCustomType"))
-    	{
-    		//formset exists.  And, form exists...so, use the get by ID and update the values....
-    		try
-    		{
-	    		JSONObject inType = new JSONObject(inJson);
-
-				CustomType ct;
-
-
-				int ctId = new Integer(inType.getString("customTypeId")).intValue();
-				if(ctId==0)
-				{
-					//formSet must exist by ID and we need it....
-					//OK, now get the object by ID
-
-					ct =  ao.create(CustomType.class);
-				}
-				else
-				{
-					//OK, now get the object by ID
-					ct = ao.get(CustomType.class, ctId);
-				}
-
-	    		ct.setName(inType.getString("name"));
-        		ct.setDescription(inType.getString("description"));
-        		ct.setCustomType(inType.getString("customType"));
-        		ct.setFieldName(inType.getString("fieldName"));
-	    		ct.setSettings(inType.getString("settings"));
-	    		ct.save();
-	    		final PrintWriter w = res.getWriter();
-	    		w.printf("{\"status\":\"OK\",\"result\":\""+ct.getID()+"\"}");
-	    		w.close();
-	    		return;
-
-    		}
-    		catch(JSONException e)
-    		{
-    			//failed json read
-    			plog.error("Failed to save custom type" + e.getMessage());
 	    		final PrintWriter w = res.getWriter();
 	    		w.printf("{\"status\":\"FAIL\",message:\""+e.getMessage()+"\"}");
 	    		w.close();

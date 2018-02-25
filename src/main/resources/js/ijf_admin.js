@@ -29,8 +29,19 @@ helpLink:function(inLabel, inCaller)
 
 	switch(cType)
 	{
-
 		//field styles
+		case "Reference Editor":
+				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-37#" + inLabel);
+		break;
+		case "itemlistedit":
+				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-36#" + inLabel);
+		break;
+		case "itemlistHTML":
+				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-35#" + inLabel);
+		break;
+		case "GRIDHTML":
+				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-34#" + inLabel);
+		break;
 		case "historylist":
 		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-33#" + inLabel);
 		break;
@@ -1401,7 +1412,7 @@ addEditForm:function (sRow)
 		});
 
 
-		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","grouppicker","grouppickermulti","html","historylist","iframe","itemlist","itemtree","multiselect","navigatetoform","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
+		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","GRIDHTML","grouppicker","grouppickermulti","html","htmleditor","historylist","iframe","itemlist","itemlistHTML","itemtree","multiselect","navigatetoform","Reference Editor","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
 
 	    var  sectionLookup = [];
 
@@ -2282,6 +2293,7 @@ addEditForm:function (sRow)
 							text:"Preview Form",
 							handler: function(){
 							   // render a local version
+
 								ijfUtils.clearAll();
 								ijf.admin.renderForm("ijfContent",false);
 							}

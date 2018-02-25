@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "3.0.4";
+    window.g_version = "4.1.4";
 
     console.log("Initializing IJF version: " + window.g_version);
     //prevent double initializing....
@@ -194,9 +194,9 @@ function init(inConfigVersion)
 
 function processSetup(inContainerId)
 {
-
+    //ijfUtils.clearExt();
     ijfUtils.clearAll();
-    ijfUtils.clearExt();
+
     ijf.jiraMeta=null;
 
     //hook to allow non-item based forms, ie reports
@@ -333,8 +333,9 @@ function renderForm(inContainerId, inFormId, isNested, item, afterRender)
 
 	if(!isNested)
 	{
+		//ijfUtils.clearExt();
     	ijfUtils.clearAll();
-    	ijfUtils.clearExt();
+
     	ijf.main.outerForm = ijf.fw.forms[inFormId];
     	//if the ijf.admin.dWin exists, destroy it....
     	if(ijf.lists.dWin) Ext.destroy(ijf.lists.dWin);

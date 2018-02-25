@@ -32,6 +32,19 @@ renderField:function(inFormKey, item, inField, inContainer)
     try
     {
         switch(inField.controlType) {
+
+            case 'Reference Editor':
+                ijf.extUtils.renderGridRefEditor(inFormKey,item,inField,inContainer);
+                break;
+            case 'itemlistedit':
+                ijf.extUtils.renderItemListEdit (inFormKey,item,inField,inContainer);
+                break;
+            case 'itemlistHTML':
+                ijf.extUtils.renderItemlistHtml(inFormKey,item,inField,inContainer);
+                break;
+            case 'GRIDHTML':
+                ijf.extUtils.renderGridHtml(inFormKey,item,inField,inContainer);
+                break;
             case 'GRID':
                 ijf.extUtils.renderGridPanel(inFormKey,item,inField,inContainer);
                 break;
@@ -40,6 +53,9 @@ renderField:function(inFormKey, item, inField, inContainer)
                 break;
             case 'textarea':
                 ijf.extUtils.renderTextarea(inFormKey,item,inField,inContainer);
+                break;
+            case 'htmleditor':
+                ijf.extUtils.renderHtmleditor(inFormKey,item,inField,inContainer);
                 break;
             case 'formbuttons':
                 ijf.extUtils.renderFormButtons(inFormKey,item,inField,inContainer);
@@ -1342,7 +1358,7 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 	                     tForm=ijf.fw.forms[inField.referenceFilter];
 					}
 					Ext.getBody().mask("Saving...");
-					var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,inField.form,item)};
+					var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,tForm,item)};
 					window.setTimeout(saveIt,50);
 			}});
 
@@ -4575,6 +4591,13 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
                 xtype: xType,
                 text: lCaption,
                 handler: function(){
+					//bail if unsaved data
+					if(window.onbeforeunload!=null)
+                    {
+						//unsaved data
+						ijfUtils.modalDialogMessage("Info","Sorry but this form has unsaved data.  Please save then try again.");
+						return;
+					}
                     var action = {};
                     action.form = inField.dataSource;
                     //action.title = aTitle;
@@ -4783,6 +4806,227 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 }
 ,
+ renderHtmleditor:function(inFormKey,item, inField, inContainer)
+{
+
+    var collapsible = false;
+    if (inField.style.indexOf('collapsible:true')>-1)
+    {
+        collapsible=true;
+    }
+    var collapsed = false;
+    if (inField.style.indexOf('collapsed:true')>-1)
+    {
+        collapsed=true;
+    }
+
+    var panelTitle = "";
+    if (inField.style.indexOf('panelTitle:')>-1)
+    {
+        panelTitle = inField.style.substr(inField.style.indexOf('panelTitle:')+11);
+        var tPt = panelTitle.split(";");
+        panelTitle=tPt[0];
+    }
+
+    inContainer.title = inField.toolTip;
+
+	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+	var jf=item.fields[jfFieldDef.id];
+
+	var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf,false,true);
+
+	    var lAllowBlank = true;
+	    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
+
+	    var lMaxsize =  Number.MAX_VALUE;
+
+	    var lValidator = function(v){return true};
+	    var lRegex =  inField.regEx;
+	    if((lRegex!=null) && (lRegex!=""))
+	    {
+	        lValidator = function(v)
+	        {
+	            var rgx = new RegExp(lRegex);
+	            if (!rgx.exec(v)) {
+	                return inField.regExMessage;
+	            }
+	            return true;
+	        }
+	    }
+	    var hideField = ijfUtils.renderIfShowField(data,inField);
+	    var hideLabel = false;
+	    if (inField.caption=="")
+	        var lCaption = inField.dataSource;
+	    else if(inField.caption=="none")
+	    {
+	        var lCaption = "";
+	        hideLabel=true;
+	    }
+	    else
+	        var lCaption = inField.caption;
+	    if (inField.style.indexOf('hidden:true')>-1)
+	    {
+	        hideLabel=true;
+	        hideField=true;
+	    }
+	    var rOnly = false;
+	    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+	    {
+	        rOnly=true;
+	    }
+	    if (inField.style.indexOf('enteronce:true')>-1)
+	    {
+	        if (!!data) rOnly=true;
+	    }
+
+	    var l_labelStyle = inField.labelStyle;
+	    var l_panelStyle = inField.panelStyle;
+	    var l_Style = inField.style;
+	    var l_fieldStyle = inField.fieldStyle;
+
+
+	    if(!l_labelStyle) l_labelStyle="background:transparent";
+	    if(!l_panelStyle) l_panelStyle="background:transparent";
+	    if(!l_Style) l_Style="background:transparent";
+	    if(!l_fieldStyle) l_fieldStyle="background:white";
+
+		var l_Height = 'auto';
+		var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
+		if(l_Height=="")
+		{
+			l_Height='auto';
+		}
+		else
+		{
+			l_Height = l_Height.replace("px","")/1;
+		}
+		var l_Width = 'auto';
+		var l_Width=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"width");
+		if(l_Width=="")
+		{
+			l_Width='auto';
+		}
+		else
+		{
+			l_Width = l_Width.replace("px","")/1;
+		}
+
+
+		//permissions check....has to exist...
+		if(inField.permissions.enabled)
+		{
+			var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+		else
+		{
+			var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+		if((!rOnly) && (!perms.canEdit)) rOnly=true;
+		if((!hideField) && (!perms.canSee))	hideField=true;
+		//end permissions
+
+		if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
+
+
+		var collapsible = false;
+		if (inField.style.indexOf('collapsible:true')>-1)
+		{
+			collapsible=true;
+		}
+		var collapsed = false;
+		if (inField.style.indexOf('collapsed:true')>-1)
+		{
+			collapsed=true;
+		}
+
+		var panelTitle = "";
+		if (inField.style.indexOf('panelTitle:')>-1)
+		{
+			panelTitle = inField.style.substr(inField.style.indexOf('panelTitle:')+11);
+			var tPt = panelTitle.split(";");
+			panelTitle=tPt[0];
+		}
+
+	    var ocf =  ijfUtils.getEvent(inField);
+        if(rOnly)
+        {
+			var simple = new Ext.FormPanel({
+				labelAlign: 'left',
+				border:false,
+				hidden: hideField,
+				bodyStyle: l_Style,
+				items: {
+					html: data,
+					frame: false,
+					border: false,
+					bodyStyle:  l_panelStyle,
+					xtype: "panel"}
+			});
+		}
+		else
+		{
+			var simple = new Ext.FormPanel({
+				border:false,
+				hidden: hideField,
+				//layout: 'fit',
+				collapsible: collapsible,
+				collapsed: collapsed,
+				title: panelTitle,
+				width: 'auto',
+				height: 'auto',
+				bodyStyle: l_Style,
+				items:[{
+					xtype: 'htmleditor',
+					width: l_Width,
+					height: l_Height,
+					//frame: true,
+					//labelAlign: 'left',
+					//labelStyle: l_labelStyle,
+					//style: l_panelStyle,
+					//fieldStyle: l_fieldStyle,
+					//fieldLabel: lCaption,
+					//hideLabel:  hideLabel,
+					//allowBlank: lAllowBlank,
+					//maxLength: lMaxsize,
+					//validator: lValidator,
+					readOnly: rOnly,
+					value: data,
+					id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+					listeners: {
+						afterrender: function(f)
+						{
+							this.validate();
+						},
+						valid: function(f)
+						{
+							inContainer.title = inField.toolTip;
+						},
+						invalid: function(f,msg){
+							if(!inField.toolTip) inContainer.title = f.getErrors().join();
+						},
+						change: function(f,n,o){
+							ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+							if(f.isValid())
+							{
+								ocf(f,n,o);
+							}
+						}
+					}
+				}]
+			});
+		}
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple,inFormKey,item, inField, inContainer);
+
+	    simple.render(inContainer);
+	    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
+}
+,
 renderItemList:function(inFormKey,item, inField, inContainer)
 {
 
@@ -4798,6 +5042,18 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         rOnly=true;
     }
 
+    var editing = false;
+    if (inField.fieldStyle.indexOf('edit:true')>-1)
+    {
+        editing = true;
+    }
+
+    var urlkey = false;
+    if (inField.fieldStyle.indexOf('urlkey:true')>-1)
+    {
+        urlkey = true;
+    }
+
     var hideField = ijfUtils.renderIfShowField("",inField);
 
     var collapsible = true;
@@ -4810,7 +5066,6 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     {
         collapsed=true;
     }
-
 
 	    var l_labelStyle = inField.labelStyle;
 	    var l_panelStyle = inField.panelStyle;
@@ -5190,6 +5445,36 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				}
 			});
 		});
+
+	   //if editing, construct the edit meta for the row returned
+	   if(editing)
+	   {
+			var eKey = rawList.issues[0].key;
+			if(!ijf.jiraEditMeta.hasOwnProperty(eKey))
+			{
+				//this must proxy as well, if the form is proxy
+				if(inField.form.formProxy=="true")
+				{
+					//proxy auth
+					ijf.jiraEditMeta[eKey] = ijfUtils.getProxyApiCallSync('/rest/api/2/issue/'+eKey+'/editmeta',thisForm.formSet.id);
+					ijfUtils.footLog('Item edit meta aquired with proxy auth');
+				}
+				else
+				{
+					//normal
+					ijf.jiraEditMeta[eKey] = ijfUtils.getJiraIssueMetaSync(eKey);
+				}
+
+				ijf.jiraEditMetaKeyed[eKey] = [];
+				Object.keys(ijf.jiraEditMeta[eKey].fields).forEach(function(f)
+				{
+					ijf.jiraEditMetaKeyed[eKey][ijf.jiraEditMeta[eKey].fields[f].name]=ijf.jiraEditMeta[eKey].fields[f];
+				});
+			}
+			var editMeta = ijf.jiraEditMetaKeyed[eKey];
+			editMeta.transitions= ijfUtils.jiraApiSync('GET','/rest/api/2/issue/'+eKey+'/transitions', null);
+	   }
+
 	   jqlType = true;
    }
 
@@ -5246,10 +5531,75 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     //colSettingsArray.push(new Ext.grid.RowNumberer());
     //push iid as special first field...
 
+
+
+    var updateGridQuiet = function(inId,inName,inValue)
+    {
+		var taskOrderKey = null;
+		var iKey = inId;
+		var putObj = {};
+		putObj["fields"]={};
+		putObj["fields"][inName]=inValue;
+		//how to save asynch....
+		var jData = JSON.stringify(putObj);
+		var tApi = "/rest/api/2/issue/"+iKey;
+
+		return ijfUtils.jiraApiSync("PUT",tApi,jData);
+	}
+
+    var updateGrid = function(container,inName,inValue)
+    {
+		var taskOrderKey = null;
+		var iKey = container.grid.selection.data.iid;
+		var putObj = {};
+		putObj["fields"]={};
+		putObj["fields"][inName]=inValue;
+		//how to save asynch....
+		var jData = JSON.stringify(putObj);
+		var tApi = "/rest/api/2/issue/"+iKey;
+		var cRow = container.grid.selection;//container.grid.selection.data.index;
+
+        var onsuccess =  function(data,e,f) {
+                 ijfUtils.footLog("Successful data response code: " + f.status);
+                 if((f.status==200) || (f.status==201) || (f.status==204))
+                 {
+					var delayCommit = function() {cRow.commit()};
+					window.setTimeout(delayCommit,300);
+				 }
+				 else
+				 {
+					 ijfUtils.modalDialogMessage('Error','Sorry a network error prevented the field from saving.');
+				 }
+        };
+        var onerror = function(e) {
+				 if(e.status==201)
+                 {
+				 	var delayCommit = function() {cRow.commit()};
+					window.setTimeout(delayCommit,300);
+				 }
+                 else
+                 {
+                     ijfUtils.footLog("Failed data post: " + " "  + e.statusText);
+                     ijfUtils.modalDialogMessage('Error','Sorry a network error prevented the field from saving.');
+                 }
+	    };
+		ijfUtils.jiraApi("PUT",tApi,jData,onsuccess,onerror);
+	}
+
+
     //look for key, hide if not there...
 	var hideKey=true;
     if(inField.dataReference.indexOf("key")>-1) hideKey=false;
 
+    gridFieldArray.push({name: "iid", type: "string"});
+    colSettingsArray.push({
+        header: "iid",
+        dataIndex: "iid",
+        hidden: true,
+        style: l_labelStyle,
+        width: 0
+    });
+    /*
     gridFieldArray.push({name: "iid", type: "string"});
     colSettingsArray.push({
         header: colMeta["key"].header,
@@ -5260,11 +5610,31 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         sortable: true
     });
 	delete colMeta["key"];
-
+ 	*/
     Object.keys(colMeta).forEach(function(k){
 		var f = colMeta[k];
 		if(f.schema.type=="date")
 		{
+			var editor = null;
+			if(editing)
+			{
+				var editor = {
+					completeOnEnter: true,
+					field: {
+						xtype: 'datefield',
+						format: 'm/d/y',
+						listeners: {
+							focusleave: function(n,o,f)
+							{
+								if(n.lastValue==n.originalValue) return;
+								var container = n.up();
+								if(!container) return;
+								updateGrid(container,n.name,moment(n.lastValue).format("YYYY-MM-DD"));
+							}
+						}
+					}
+				};
+			}
 			gridFieldArray.push({name: f.id, type: "date"});
 			colSettingsArray.push({
 				header: f.header,
@@ -5274,6 +5644,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				width: f.width,
 				style: l_labelStyle,
 				format: 'm/d/y',
+				editor: editor,
 				filter: {
 				  type: 'date'
 	            }
@@ -5281,6 +5652,29 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 		}
 		else if(f.schema.type=="datetime")
 		{
+			var editor = null;
+			if(editing)
+			{
+				if(f.id=="duedate")
+				{
+					var editor = {
+						completeOnEnter: true,
+						field: {
+							xtype: 'datefield',
+							format: 'm/d/y',
+							listeners: {
+								focusleave: function(n,o,f)
+								{
+									if(n.lastValue==n.originalValue) return;
+									var container = n.up();
+									if(!container) return;
+									updateGrid(container,n.name,moment(n.lastValue).format("YYYY-MM-DD"));
+								}
+							}
+						}
+					};
+				}
+			}
 			gridFieldArray.push({name: f.id, type: "date"});
 			colSettingsArray.push({
 				header: f.header,
@@ -5290,13 +5684,164 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				width: f.width,
 				style: l_labelStyle,
 				format: 'm/d/y',
+				editor: editor,
 				filter: {
 				  type: 'date'
 	            }
 			});
 		}
+	else if(f.schema.type=="datetime")
+		{
+			var editor = null;
+			if(editing)
+			{
+				if(f.id=="duedate")
+				{
+					var editor = {
+						completeOnEnter: true,
+						field: {
+							xtype: 'datefield',
+							format: 'm/d/y',
+							listeners: {
+								focusleave: function(n,o,f)
+								{
+									if(n.lastValue==n.originalValue) return;
+									var container = n.up();
+									if(!container) return;
+									updateGrid(container,n.name,moment(n.lastValue).format("YYYY-MM-DD"));
+								}
+							}
+						}
+					};
+				}
+			}
+			gridFieldArray.push({name: f.id, type: "date"});
+			colSettingsArray.push({
+				header: f.header,
+				dataIndex: f.id,
+				xtype: 'datecolumn',
+				sortable: true,
+				width: f.width,
+				style: l_labelStyle,
+				format: 'm/d/y',
+				editor: editor,
+				filter: {
+				  type: 'date'
+	            }
+			});
+		}
+		else if(f.schema.type=="user")
+		{
+			var editor = null;
+			if(editing)
+			{
+
+				var apiUrl = "/rest/api/2/user/picker";
+				var	fParam = "query";
+				var xtrParam = null;
+				var uRoot = 'users';
+				if(f.schema.system=="assignee")
+				{
+					apiUrl = "/rest/api/2/user/assignable/search";
+					fParam = "username";
+					xtrParam={project:inField.form.formSet.projectId};
+					uRoot = '';
+				}
+     		    Ext.define('JiraUserModel'+f.id, {
+			        extend: 'Ext.data.Model',
+			        fields: [{name:'name', type: 'string'},
+			                 {name: 'displayName', type: 'string'}]
+    		    });
+
+				var lookup = Ext.create('Ext.data.Store', {
+					storeId: 'userDropdownId'+f.id,
+					model: 'JiraUserModel'+f.id,
+					autoLoad: false,
+					proxy: {
+						type: 'ajax',
+						url: g_root + apiUrl,
+						extraParams : xtrParam,
+						filterParam: fParam,
+						groupParam: '',
+						limitParam: '',
+						pageParam: '',
+						sortParam: '',
+						startParam: '',
+						reader: {
+							type: 'json',
+							root: uRoot
+						}
+					}
+				});
+
+				var editor = {
+					completeOnEnter: true,
+					field: {xtype: 'combobox',
+								store: lookup,
+								displayField: 'displayName',
+								valueField: 'name',
+								labelAlign: 'left',
+								value: f.id,
+								hideTrigger: true,
+								triggerAction: 'all',
+								queryMode: 'remote',
+								queryParam: fParam,
+								minChars: 2,
+								emptyText:'Start typing...',
+								selectOnFocus:true,
+								listeners: {
+									focusleave: function(f,n,o){
+										if(f.originalValue==f.value) return;
+										var newVal = f.value;
+										var container = f.up();
+										if(!container) return;
+										updateGrid(container,f.name,{"name":newVal});
+									}
+								}
+
+					}
+				};
+			}
+			gridFieldArray.push({name: f.id, type: "string"});
+			colSettingsArray.push({
+				header: f.header,
+				dataIndex: f.id,
+				sourceField: f,
+				sortable: true,
+				width: f.width,
+				style: l_labelStyle,
+				editor: editor,
+				filter: {
+				  type: 'list'
+	            }
+			});
+		}
 		else
 		{
+			//add editing capability...
+			var editor = null;
+			if((editing) && (f.schema.type!="status"))
+			{
+				if(f.id=="summary")
+				{
+					var editor = {
+						completeOnEnter: true,
+						field: {
+							xtype:'textfield',
+							//allowBlank: (col.required!="Yes"),
+							listeners: {
+								focusleave: function(n,o,f)
+								{
+									if(n.lastValue==n.originalValue) return;
+									var container = n.up();
+									if(!container) return;
+									updateGrid(container,n.name,n.lastValue);
+								}
+							}
+						}
+					};
+				}
+			}
 			var fType = 'list';
 			if(f.id=="summary") fType='string';
 			gridFieldArray.push({name: f.id, type: "string"});
@@ -5307,6 +5852,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				width: f.width,
 				style: l_labelStyle,
 				sortable: true,
+				editor: editor,
 				filter: {
 				  type: fType
 	            }
@@ -5483,6 +6029,9 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 											});
 											//retObj.iid=i.id;
 											retObj.iid=i.key;
+											retObj.key = i.key
+											if(urlkey) retObj.key="<a href='/browse/"+i.key+"' target='_blank'>"+i.key+"</a>";
+
 											return retObj;
 										});
 								if(ijf.snippets.hasOwnProperty(inField.referenceFilter)) dataItems = ijf.snippets[inField.referenceFilter](dataItems);
@@ -5518,11 +6067,146 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     	};
 	}
 
+    if(editing)
+    {
+		var gridMenu = new Ext.menu.Menu({ items:
+		[
+             { text: 'Add', handler: function()  {
+
+					//add the issue with "new item" summary and insert into grid no refresh...
+
+					//Issue type and link type = referenceFilter:type
+					//links:  normal,  child,  normal-related
+					//[issuetype]:[normal|child|related]
+					//normal and child require a currentItem
+        			if(!inField.referenceFilter)
+					{
+						ijfUtils.modalDialogMessage("Error","Field Reference Filter must be valid issuetype");
+						return;
+					}
+					var iTypeParts = inField.referenceFilter.split(":");
+					var iProject = iTypeParts[0];
+					var iType = iTypeParts[1];
+					var iLink = "normal";
+					if(iTypeParts.length==3) iLink=iTypeParts[2];
+
+					if((!iProject) || (!iType))
+					{
+						ijfUtils.modalDialogMessage("Error","Unable to determine project and type from reference filter.");
+						return;
+					}
+
+
+					if((iLink=="child") || (iLink=="related"))
+					{
+						if(!ijf.currentItem)
+						{
+							ijfUtils.modalDialogMessage("Error","There must be a current item in memory for this type of add.");
+							return;
+						}
+					}
+
+
+					var putObj = {};
+					putObj["fields"]={};
+					putObj["fields"]["summary"]="(enter new summary here)";
+        			putObj.fields.project = {"key":iProject};
+        			//Parent ID and Issue Type must be set
+        			putObj.fields.issuetype = {"name":iType};
+
+        			if(iLink=="child")
+        			{
+						putObj["fields"]["parent"]={"key":ijf.currentItem.key};
+					}
+
+					var jData = JSON.stringify(putObj);
+					var tApi = "/rest/api/2/issue";
+					saveRes = ijfUtils.jiraApiSync("POST",tApi,jData);
+					//saveRes is the Key of the new issue if successfull,
+					if(saveRes.key)
+					{
+					   if(iLink=="related")
+					   {
+							//now create the relationship
+							var jsonString = {
+												"type": {
+													"name": "Relates"
+												   },
+												"inwardIssue": {
+													"key": ijf.currentItem.key
+												   },
+												"outwardIssue": {
+													"key": saveRes.key
+												   },
+												"comment":{
+													"body":"Linked related issue"
+												  }
+								};
+								var saveRelRes = ijfUtils.jiraApiSync("POST","/rest/api/2/issueLink",JSON.stringify(jsonString));
+								if(saveRelRes!="OK")
+								{
+									ijfUtils.modalDialogMessage("Error","Unable to establish the issue link: " + saveRes);
+									return;
+								}
+					   }
+
+						//reload the current form....
+					   var resetForm = function(){   ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);};
+					   window.setTimeout(resetForm,50);
+					   return;
+
+					}
+					else
+					{
+						ijfUtils.modalDialogMessage("Error","Sorry, there was an error with the add: " + saveRes);
+					}
+				} },
+ 				{text: 'Delete Task', handler: function()  {
+					var rId = grid.selection.data.iid
+
+					var delFunc = function()
+					{
+						var tApi = "/rest/api/2/issue/"+rId;
+						var delRes = ijfUtils.jiraApiSync("DELETE",tApi,null);
+						try
+						{
+							if(delRes=="OK")
+							{
+							   var resetForm = function(){   ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);};
+							   window.setTimeout(resetForm,50);
+							   return;
+							}
+							else
+							{
+								ijfUtils.modalDialogMessage("Error","Unable to delete all the issue");
+								return;
+							}
+						}
+						catch(e)
+						{
+							ijfUtils.modalDialogMessage("Error","Sorry, there was an error with the delete: " + e.message);
+							return
+						}
+				    }
+				    ijfUtils.modalDialog("Warning","You are about to permanently remove this item, continue?",delFunc);
+				} }
+		]});
+	}
+
+    var plugins = ['gridfilters'];
+    if(editing)
+    {
+		plugins.push({
+			ptype: 'cellediting',
+			clicksToEdit: 1
+        });
+	}
+
     var l_tbar=[];
     var lXtype="";
     var grid= new Ext.grid.GridPanel({
         store: store,
-        plugins: 'gridfilters',
+        plugins: plugins,
         style: l_panelStyle,
         height: l_Height,
         width: "100%",
@@ -5596,6 +6280,8 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         style: l_Style,
         items: [grid]
     });
+
+
 	//before render....
 	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](layout, inFormKey,item, inField, inContainer);
 
@@ -5604,6 +6290,15 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     ijf.main.controlSet[thisControl.id]=thisControl;
     //after render....
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](layout, inFormKey,item, inField, inContainer);
+
+	if(editing)
+	{
+		grid.getEl().on('contextmenu', function(e) {
+				e.preventDefault();
+				gridMenu.showAt(e.clientX+window.pageXOffset,e.clientY+window.pageYOffset);
+		});
+	}
+
 },
 
 renderItemTree:function(inFormKey,item, inField, inContainer)
@@ -6430,10 +7125,290 @@ treeMenu.add({  text: 'Move Down', handler: function()  {
     //lastly disable context menu for this element
 	tree.getEl().on('contextmenu', function(e) {
   	    e.preventDefault();
-		treeMenu.showAt(e.clientX,e.clientY);
+		treeMenu.showAt(e.clientX+window.pageXOffset,e.clientY+window.pageYOffset);
 	});
 
 },
+renderItemlistHtml:function(inFormKey,item, inField, inContainer)
+{
+	inContainer.title = inField.toolTip;
+	var l_labelStyle = inField.labelStyle;
+	var l_panelStyle = inField.panelStyle;
+	var l_fieldStyle = inField.fieldStyle;
+	var l_Style = inField.style;
+
+	if(!l_labelStyle) l_labelStyle="background:transparent";
+	if(!l_panelStyle) l_panelStyle="background:transparent";
+	if(!l_Style) l_Style="background:transparent";
+    if(!l_Style) l_Style = l_panelStyle;
+//get type definition
+
+    inContainer.title = inField.toolTip;
+
+
+       var translateFields = ijfUtils.translateJiraFieldsToIds(inField.dataReference);
+
+	   var lds = inField.dataSource;
+
+        var tSearch = "jql="+lds+"&fields="+translateFields;
+ 	    tSearch = ijfUtils.replaceKeyValues(tSearch,item);
+		var aUrl = '/rest/api/2/search?'+tSearch;
+
+        if(inField.form.formProxy=="true")
+        {
+			aUrl=aUrl.replace(/ /g,"%20");
+ 	   		var rawList = ijfUtils.getProxyApiCallSync(aUrl, inField.form.formSet.id);
+	    }
+	    else
+	    {
+		    var rawList = ijfUtils.jiraApiSync('GET',aUrl, null);
+		}
+
+        var colMeta = [];
+        var dataItems = rawList.issues.map(function(i){
+			var retObj ={};
+			translateFields.split(",").forEach(function(f){
+				var thisField = f.trim();
+				var dVal = "unknown";
+				var jField = ijfUtils.getJiraFieldById(thisField);
+				if(i.fields.hasOwnProperty(jField.id))
+				{
+					dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
+					//perhaps build the types here...
+					colMeta[jField.id]=jField;
+				}
+				retObj[thisField]= dVal;
+			});
+			//retObj.iid=i.id;
+			retObj.iid=i.key;
+			retObj.key=i.key;
+			return retObj;
+		});
+
+
+
+	var colWidths=[];
+	var colHeaders = [];
+	if(inField.tableWidths) colWidths=inField.tableWidths.split(",");
+	if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
+
+	//create Table from Json
+    var gCols = translateFields.split(",");
+
+    var tOut = "<table id="+inFormKey+'_tbl_'+inField.formCell.replace(",","_")+" cellspacing=0 cellpadding=4 style='"+l_fieldStyle+"'><tr>";
+    var cIndex=0;
+    gCols.forEach(function(col){
+			var thisColWidth = 120;
+			if(colWidths[cIndex]) thisColWidth=colWidths[cIndex]/1;
+			var thisColHeader = col.columnName;
+			if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+			var thStyle = "width:"+thisColWidth + ";"+l_labelStyle;
+		    tOut += "<td style='"+thStyle+"'>"+thisColHeader+"</td>";
+		    cIndex++;
+	});
+    tOut += "</tr>";
+    if(dataItems)
+    {
+		try
+		{
+			dataItems.forEach(function(r){
+			    tOut += "<tr>";
+				gCols.forEach(function(col){
+					var outVal = r[col];
+					var cMeta = colMeta[col];
+					if((cMeta) && (cMeta.schema))
+					{
+						switch(cMeta.schema.type)
+						{
+							case "date":
+								if(col.format) outVal = Ext.util.Format.dateRenderer('dd/mm/yyyy')(outVal); //moment(val).format(col.format);
+								break;
+							case "datetime":
+								if(col.format) outVal = Ext.util.Format.dateRenderer('dd/mm/yyyy')(outVal); //moment(val).format(col.format);
+								break;
+							case "numberfield":
+								if(col.format) outVal = Ext.util.Format.numberRenderer(col.format)(outVal); //moment(val).format(col.format);
+								break;
+							default:
+						}
+					}
+					tOut += "<td>"+outVal+"</td>";
+				});
+			    tOut += "</tr>";
+			});
+
+		}
+		catch(e)
+		{
+			throw('Failed to parse the grid json');
+		}
+	}
+    tOut += "</table>";
+
+
+    var outHtml = tOut;
+
+    //rendeIf logic
+    var hideField = ijfUtils.renderIfShowField("",inField);
+
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
+    var pnl = new Ext.FormPanel({
+        labelAlign: 'left',
+        border:false,
+        hidden: hideField,
+        bodyStyle: l_Style,
+        items: {
+            html: outHtml,
+            frame: false,
+            border: false,
+            bodyStyle:  l_panelStyle,
+            xtype: "panel"}
+    });
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](pnl,inFormKey,item, inField, inContainer);
+    pnl.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
+
+}
+,
+renderGridHtml:function(inFormKey,item, inField, inContainer)
+{
+	inContainer.title = inField.toolTip;
+	var l_labelStyle = inField.labelStyle;
+	var l_panelStyle = inField.panelStyle;
+	var l_fieldStyle = inField.fieldStyle;
+	var l_Style = inField.style;
+
+	if(!l_labelStyle) l_labelStyle="background:transparent";
+	if(!l_panelStyle) l_panelStyle="background:transparent";
+	if(!l_Style) l_Style="background:transparent";
+    if(!l_Style) l_Style = l_panelStyle;
+//get type definition
+	var thisT = {};
+    for(var tF in ijf.fw.CustomTypes){
+		if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+  		if(ijf.fw.CustomTypes[tF].name==inField.dataSource) thisT=ijf.fw.CustomTypes[tF];
+	}
+
+	if(!thisT)	throw("Invalid type name: " + inField.dataSource);
+
+    inContainer.title = inField.toolTip;
+
+	var jfFieldMeta = ijf.jiraMetaKeyed[thisT.fieldName];
+	var jfFieldDef = ijf.jiraFieldsKeyed[thisT.fieldName];
+	var jf=item.fields[jfFieldDef.id];
+
+	var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+
+	var colWidths=[];
+	var colHeaders = [];
+	if(inField.tableWidths) colWidths=inField.tableWidths.split(",");
+	if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
+
+	//create Table from Json
+    var gCols = JSON.parse(thisT.settings);
+    //order by order
+    gCols = gCols.sort(function(a,b){return (a.order-b.order);});
+    var cIndex = 0;
+    //write out the header
+
+    var tOut = "<table id="+inFormKey+'_tbl_'+inField.formCell.replace(",","_")+" cellspacing=0 cellpadding=4 style='"+l_fieldStyle+"'><tr>";
+    gCols.forEach(function(col){
+			var thisColWidth = 120;
+			if(colWidths[cIndex]) thisColWidth=colWidths[cIndex]/1;
+			var thisColHeader = col.columnName;
+			if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+			var thStyle = "width:"+thisColWidth + ";"+l_labelStyle;
+		    tOut += "<td style='"+thStyle+"'>"+thisColHeader+"</td>";
+		    cIndex++;
+	});
+    tOut += "</tr>";
+    if(data)
+    {
+		try
+		{
+			var cts = JSON.parse(data);
+			cts.forEach(function(r){
+			    tOut += "<tr>";
+				gCols.forEach(function(col){
+					var outVal = r[col.columnName];
+					switch(col.controlType)
+					{
+						case "datefield":
+							if(col.format) outVal = Ext.util.Format.dateRenderer(col.format)(outVal); //moment(val).format(col.format);
+							break;
+						case "numberfield":
+							if(col.format) outVal = Ext.util.Format.numberRenderer(col.format)(outVal); //moment(val).format(col.format);
+							break;
+						default:
+					}
+					tOut += "<td>"+outVal+"</td>";
+				});
+			    tOut += "</tr>";
+			});
+
+		}
+		catch(e)
+		{
+			throw('Failed to parse the grid json');
+		}
+	}
+    tOut += "</table>";
+
+
+    var outHtml = tOut;
+
+    //rendeIf logic
+    var hideField = ijfUtils.renderIfShowField("",inField);
+
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
+    var pnl = new Ext.FormPanel({
+        labelAlign: 'left',
+        border:false,
+        hidden: hideField,
+        bodyStyle: l_Style,
+        items: {
+            html: outHtml,
+            frame: false,
+            border: false,
+            bodyStyle:  l_panelStyle,
+            xtype: "panel"}
+    });
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](pnl,inFormKey,item, inField, inContainer);
+    pnl.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
+
+}
+,
 renderGridPanel:function(inFormKey,item, inField, inContainer)
 {
 	//get type definition
@@ -6534,6 +7509,15 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
     {
         collapsed=true;
     }
+
+	var features = null;
+    if (l_fieldStyle.indexOf('sums:true')>-1)
+    {
+        features=[{
+		        ftype: 'summary'
+		        }];
+    }
+
 
 	var l_Height = 300;
     var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
@@ -6881,6 +7865,24 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 	var headerButtons =[];
 		headerButtons.push({
 						xtype:'button',
+						text: 'Save',
+						scope: this,
+						handler: function(){
+							 //create record...
+							var onSuccessSave = function()
+							{
+								ijfUtils.hideProgress();
+								if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
+								ijf.main.setAllClean();
+								ijf.main.resetForm();
+							};
+							Ext.getBody().mask("Saving...");
+							var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,inField.form,item)};
+							window.setTimeout(saveIt,50);
+						}
+					});
+		headerButtons.push({
+						xtype:'button',
 						text: 'Add Row',
 						scope: this,
 						handler: function(){
@@ -6994,7 +7996,6 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 		},
         store: gridStore,
         width:l_Width,
-        plugins: 'gridfilters',
         id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
         //reserveScrollOffset: true,
         columns: listColumns,
@@ -7003,10 +8004,11 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
         collapsed: collapsed,
         selModel: 'cellmodel',
         disabled: rOnly,
-		plugins: {
+        features: features,
+		plugins: ['gridfilters',{
 			ptype: 'cellediting',
 			clicksToEdit: 1
-        }
+        }]
     });
 
 	gridStore.parentGridPanel = gridPanel;
@@ -7031,6 +8033,365 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 		});
 		return retVal;
 	};
+
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](gridPanel,inFormKey,item, inField, inContainer);
+
+    gridPanel.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, gridPanel, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](gridPanel, inFormKey,item, inField, inContainer);
+}
+,
+renderGridRefEditor:function(inFormKey,item, inField, inContainer)
+{
+	//get type definition
+	var thisT = {};
+    for(var tF in ijf.fw.CustomTypes){
+		if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+  		if(ijf.fw.CustomTypes[tF].name==inField.dataSource) thisT=ijf.fw.CustomTypes[tF];
+	}
+
+	if(!thisT)	throw("Invalid type name: " + inField.dataSource);
+
+    inContainer.title = inField.toolTip;
+
+	var data = ijfUtils.getReferenceDataRaw(thisT.name);
+
+
+    if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
+
+    var lMaxsize =  Number.MAX_VALUE;
+
+    var lValidator = function(v){return true};
+    var lRegex =  inField.regEx;
+    if((lRegex!=null) && (lRegex!=""))
+    {
+        lValidator = function(v)
+        {
+            var rgx = new RegExp(lRegex);
+            if (!rgx.exec(v)) {
+                return inField.regExMessage;
+            }
+            return true;
+        }
+    }
+    var hideField = ijfUtils.renderIfShowField(data,inField);
+    var hideLabel = false;
+    if (inField.caption=="")
+        var lCaption = inField.dataSource;
+    else if(inField.caption=="none")
+    {
+        var lCaption = "";
+        hideLabel=true;
+    }
+    else
+        var lCaption = inField.caption;
+    if (inField.style.indexOf('hidden:true')>-1)
+    {
+        hideLabel=true;
+        hideField=true;
+    }
+
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+    if (inField.style.indexOf('enteronce:true')>-1)
+    {
+        if (!!data) rOnly=true;
+    }
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
+	//if(rOnly) l_fieldStyle="background:lightgray";
+
+    var ocf =  ijfUtils.getEvent(inField);
+
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
+    var collapsible = true;
+    if (l_fieldStyle.indexOf('collapsible:false')>-1)
+    {
+        collapsible=false;
+    }
+    var collapsed = false;
+    if (l_fieldStyle.indexOf('collapsed:true')>-1)
+    {
+        collapsed=true;
+    }
+
+	var features = null;
+    if (l_fieldStyle.indexOf('sums:true')>-1)
+    {
+        features=[{
+		        ftype: 'summary'
+		        }];
+    }
+
+	var l_Height = 300;
+    var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
+    if(l_Height=="")
+    {
+		l_Height=300;
+	}
+	else
+	{
+    	l_Height = l_Height.replace("px","")/1;
+	}
+
+	var l_Width = 600;
+    var l_Width=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"width");
+    if(l_Width=="")
+    {
+		l_Width=600;
+	}
+	else
+	{
+    	l_Width = l_Width.replace("px","")/1;
+	}
+
+	var colWidths=[];
+	var colHeaders = [];
+	if(inField.tableWidths) colWidths=inField.tableWidths.split(",");
+	if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
+
+    //The grid setup....
+    var listColumns = [];
+    var tFields = [];
+    var lookups = [];
+
+    var gCols = Object.keys(data[0]);
+
+    var cIndex = 0;
+    var lookups = [];
+
+
+    gCols.forEach(function(col){
+
+		var thisColWidth = 120;
+		if(colWidths[cIndex]) thisColWidth=colWidths[cIndex]/1;
+		var thisColHeader = col;
+		if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+
+		tFields.push({name: col, type: 'string'});
+
+		listColumns.push({
+				header: thisColHeader,
+				sortable: true,
+				hidden: false,
+				width: thisColWidth,
+				dataIndex: col,
+				filter: {
+					type: 'list'
+				},
+				editor: {
+					completeOnEnter: true,
+					field: {
+						xtype: 'textfield',
+						allowBlank: true,
+						listeners: {
+							change: function(n,o,f)
+							{
+
+							},
+							focus: function(){
+
+							}
+						}
+					}
+				}
+		});
+
+		cIndex++;
+	});
+
+    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(",","_")))
+    {
+        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(",","_"), {
+            extend: 'Ext.data.Model',
+            fields: tFields
+        });
+    }
+
+    var gridStore = new Ext.data.Store({
+        model: inFormKey+'_mdl_'+inField.formCell.replace(",","_")
+    });
+	gridStore.ijfCols = gCols;
+
+	if(data)
+    {
+		gridStore.loadData(data);
+	}
+
+	var headerButtons =[];
+		headerButtons.push({
+						xtype:'button',
+						text: 'Save Values',
+						scope: this,
+						handler: function(){
+							 //save values..
+							var gridData = gridStore.getData();
+							var dataArray = gridData.items.map(function(r){return r.data;});
+							//sanitize grid
+							dataArray = dataArray.map(function(r){delete r.id; return Object.keys(r).map(function(c){return r[c]}).join("\t")}).join("\n");
+
+							thisT.settings = JSON.stringify(dataArray);
+							var jOut = {
+										customTypeId: thisT.id,
+										name: thisT.name,
+										description: thisT.description,
+										customType: thisT.customType,
+										fieldName: thisT.fieldName,
+										settings: JSON.stringify(thisT.settings)
+							};
+							var jdata = JSON.stringify(jOut);
+							var sStat = ijfUtils.saveJiraFormSync(jdata,"saveCustomType");
+							if(isNaN(sStat))
+							{
+								ijfUtils.modalDialogMessage("Save Error","Sorry, something went wrong with the save: " + sStat);
+							}
+							else
+							{
+								gridData.items.forEach(function(r){r.commit()});
+								ijfUtils.modalDialogMessage("Info","Saved");
+							}
+						}
+					});
+		headerButtons.push({
+						xtype:'button',
+						text: 'Add Row',
+						scope: this,
+						handler: function(){
+							 //create record...
+							var newRecord = {id:Ext.id()};
+							gCols.forEach(function(col){
+								newRecord[col.columnName]=col["default"];
+							});
+							 //gridStore.parentGridPanel.stopEditing();
+							var position = gridStore.getCount();
+							gridStore.insert(position, newRecord);
+						}
+					});
+		headerButtons.push({
+						xtype:'button',
+						text: 'Delete Row',
+						scope: this,
+						handler: function(){
+							var selection = gridStore.parentGridPanel.getSelection();
+							if (selection) {
+								selection.forEach(function(r){
+									gridStore.remove(r);
+								});
+							}
+						}
+					});
+		headerButtons.push({
+					xtype:'button',
+					text:"Clear All",
+					scope: this,
+					handler: function(){
+					   //need the formset ID...
+					   var clearGridRows = function(){
+							gridStore.getData().each(function(r){
+									gridStore.remove(r);
+							});
+					   };
+					   ijfUtils.modalDialog("Warning","You are about to remove all rows, are you sure?",clearGridRows);
+					}
+				});
+		headerButtons.push({
+					xtype:'button',
+					text: 'Download',
+					margin: '0 0 0 20',
+					scope: this,
+					handler: function(){
+						var outStr = "";
+						gridStore.ijfCols
+						gridStore.getData().each(function(r){
+							gridStore.ijfCols.forEach(function(c){
+								if(r.data.hasOwnProperty(c))
+								{
+									outStr+="\"" + r.data[c] + "\","
+								}
+								else
+								{
+									outStr+=",";
+								}
+							});
+							outStr+="\n";
+						});
+						var blob = new Blob([outStr], {type: "text/plain;charset=utf-8"});
+						saveAs(blob,inField.dataSource+".csv");
+					}
+				});
+			headerButtons.push({
+				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upGrdFrm_'+inField.formCell.replace(",","_")+"'><input id='"+inFormKey+'_upGrd_'+inField.formCell.replace(",","_")+"' type='file' name='file' onchange='ijfUtils.gridUploadCsvFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(",","_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\");'></form>",
+				frame: false,
+				hidden: true,
+				border: false,
+			    xtype: "panel"});
+			headerButtons.push({
+				xtype:'button',
+				text:"Upload",
+				scope: this,
+				handler: function(){
+				   //need the formset ID...
+				   var jKey = '#'+inFormKey+'_upGrd_'+inField.formCell.replace(",","_");
+				   jQuery(jKey).val("");
+				   jQuery(jKey).trigger('click');
+				}
+			});
+
+    var gridPanel = new Ext.grid.GridPanel({
+		 title: lCaption,
+		 style: l_Style,
+		 hidden: hideField,
+		 bodyStyle: l_panelStyle,
+		 height: l_Height,
+		 header:{
+				titlePosition: 0,
+				items: headerButtons
+		},
+        store: gridStore,
+        width:l_Width,
+        id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+        //reserveScrollOffset: true,
+        columns: listColumns,
+        frame: true,
+        collapsible: collapsible,
+        collapsed: collapsed,
+        selModel: 'cellmodel',
+        disabled: rOnly,
+        features: features,
+		plugins: ['gridfilters',{
+			ptype: 'cellediting',
+			clicksToEdit: 1
+        }]
+    });
+
+	gridStore.parentGridPanel = gridPanel;
 
     //before render....
     if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](gridPanel,inFormKey,item, inField, inContainer);

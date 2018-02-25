@@ -495,7 +495,6 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 {
 
 
-
     //OK, value in the control, is now the value you want to save...
     //need to switch on the type of control, text or grid
 	var tSection = ijfUtils.getFieldDef(ijf.main.itemId,this.field.dataSource);
@@ -615,7 +614,14 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 			case 'string':
 				//std text value
 				//in cases where a multiselect control with ijfReference i need special handling for this
-				if(this.field.controlType=="multiselect")
+				if(this.field.controlType=="htmleditor")
+				{
+					//need to get html...
+
+					 var b = this.control.items.items[0].getEditorBody();
+					 this.newVal =  b.outerHTML;
+				}
+				else if(this.field.controlType=="multiselect")
 				{
 					//value is array.  get the array, switch to actual array values from ijfReference, save a json
 					var vArr = this.control.items.items[0].getValue();
