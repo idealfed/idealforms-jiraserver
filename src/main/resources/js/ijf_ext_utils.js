@@ -277,6 +277,12 @@ renderField:function(inFormKey, item, inField, inContainer)
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
+
+	//context item might change for call  save these...
+	var tempJiraMeta = ijf.jiraMeta;
+	var tempJiraMetaKeyed =	ijf.jiraMetaKeyed;
+
+
     if(collapsible)
     {
 		var l_labelStyle = inField.labelStyle;
@@ -323,6 +329,23 @@ renderField:function(inFormKey, item, inField, inContainer)
 	    //after render....
 	    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
 
+		if((collapsible) && (!collapsed))
+		{
+			simple.collapse(true);
+			//collapse exap
+			var closePanel = function()
+			{
+				if(!simple.collapsed) simple.collapse(true);
+			}
+			var openPanel = function()
+			{
+				if(simple.collapsed) simple.expand(true);
+			}
+
+			window.setTimeout(closePanel,40);
+			window.setTimeout(openPanel,400);
+
+		}
     }
     else
     {
@@ -333,6 +356,9 @@ renderField:function(inFormKey, item, inField, inContainer)
 	    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](null, inFormKey,item, inField, inContainer);
 
     }
+    //reset context meta...
+    ijf.jiraMeta= tempJiraMeta;
+	ijf.jiraMetaKeyed= tempJiraMetaKeyed;
     ijf.main.gSubformParams=null;
 }
 ,
@@ -5116,6 +5142,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 	   			});
 	   			//retObj.iid=i.id;
 	   			retObj.iid=i.key;
+	   			retObj.key=i.key;
 	   			return retObj;
 		});
 		dataItems = dataItems.sort(function(a, b)
@@ -5599,6 +5626,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         style: l_labelStyle,
         width: 0
     });
+    if(hideKey) delete colMeta["key"];
     /*
     gridFieldArray.push({name: "iid", type: "string"});
     colSettingsArray.push({
@@ -6241,10 +6269,14 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				var tEvent = this.ijfForm.tableDblClick;
 				if(ijf.fw.forms.hasOwnProperty(tEvent))
 				{
-					ijf.currentItem=null;
-                    ijf.main.itemId= record.data.iid;
-                    window.g_formId=tEvent;
-                    ijf.main.processSetup("ijfContent");
+					ijfUtils.showProgress();
+					var renderForm = function(){
+						ijf.currentItem=null;
+						ijf.main.itemId= record.data.iid;
+						window.g_formId=tEvent;
+						ijf.main.processSetup("ijfContent");
+					}
+					window.setTimeout(renderForm,50);
 					return;
 				}
 				//look for snippet...
@@ -6503,7 +6535,9 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
                  ijfUtils.footLog("Successful data response code: " + f.status);
                  if((f.status==200) || (f.status==201) || (f.status==204))
                  {
-					var delayCommit = function() {cRow.commit()};
+					var delayCommit = function() {
+						cRow.commit()
+					};
 					window.setTimeout(delayCommit,300);
 				 }
 				 else
@@ -6551,6 +6585,7 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
     });
 	delete colMeta["key"];
 
+
     Object.keys(colMeta).forEach(function(k){
 		var f = colMeta[k];
 		if(f.schema.type=="date")
@@ -6584,6 +6619,83 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 				  type: 'date'
 	            }
 			});
+		}
+		else if(f.schema.type=="option")
+		{
+			//need metadata of the tree issues
+
+			var eKey = dataItems[0].iid;
+			if(!ijf.jiraEditMeta.hasOwnProperty(eKey))
+			{
+				//this must proxy as well, if the form is proxy
+				if(inField.form.formProxy=="true")
+				{
+					//proxy auth
+					ijf.jiraEditMeta[eKey] = ijfUtils.getProxyApiCallSync('/rest/api/2/issue/'+eKey+'/editmeta',thisForm.formSet.id);
+					ijfUtils.footLog('Item edit meta aquired with proxy auth');
+				}
+				else
+				{
+					//normal
+					ijf.jiraEditMeta[eKey] = ijfUtils.getJiraIssueMetaSync(eKey);
+				}
+
+				ijf.jiraEditMetaKeyed[eKey] = [];
+				Object.keys(ijf.jiraEditMeta[eKey].fields).forEach(function(f)
+				{
+					ijf.jiraEditMetaKeyed[eKey][ijf.jiraEditMeta[eKey].fields[f].name]=ijf.jiraEditMeta[eKey].fields[f];
+				});
+			}
+
+			var lookup = ijf.jiraEditMeta[eKey].fields[f.id].allowedValues.map(function(e)
+			{
+				return [e.id,e.value];
+			});
+
+			gridFieldArray.push({name: f.id, type: "string"});
+            colSettingsArray.push({
+				text: f.header,
+				width: 'auto',
+				dataIndex: f.id,
+				width: f.width,
+				sortable: true,
+				filter: {
+				  type: 'list'
+	            },
+	            editor: {
+					completeOnEnter: true,
+					field: {
+						xtype:'combobox',
+						store: lookup,
+						allowBlank: true,
+						forceSelection: true,
+						displayField: 1,
+						valueField: 0,
+						listeners: {
+							focusenter: function(f,o,n)
+							{
+									var container = f.up();
+									var curVal = container.grid.selection.get(f.name);
+									f.setValue(f.store.getData().items.reduce(function(inVal,i){if(i.data.field2==curVal) inVal=i.data.field1; return inVal;},null));
+							},
+							focusleave: function(f,o,n)
+							{
+									var newVal = f.value;
+									var container = f.up();
+									if(!container) return;
+									if(container.grid.selection.get(f.name)==newVal) return;
+									var tUpdate = function(){container.grid.selection.set(f.name,f.rawValue);}
+									window.setTimeout(tUpdate,20);
+									var uVal = {"id":newVal};
+									if(!newVal) uVal=null;
+									updateTree(container,f.name,uVal);
+							}
+						}
+					}
+				}
+
+			});
+
 		}
 		else if(f.schema.type=="datetime")
 		{
@@ -6636,6 +6748,90 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 
 			});
         }
+        else if(f.schema.type=="user")
+		{
+			var editor = null;
+
+			var apiUrl = "/rest/api/2/user/picker";
+			var	fParam = "query";
+			var xtrParam = null;
+			var uRoot = 'users';
+			if(f.schema.system=="assignee")
+			{
+				apiUrl = "/rest/api/2/user/assignable/search";
+				fParam = "username";
+				xtrParam={project:inField.form.formSet.projectId};
+				uRoot = '';
+			}
+			Ext.define('JiraUserModel'+f.id, {
+				extend: 'Ext.data.Model',
+				fields: [{name:'name', type: 'string'},
+						 {name: 'displayName', type: 'string'}]
+			});
+
+			var lookup = Ext.create('Ext.data.Store', {
+				storeId: 'userDropdownId'+f.id,
+				model: 'JiraUserModel'+f.id,
+				autoLoad: false,
+				proxy: {
+					type: 'ajax',
+					url: g_root + apiUrl,
+					extraParams : xtrParam,
+					filterParam: fParam,
+					groupParam: '',
+					limitParam: '',
+					pageParam: '',
+					sortParam: '',
+					startParam: '',
+					reader: {
+						type: 'json',
+						root: uRoot
+					}
+				}
+			});
+
+			var editor = {
+				completeOnEnter: true,
+				field: {xtype: 'combobox',
+							store: lookup,
+							displayField: 'displayName',
+							valueField: 'name',
+							labelAlign: 'left',
+							value: f.id,
+							hideTrigger: true,
+							triggerAction: 'all',
+							queryMode: 'remote',
+							queryParam: fParam,
+							minChars: 2,
+							emptyText:'Start typing...',
+							selectOnFocus:true,
+							listeners: {
+								focusleave: function(f,n,o){
+									if(f.originalValue==f.value) return;
+									var newVal = f.value;
+									var container = f.up();
+									if(!container) return;
+									updateTree(container,f.name,{"name":newVal});
+								}
+							}
+
+				}
+			};
+
+			gridFieldArray.push({name: f.id, type: "string"});
+			colSettingsArray.push({
+				header: f.header,
+				dataIndex: f.id,
+				sourceField: f,
+				sortable: true,
+				width: f.width,
+				style: l_labelStyle,
+				editor: editor,
+				filter: {
+				  type: 'list'
+	            }
+			});
+		}
 		else
 		{
 			var fType = 'list';

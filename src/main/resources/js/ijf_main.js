@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "4.1.4";
+    window.g_version = "4.1.5";
 
     console.log("Initializing IJF version: " + window.g_version);
     //prevent double initializing....
@@ -475,6 +475,46 @@ function renderForm(inContainerId, inFormId, isNested, item, afterRender)
 		}
 	}
 
+	//case of nested form, wanting to render form using a session defined Item
+	var formItem = item;
+	if(isNested)
+	{
+		//look for session variable for the form name.
+		if(ijf.session.hasOwnProperty("subformItemKey_" + thisForm.name))
+		{
+			var subFormKey = ijf.session["subformItemKey_" + thisForm.name];
+			var subFormItem =ijfUtils.getJiraIssueSync(subFormKey);
+			if(subFormItem.key)
+			{
+				formItem=subFormItem;
+				if(!ijf.jiraEditMeta.hasOwnProperty(subFormItem.key))
+				{
+					//this must proxy as well, if the form is proxy
+					if(thisForm.formProxy=="true")
+					{
+						//proxy auth
+						ijf.jiraEditMeta[subFormItem.key] = ijfUtils.getProxyApiCallSync('/rest/api/2/issue/'+subFormItem.key+'/editmeta',thisForm.formSet.id);
+						ijfUtils.footLog('Item edit meta aquired with proxy auth');
+					}
+					else
+					{
+						//normal
+						ijf.jiraEditMeta[subFormItem.key] = ijfUtils.getJiraIssueMetaSync(subFormKey);
+					}
+
+					ijf.jiraEditMetaKeyed[subFormItem.key] = [];
+					Object.keys(ijf.jiraEditMeta[subFormItem.key].fields).forEach(function(f)
+					{
+						ijf.jiraEditMetaKeyed[subFormItem.key][ijf.jiraEditMeta[subFormItem.key].fields[f].name]=ijf.jiraEditMeta[subFormItem.key].fields[f];
+					});
+				}
+				ijf.jiraMeta=ijf.jiraEditMeta[subFormItem.key];
+				ijf.jiraMetaKeyed=ijf.jiraEditMetaKeyed[subFormItem.key];
+			    //now you have meta for nested Item
+			}
+		}
+	}
+
 	//init form settings
 	if(!thisForm.settings.headerLeft) thisForm.settings.headerLeft="";
 	if(!thisForm.settings.headerCenter) thisForm.settings.headerCenter="";
@@ -493,7 +533,7 @@ function renderForm(inContainerId, inFormId, isNested, item, afterRender)
             document.title = thisForm.settings["tabTitle"];
         }
 
-        ijfUtils.renderHeader(inContainerId,thisForm,item);
+        ijfUtils.renderHeader(inContainerId,thisForm,formItem);
 
         ijfUtils.setElementWithStyleString("ijfHead",thisForm.settings["title_style"]);
     }
@@ -595,7 +635,7 @@ function renderForm(inContainerId, inFormId, isNested, item, afterRender)
         var container = document.getElementById(targetCell);
         try
         {
-            ijf.extUtils.renderField(inContainerId,item,thisField,container);
+            ijf.extUtils.renderField(inContainerId,formItem,thisField,container);
         }
         catch(e)
         {
