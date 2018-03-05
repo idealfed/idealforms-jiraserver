@@ -1085,12 +1085,12 @@ setContent:function(cId,x,y,colSpans,cellsOnly,rowSpans)
 				if(colSpans.hasOwnProperty(i+"_"+j))
 				{
 					var cSpan = colSpans[i+"_"+j];
-					cHtml += "<td  valign='top' " + rspanString + " colspan='" + cSpan + "'><div class='"+cellStyle+"' id='"+cId+"_"+i+"_"+j+"'>"+cellContent+"</div></td>";
+					cHtml += "<td  valign='top' " + rspanString + " colspan='" + cSpan + "' id='td_"+cId+"_"+i+"_"+j+"'><div class='"+cellStyle+"' id='"+cId+"_"+i+"_"+j+"'>"+cellContent+"</div></td>";
 					j=j+(cSpan/1)-1;
 				}
 				else
 				{
-					cHtml += "<td " + rspanString + " valign='top'><div  class='"+cellStyle+"' id='"+cId+"_"+i+"_"+j+"'>"+cellContent+"</div></td>";
+					cHtml += "<td " + rspanString + " valign='top' id='td_"+cId+"_"+i+"_"+j+"'><div  class='"+cellStyle+"' id='"+cId+"_"+i+"_"+j+"'>"+cellContent+"</div></td>";
 				}
 			}
 			cHtml += "</tr>";

@@ -232,7 +232,18 @@ renderReport_noforms:function(inContainerId)
 
 			thisT.fileDetail = fileDetail;
 			//you have prepped data AND you have file type...call generateCustomeFile
-			var gRep = function(){ijfUtils.generateWordFile(itemData,thisT);}
+			var gRep = function(){
+				try
+				{
+					ijfUtils.generateWordFile(itemData,thisT);
+				}
+				catch(e)
+				{
+					Ext.getBody().unmask();
+					ijfUtils.modalDialogMessage("Report Error","The report could not be created, Please look at:<br><br>" + e.message + "<br>" + e.properties.explanation);
+				}
+
+			}
 			Ext.getBody().mask("Creating");
 			window.setTimeout(gRep,100);
 	}
@@ -3093,7 +3104,17 @@ addEditCustomFileReference:function (inTypeId,isReportView)
 									thisT.fileDetail = fileDetail;
 									//you have prepped data AND you have file type...call generateCustomeFile
 									var whenDone = function(){ijf.lists.dWin2.unmask();};
-									var gRep = function(){ijfUtils.generateWordFile(itemData,thisT,whenDone);}
+									var gRep = function(){
+										try
+										{
+											ijfUtils.generateWordFile(itemData,thisT,whenDone);
+										}
+										catch(e)
+										{
+											ijf.lists.dWin2.unmask();
+											ijfUtils.modalDialogMessage("Report Error","The report could not be created, Please look at:<br><br>" + e.message + "<br>" + e.properties.explanation);
+										}
+									}
 									ijf.lists.dWin2.mask("Creating");
 									window.setTimeout(gRep,100);
 							}

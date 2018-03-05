@@ -2522,6 +2522,42 @@ addEditForm:function (sRow)
 
 			var colwidths = ijf.admin.cwfAdmin_form.settings["columnWidths"].split(";");
 
+
+			for(var i in colwidths)
+			{
+
+				if(!colwidths.hasOwnProperty(i)) continue;
+				var wPair = colwidths[i].split(":");
+
+				var rows = ijf.admin.cwfAdmin_form.settings["rows"]/1+1;
+
+				for (var i = 1; i<rows;i++)
+				{
+					if(rowsWithSpans.hasOwnProperty(i+"spannedRow")) continue;
+					//if the width is % then set the outer TD to % and set the innter DIV to 100%.
+					var tcWidth = wPair[1].trim();
+					if(tcWidth.indexOf("%")>-1)
+					{
+						//table td
+						var tContainer = "td_" + inContainerId + "_" + i + "_" + wPair[0].trim();
+						var e = document.getElementById(tContainer);
+						if(e!=null) e.style.width=wPair[1];
+						//div
+						tContainer = inContainerId + "_" + i + "_" + wPair[0].trim();
+						e = document.getElementById(tContainer);
+						if(e!=null) e.style.width="100%";
+					}
+					else
+					{
+						var tContainer = inContainerId + "_" + i + "_" + wPair[0].trim();
+						var e = document.getElementById(tContainer);
+						if(e!=null) e.style.width=wPair[1];
+					}
+				}
+			}
+
+
+/*
 			for(var i in colwidths)
 			{
 
@@ -2538,6 +2574,8 @@ addEditForm:function (sRow)
 					if(e!=null) e.style.width=wPair[1];
 				}
 			}
+*/
+
 		}
 
 

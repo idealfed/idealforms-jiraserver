@@ -1431,7 +1431,8 @@ function render(options) {
 
 				if (typeof value == "string") {
 					var cleanWordChars = ijfUtils.replaceWordChars(value);
-					return cleanWordChars.replace("\n", "<w:br/>");
+					//please change
+					return cleanWordChars.replace(/\n/g, "<w:br/>");
 				}
 				return value;
 			}

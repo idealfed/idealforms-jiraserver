@@ -4550,7 +4550,17 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 						return;
 					}
 					//you have prepped data AND you have file type...call generateCustomeFile
-					var gRep = function(){ijfUtils.generateWordFile(itemData,thisT);}
+					var gRep = function(){
+						try
+						{
+							ijfUtils.generateWordFile(itemData,thisT);
+						}
+						catch(e)
+						{
+							Ext.getBody().unmask();
+							ijfUtils.modalDialogMessage("Report Error","The report could not be created, Please look at:<br><br>" + e.message + "<br>" + e.properties.explanation);
+						}
+					}
 					Ext.getBody().mask("Creating");
 					window.setTimeout(gRep,100);
                 }
@@ -5521,6 +5531,23 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 	if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
 	for (var i = 0; i<colNames.length;i++)
 	{
+		if(colWidths[i])
+		{
+			if(isNaN(colWidths[i]))
+			{
+				//it's a string...
+				if(colMeta[colNames[i]]) colMeta[colNames[i]].width=colWidths[i];
+			}
+			else
+			{
+				if(colMeta[colNames[i]]) colMeta[colNames[i]].width=colWidths[i]/1;
+			}
+		}
+		else
+		{
+			if(colMeta[colNames[i]]) colMeta[colNames[i]].width=100;
+		}
+/*
 		if(colWidths[i]>0)
 		{
 
@@ -5541,7 +5568,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 		{
 			if(colMeta[colNames[i]]) colMeta[colNames[i]].width=100;
 		}
-
+*/
 		if(colHeaders[i])
 		{
 			if(colMeta[colNames[i]]) colMeta[colNames[i]].header=colHeaders[i];
@@ -5551,6 +5578,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 			if(colMeta[colNames[i]]) colMeta[colNames[i]].header=colMeta[colNames[i]].name;
 		}
 	}
+
 
 
     var colSettingsArray = [];
@@ -5641,6 +5669,8 @@ renderItemList:function(inFormKey,item, inField, inContainer)
  	*/
     Object.keys(colMeta).forEach(function(k){
 		var f = colMeta[k];
+		var hCol = false;
+		if(f.width==0) hCol=true;
 		if(f.schema.type=="date")
 		{
 			var editor = null;
@@ -5669,6 +5699,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				dataIndex: f.id,
 				xtype: 'datecolumn',
 				sortable: true,
+				hidden: hCol,
 				width: f.width,
 				style: l_labelStyle,
 				format: 'm/d/y',
@@ -5709,6 +5740,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				dataIndex: f.id,
 				xtype: 'datecolumn',
 				sortable: true,
+				hidden: hCol,
 				width: f.width,
 				style: l_labelStyle,
 				format: 'm/d/y',
@@ -5749,6 +5781,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				dataIndex: f.id,
 				xtype: 'datecolumn',
 				sortable: true,
+				hidden: hCol,
 				width: f.width,
 				style: l_labelStyle,
 				format: 'm/d/y',
@@ -5836,6 +5869,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				dataIndex: f.id,
 				sourceField: f,
 				sortable: true,
+				hidden: hCol,
 				width: f.width,
 				style: l_labelStyle,
 				editor: editor,
@@ -5877,6 +5911,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				header: f.header,
 				width: 'auto',
 				dataIndex: f.id,
+				hidden: hCol,
 				width: f.width,
 				style: l_labelStyle,
 				sortable: true,
@@ -6238,6 +6273,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         style: l_panelStyle,
         height: l_Height,
         width: "100%",
+        layout: 'fit',
         ijfForm: inField,
         columns: colSettingsArray,
         selModel: {selType: 'rowmodel', mode: 'SINGLE'},
@@ -6306,9 +6342,10 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         collapsed: false,
         hidden: hideField,
         width: "100%",
-        layoutConfig: {
-            columns: 1
-        },
+        layout: 'fit',
+        //layoutConfig: {
+        //    columns: 1
+        //},
         style: l_Style,
         items: [grid]
     });

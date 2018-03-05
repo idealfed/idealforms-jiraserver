@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "4.1.5";
+    window.g_version = "4.1.6";
 
     console.log("Initializing IJF version: " + window.g_version);
     //prevent double initializing....
@@ -611,10 +611,26 @@ function renderForm(inContainerId, inFormId, isNested, item, afterRender)
 
             for (var i = 1; i<rows;i++)
             {
-                if(rowsWithSpans.hasOwnProperty(i+"spannedRow")) continue;
-                var tContainer = inContainerId + "_" + i + "_" + wPair[0].trim();
-                var e = document.getElementById(tContainer);
-                if(e!=null) e.style.width=wPair[1];
+				if(rowsWithSpans.hasOwnProperty(i+"spannedRow")) continue;
+				//if the width is % then set the outer TD to % and set the innter DIV to 100%.
+				var tcWidth = wPair[1].trim();
+				if(tcWidth.indexOf("%")>-1)
+				{
+					//table td
+					var tContainer = "td_" + inContainerId + "_" + i + "_" + wPair[0].trim();
+					var e = document.getElementById(tContainer);
+					if(e!=null) e.style.width=wPair[1];
+					//div
+					tContainer = inContainerId + "_" + i + "_" + wPair[0].trim();
+					e = document.getElementById(tContainer);
+					if(e!=null) e.style.width="100%";
+				}
+				else
+				{
+					var tContainer = inContainerId + "_" + i + "_" + wPair[0].trim();
+					var e = document.getElementById(tContainer);
+					if(e!=null) e.style.width=wPair[1];
+			    }
             }
         }
     }
