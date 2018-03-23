@@ -538,14 +538,22 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				//std text value
 				var sc = {};
 				var newUser = this.control.items.items[0].getValue();
-				var tv = {"name":newUser};
+				if(newUser)
+					var tv = {"name":newUser};
+				else
+					var tv = null;
+
  				this.newVal = tv;
 				break;
 			case 'group':
 				//std text value
 				var sc = {};
 				var newGroup = this.control.items.items[0].getValue();
-				var tv = {"name":newGroup};
+				if(newGroup)
+					var tv = {"name":newGroup};
+				else
+					var tv = null;
+
  				this.newVal = tv;
 				break;
 			case 'securitylevel':
@@ -558,14 +566,25 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				  if(this.field.controlType=="radio")
 				  {
 					  sc = this.control.items.items[0].getValue();
-					  var newId = sc[Object.keys(sc)[0]];
-					  var tv = {"id":newId};
+					  if(sc)
+					  {
+						  var newId = sc[Object.keys(sc)[0]];
+						  var tv = {"id":newId};
+				  	  }
+				  	  else
+				  	  {
+						 var tv = null;
+					  }
 				      this.newVal = tv;
 				  }
 				  else
 				  {
 					  sc = this.control.items.items[0].getSelection();
-					  var tv = {"id":sc.data.field1};
+					  if(sc)
+						  var tv = {"id":sc.data.field1};
+					  else
+						  var tv = null;
+
  					  this.newVal = tv;
 				  }
 
@@ -575,19 +594,31 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				  if(this.field.controlType=="multiselect")
 				  {
 					  var sc = this.control.items.items[0].getValue();
-					  var tv = sc.map(function(av){ return {"id":av};});
+					  if(sc)
+						  var tv = sc.map(function(av){ return {"id":av};});
+					  else
+					    	var tv = null;
+
 					  this.newVal = tv;
 				  }
 				  else if(this.field.controlType=="userpickermulti")
 				  {
 					   var sc = this.control.items.items[0].getValue();
-					   var tv = sc.map(function(av){ return {"name":av};});
+					   if(sc)
+						   var tv = sc.map(function(av){ return {"name":av};});
+					   else
+					   		var tv = null;
+
 					   this.newVal = tv;
 			      }
 				  else if(this.field.controlType=="grouppickermulti")
 				  {
 					   var sc = this.control.items.items[0].getValue();
-					   var tv = sc.map(function(av){ return {"name":av};});
+					   if(sc)
+					   	   var tv = sc.map(function(av){ return {"name":av};});
+					   else
+							var tv = null;
+
 					   this.newVal = tv;
 			      }
 				  else if(this.field.controlType=="attachmentupload")
@@ -598,7 +629,11 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				  {
 					  //standard checkbox array
 					  var sc = this.control.items.items[0].getChecked();
-					  var tv = sc.map(function(av){ return {"id":av.inputValue};});
+					  if(sc)
+						  var tv = sc.map(function(av){ return {"id":av.inputValue};});
+					  else
+					   	  var tv = null;
+
 					  this.newVal = tv;
 			  	  }
 				break;
@@ -659,7 +694,8 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 			case 'date':
 				//std text value
 				var tDate = this.control.items.items[0].getValue();
-				this.newVal = "";
+				this.newVal = null;
+
 				if(tDate) this.newVal = moment(tDate).format("YYYY-MM-DD");
 				break;
 			default:

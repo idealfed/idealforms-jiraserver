@@ -5092,10 +5092,10 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 
     var hideField = ijfUtils.renderIfShowField("",inField);
 
-    var collapsible = true;
-    if (inField.style.indexOf('collapsible:false')>-1)
+    var collapsible = false;
+    if (inField.style.indexOf('collapsible:true')>-1)
     {
-        collapsible=false;
+        collapsible=true;
     }
     var collapsed = false;
     if (inField.style.indexOf('collapsed:true')>-1)
@@ -6268,8 +6268,11 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     var l_tbar=[];
     var lXtype="";
     var grid= new Ext.grid.GridPanel({
+		title: lCaption,
         store: store,
         plugins: plugins,
+        collapsible : collapsible,
+        collapsed: collapsed,
         style: l_panelStyle,
         height: l_Height,
         width: "100%",
@@ -6337,7 +6340,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 		}
     });
     var layout = new Ext.Panel({
-        title: lCaption,
+        //title: lCaption,
         collapsible: false,
         collapsed: false,
         hidden: hideField,
@@ -7823,8 +7826,9 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 			switch(col.controlType)
 			{
 				case "datefield":
-					if(col.format) return Ext.util.Format.dateRenderer(col.format)(val); //moment(val).format(col.format);
-					return val;
+					if(col.format==null) col.format = 'm/d/Y';
+					if(col.format=="") col.format = 'm/d/Y';
+					return Ext.util.Format.dateRenderer(col.format)(val); //moment(val).format(col.format);
 					break;
 				case "combobox":
 					//if value lookup is two dimensional, lookup value of val...

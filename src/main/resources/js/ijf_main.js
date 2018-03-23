@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "4.1.6";
+    window.g_version = "4.1.9";
 
     console.log("Initializing IJF version: " + window.g_version);
     //prevent double initializing....
@@ -606,28 +606,29 @@ function renderForm(inContainerId, inFormId, isNested, item, afterRender)
 
             if(!colwidths.hasOwnProperty(i)) continue;
             var wPair = colwidths[i].split(":");
+			if(wPair.length < 2) continue;
 
             var rows = thisForm.settings["rows"]/1+1;
 
-            for (var i = 1; i<rows;i++)
+            for (var j = 1; j<rows; j++)
             {
-				if(rowsWithSpans.hasOwnProperty(i+"spannedRow")) continue;
+				if(rowsWithSpans.hasOwnProperty(j+"spannedRow")) continue;
 				//if the width is % then set the outer TD to % and set the innter DIV to 100%.
 				var tcWidth = wPair[1].trim();
 				if(tcWidth.indexOf("%")>-1)
 				{
 					//table td
-					var tContainer = "td_" + inContainerId + "_" + i + "_" + wPair[0].trim();
+					var tContainer = "td_" + inContainerId + "_" + j + "_" + wPair[0].trim();
 					var e = document.getElementById(tContainer);
 					if(e!=null) e.style.width=wPair[1];
 					//div
-					tContainer = inContainerId + "_" + i + "_" + wPair[0].trim();
+					tContainer = inContainerId + "_" + j + "_" + wPair[0].trim();
 					e = document.getElementById(tContainer);
 					if(e!=null) e.style.width="100%";
 				}
 				else
 				{
-					var tContainer = inContainerId + "_" + i + "_" + wPair[0].trim();
+					var tContainer = inContainerId + "_" + j + "_" + wPair[0].trim();
 					var e = document.getElementById(tContainer);
 					if(e!=null) e.style.width=wPair[1];
 			    }
@@ -828,13 +829,13 @@ function saveBatch(onSuccess,inFields,inForm, item)
 			if(saveRes=="OK")
 			{
 				fieldsOk=true;
-
 				//adding hook to save to additional target. if form
 				//additionalSave ! null attempt to save...
 				if(inForm.settings.hasOwnProperty("additionalSave"))
 				{
 					//saving additional target...
 					putObj.key=item.key;
+					putObj.form = inForm.name;
 					jData = JSON.stringify(putObj);
 					var addTarget = inForm.settings["additionalSave"];
 					var onAddSuccess = function(d){ijfUtils.footLog("Additional Save Success");};
@@ -865,6 +866,7 @@ function saveBatch(onSuccess,inFields,inForm, item)
 					{
 						//saving additional target...
 						putObj.key=saveRes.key;
+						putObj.form = inForm.name;
  						jData = JSON.stringify(putObj);
 						var addTarget = inForm.settings["additionalSave"];
 						var onAddSuccess = function(d){ijfUtils.footLog("Additional Save Success");};
