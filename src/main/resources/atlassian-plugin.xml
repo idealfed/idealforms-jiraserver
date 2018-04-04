@@ -81,6 +81,10 @@
     <link linkId="ijfReportsAdminId">/plugins/servlet/iforms?decorator=admin&amp;mode=reports</link>
   </web-item>
 
+  <web-item key="ijf_links_link2" name="Admin on IJF Links Main Section" section="admin_plugins_menu/ijf_web_section" weight="20">
+    <label>Ideal Groups Admin</label>
+    <link linkId="ijfGroupsAdminId">/plugins/servlet/iforms?decorator=admin&amp;mode=groups</link>
+  </web-item>
     
   <!-- import from the product container -->
   <component-import key="ao" name="Active Objects service" interface="com.atlassian.activeobjects.external.ActiveObjects">

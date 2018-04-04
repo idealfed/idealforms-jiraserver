@@ -521,6 +521,631 @@ renderReportList_Borderlayout:function(inContainerId)
     ijf.main.controlSet[tElement.id] =   new itemControl(tElement.id, null, null, pnl, null);
 
 },
+ijfGroupsHeaderTopChecked:function(cb)
+	{
+		var grid = Ext.getCmp("groupReportListViewId");
+		var gridData = grid.getStore().getData();
+		var c = cb.checked;
+		gridData.items.forEach(function(r)
+		{
+			r.set('chkbx',c);
+		});
+    },
+renderGroupList_Borderlayout:function(inContainerId)
+{
+
+	document.title = "IJF Group Management";
+	var colSpans = {};
+    ijfUtils.setContent(inContainerId,1,1,colSpans,false,colSpans);
+
+    //what to show....
+    var listColumns = [];
+    var tFields = [];
+    tFields.push({name: 'iid',  type: 'string'});
+
+    listColumns.push({
+        header: 'ID',
+        width:'0%',
+        hidden: true,
+        dataIndex: 'iName'
+    });
+
+    tFields.push({name: 'chkbx', type: 'boolean'});
+    tFields.push({name: 'iName', type: 'string'});
+    tFields.push({name: 'iHtmlName', type: 'string'});
+
+	listColumns.push({
+			header: "<input type='checkbox' onclick='ijf.lists.ijfGroupsHeaderTopChecked(this);'>",
+			sortable: false,
+			hidden: false,
+			xtype: 'checkcolumn',
+			centered:true,
+			width: 50,
+			dataIndex: 'chkbx',
+			listeners: {
+				checkchange: function(n,o,f)
+				{
+					null;
+				}
+			}
+	});
+
+    listColumns.push({
+            header: 'Name',
+            sortable: true,
+            hidden: false,
+            width: '47%',
+            dataIndex: 'iName',
+            filter: {
+                type: 'string'
+            }
+    });
+    listColumns.push({
+			header: 'HTML Name',
+			width:'47%',
+			sortable: true,
+			hidden: false,
+			dataIndex: 'iHtmlName',
+			filter: {
+				type: 'string'
+			}
+    });
+
+    if(!Ext.ClassManager.isCreated('groupGridFieldArray'))
+    {
+        Ext.define('groupGridFieldArray', {
+            extend: 'Ext.data.Model',
+            fields: tFields
+        });
+    }
+    if(!this.groupStore)
+    {
+		this.groupStore = new Ext.data.Store({
+			model: 'groupGridFieldArray'
+		});
+    }
+
+    if(Ext.getCmp('groupReportListViewId')) Ext.getCmp('groupReportListViewId').destroy();
+
+   var refreshList = function()
+   {
+
+	    var grps = ijfUtils.jiraApiSync("GET","/rest/api/2/groups/picker?maxResults=1000",null);
+
+		var cts = new Array();
+
+		grps.groups.forEach(function(gp){
+			cts.push([false,gp.name, gp.name, gp.html]);
+		});
+
+		ijf.lists.groupStore.removeAll();
+		ijf.lists.groupStore.loadData(cts);
+		var focusOnList = function()
+		{
+			var c = Ext.getCmp('groupReportListViewId');
+			if(c) 	c.focus();
+		}
+		window.setTimeout(focusOnList,200);
+    }
+
+
+    var groupListView = new Ext.grid.GridPanel({
+        store: this.groupStore,
+        height:'100%',
+        width:'100%',
+        plugins: 'gridfilters',
+        id: "groupReportListViewId",
+        columns: listColumns,
+        listeners: {
+          rowdblclick: function(grid,rowIndex,e) {
+              var tId = rowIndex.data.iid;
+              if(!tId) return;
+
+            },
+			focusenter: function(f)
+			{
+				refreshList();
+			},
+			render: function(f)
+			{
+				refreshList();
+			}
+		}
+    });
+
+    ijf.lists.refreshList=refreshList;
+
+    var groupsPnl = new Ext.Panel({
+        layout: 'vbox',
+        title: "IJF Group Administration",
+        width: '100%',
+        height:'100%',
+        scrollable:true,
+        items: [groupListView],
+        buttons:[{
+			text:'Export',
+				handler: function(f,i,n){
+					var outStr = "";
+					debugger;
+					groupListView.getStore().getData().each(function(r){
+							outStr+=r.data["iName"] + "\n";
+					});
+					var blob = new Blob([outStr], {type: "text/plain;charset=utf-8"});
+					saveAs(blob,"groupList.csv");
+			}},
+			{
+				html:  "<form enctype='multipart/form-data' id='groupUploadFormId'><input id='groupUploadFileId' type='file' name='file' onchange='ijfUtils.readJiraGroupsConfigFile(event);'></form>",
+				frame: false,
+				hidden: true,
+				border: false,
+			    xtype: "panel"},
+			{
+				xtype:'button',
+				text:"Import",
+				margin: '0 200 0 0',
+				handler: function(){
+				   //need the formset ID...
+				   var uploadGroupFunction = function(){
+					   jQuery('#groupUploadFileId').val("");
+					   jQuery('#groupUploadFileId').trigger('click');
+				   };
+				   ijfUtils.modalDialog("Warning","You are about to upload a group configuration file.  If the same group exists by name, this will skip.",uploadGroupFunction);
+				}
+			},
+            {text:'Add',
+            hidden:true,
+            handler: function(f,i,n){
+				 //ijf.lists.addEditType(0,true);
+				 ijfUtils.modalDialogMessage("Info","This feature is under construction");
+			}},
+			{
+            text:'Delete Checked',
+            handler: function(f,i,n){
+
+				 var gridStore = groupListView.getStore()
+				 var lData = gridStore.getData();
+				var delGrps = [];
+
+				lData.items.forEach(function(r)
+				{
+					var cb = r.get('chkbx');
+					if(cb)
+					{
+						var groupName=r.get("iName").trim();
+						delGrps.push(groupName);
+					}
+				});
+
+				 var deleteThem = function()
+				 {
+					delGrps.forEach(function(groupName)
+					{
+						var delRes = ijfUtils.jiraApiSync("DELETE","/rest/api/2/group?groupname="+groupName,null);
+						if(delRes!="OK")
+						{
+							console.log(groupName + " " + delRes);
+						}
+						else
+						{
+							console.log(groupName + " - group deleted");
+						}
+					});
+					ijf.lists.refreshList();
+			 	}
+				ijfUtils.modalDialog("Warning","You are about to delete these groups, procede?",deleteThem);
+
+			}}
+        ],
+        modal: true
+    });
+    var cButtons = [];
+    cButtons.push({
+		text:'NOT USED',
+		xtype: 'button',
+		margin: '0 3 0 3',
+		handler: function(){
+			//ijf.lists.addEditForm(ijf.lists.itemId);
+            }});
+
+    var selButtons = new Ext.FormPanel({
+        //labelAlign: 'left',
+        //title: "hey",
+        //frame:true,
+        //layout: 'fit',
+        border:false,
+        frame:false,
+        bodyStyle: 'margin-left:250px;background:transparent',
+        items: cButtons
+    })
+	var bArray = [selButtons];
+
+     var pnl = new Ext.Panel({
+
+         width: 1000,
+         height: 600,
+        //title: 'Search Form',
+        id: 'cwfGroupsPanelId',
+        //frame: true,
+        //border: true,
+        layout: 'border',
+        items: [{
+            title: 'Ideal Administration for JIRA',
+            region: 'north',     // position for region
+            frame: false,
+            bodyStyle: 'background-color:#3892d4',
+            split: false,         // enable resizing
+
+            margins: '0 5 5 5',
+           // id: 'itemsNorth',
+           header: {
+			   titlePosition: 0,
+			   items: [{
+				xtype:'button',
+				style: 'margin:0 0 0 10px',
+				text:"Help",
+				handler: function(){
+				   window.open("http://www.idealfed.com/idealadmin.html");
+			}}
+			]}
+        },{
+            title: 'Center Region',
+            region: 'center',     // center region is required, no width/height specified
+            //id: 'itemsCenter',
+            frame: true,
+            xtype: 'container',
+            layout: 'fit',
+            margins: '5 5 0 0',
+            items: [groupsPnl]
+        },{
+            title: 'Left Region',
+            region: 'west',     // center region is required, no width/height specified
+            frame: true,
+            xtype: 'container',
+            layout: 'fit',
+            //margins: '5 5 0 0',
+            items: [
+            {
+				xtype: 'panel',
+				frame: true,
+				layout: 'vbox',
+				items: [
+					{
+						xtype: 'panel',
+						style: 'text-align:center',
+						html: '<br> Utilities<br>'
+					},
+					{
+						xtype: 'button',
+						style: 'margin-bottom:5px',
+						text: 'Groups',
+						handler: function(){
+                            ijfUtils.clearAll();
+							ijf.lists.renderGroupList_Borderlayout('ijfContent');
+						}
+					},
+					{
+						xtype: 'button',
+						text: 'Users',
+						shadow: true,
+						//margin: '5 5 5 5',
+						handler: function(){
+							ijfUtils.clearAll();
+							ijf.lists.renderUserList_Borderlayout('ijfContent');
+						}
+					}
+				]
+			}
+            ]
+        }]
+    });
+
+    var tElement = document.getElementById(inContainerId+"_1_1");
+    pnl.render(tElement);
+    ijf.main.controlSet[tElement.id] =   new itemControl(tElement.id, null, null, pnl, null);
+
+},
+ijfUsersHeaderTopChecked:function(inSelf)
+{
+			var grid = Ext.getCmp("userReportListViewId");
+			var gridData = grid.getStore().getData();
+			var c = cb.checked;
+			gridData.items.forEach(function(r)
+			{
+				r.set('chkbx',c);
+		});
+},
+renderUserList_Borderlayout:function(inContainerId)
+{
+
+
+	document.title = "IJF User Management";
+	var colSpans = {};
+    ijfUtils.setContent(inContainerId,1,1,colSpans,false,colSpans);
+
+    //what to show....
+    var listColumns = [];
+    var tFields = [];
+    tFields.push({name: 'iid',  type: 'string'});
+
+    listColumns.push({
+        header: 'ID',
+        width:'0%',
+        hidden: true,
+        dataIndex: 'iName'
+    });
+
+    tFields.push({name: 'chkbx', type: 'boolean'});
+    tFields.push({name: 'iName', type: 'string'});
+    tFields.push({name: 'iActive', type: 'string'});
+
+	listColumns.push({
+			header: "<input type='checkbox' onclick='ijf.lists.ijfUsersHeaderTopChecked(this);'>",
+			sortable: false,
+			hidden: false,
+			xtype: 'checkcolumn',
+			centered:true,
+			width: 50,
+			dataIndex: 'chkbx',
+			listeners: {
+				checkchange: function(n,o,f)
+				{
+					null;
+				}
+			}
+	});
+
+    listColumns.push({
+            header: 'Name',
+            sortable: true,
+            hidden: false,
+            width: '70%',
+            dataIndex: 'iName',
+            filter: {
+                type: 'string'
+            }
+    });
+    listColumns.push({
+			header: 'Active',
+			width:'28%',
+			align: 'center',
+			sortable: true,
+			hidden: false,
+			dataIndex: 'iActive',
+			filter: {
+				type: 'string'
+			}
+    });
+
+    if(!Ext.ClassManager.isCreated('userGridFieldArray'))
+    {
+        Ext.define('userGridFieldArray', {
+            extend: 'Ext.data.Model',
+            fields: tFields
+        });
+    }
+    if(!this.userStore)
+    {
+		this.userStore = new Ext.data.Store({
+			model: 'userGridFieldArray'
+		});
+    }
+
+    if(Ext.getCmp('userReportListViewId')) Ext.getCmp('userReportListViewId').destroy();
+
+   var refreshList = function()
+   {
+
+	    var users = ijfUtils.jiraApiSync("GET","/rest/api/2/user/search?username=.&includeInactive=true&maxResults=1000",null);
+
+		var cts = new Array();
+
+		users.forEach(function(gp){
+			cts.push([gp.username,false, gp.displayName, gp.active]);
+		});
+
+		ijf.lists.userStore.removeAll();
+		ijf.lists.userStore.loadData(cts);
+		var focusOnList = function()
+		{
+			var c = Ext.getCmp('userReportListViewId');
+			if(c) 	c.focus();
+		}
+		window.setTimeout(focusOnList,200);
+    }
+
+
+    var userListView = new Ext.grid.GridPanel({
+        store: this.userStore,
+        height:'100%',
+        width:'100%',
+        plugins: 'gridfilters',
+        id: "userReportListViewId",
+        columns: listColumns,
+        listeners: {
+          rowdblclick: function(grid,rowIndex,e) {
+              var tId = rowIndex.data.iid;
+              if(!tId) return;
+
+            },
+			focusenter: function(f)
+			{
+				refreshList();
+			},
+			render: function(f)
+			{
+				refreshList();
+			}
+		}
+    });
+
+    ijf.lists.refreshList=refreshList;
+
+    var userPnl = new Ext.Panel({
+        layout: 'vbox',
+        title: "IJF User Administration",
+        width: '100%',
+        height:'100%',
+        scrollable:true,
+        items: [userListView],
+        buttons:[{
+			text:'Export',
+				handler: function(f,i,n){
+					var outStr = "";
+					debugger;
+					userListView.getStore().getData().each(function(r){
+							outStr+=r.data["iid"] + "," +r.data["iName"] + "," + r.data["iActive"] + "\n";
+					});
+					var blob = new Blob([outStr], {type: "text/plain;charset=utf-8"});
+					saveAs(blob,"userList.csv");
+			}},
+			{
+            text:'Deactivate Checked',
+            handler: function(f,i,n){
+
+				 var gridStore = userListView.getStore()
+				 var lData = gridStore.getData();
+				var dUsers = [];
+
+				lData.items.forEach(function(r)
+				{
+					var cb = r.get('chkbx');
+					if(cb)
+					{
+						var uid=r.get("iid").trim();
+						dUsers.push(uid);
+					}
+				});
+
+				 var deactivateThem = function()
+				 {
+					dUsers.forEach(function(u)
+					{
+						var putObj = {};
+						putObj["active"]=false;
+						var jData = JSON.stringify(putObj);
+						var delRes = ijfUtils.jiraApiSync("PUT","/rest/api/2/user?username="+u,jData);
+						if(delRes!="OK")
+						{
+							console.log(u + " " + delRes);
+						}
+						else
+						{
+							console.log(u + " - user deactivated");
+						}
+					});
+					ijf.lists.refreshList();
+			 	}
+				ijfUtils.modalDialog("Warning","You are about to deactivate these users, procede?",deactivateThem);
+
+			}}
+        ],
+        modal: true
+    });
+    var cButtons = [];
+    cButtons.push({
+		text:'NOT USED',
+		xtype: 'button',
+		margin: '0 3 0 3',
+		handler: function(){
+			//ijf.lists.addEditForm(ijf.lists.itemId);
+            }});
+
+    var selButtons = new Ext.FormPanel({
+        //labelAlign: 'left',
+        //title: "hey",
+        //frame:true,
+        //layout: 'fit',
+        border:false,
+        frame:false,
+        bodyStyle: 'margin-left:250px;background:transparent',
+        items: cButtons
+    })
+	var bArray = [selButtons];
+
+     var pnl = new Ext.Panel({
+
+         width: 1000,
+         height: 600,
+        //title: 'Search Form',
+        id: 'cwfUsersPanelId',
+        //frame: true,
+        //border: true,
+        layout: 'border',
+        items: [{
+            title: 'Ideal Administration for JIRA',
+            region: 'north',     // position for region
+            frame: false,
+            bodyStyle: 'background-color:#3892d4',
+            split: false,         // enable resizing
+
+            margins: '0 5 5 5',
+           // id: 'itemsNorth',
+           header: {
+			   titlePosition: 0,
+			   items: [{
+				xtype:'button',
+				style: 'margin:0 0 0 10px',
+				text:"Help",
+				handler: function(){
+				   window.open("http://www.idealfed.com/idealadmin.html");
+			}}
+			]}
+        },{
+            title: 'Center Region',
+            region: 'center',     // center region is required, no width/height specified
+            //id: 'itemsCenter',
+            frame: true,
+            xtype: 'container',
+            layout: 'fit',
+            margins: '5 5 0 0',
+            items: [userPnl]
+        },{
+            title: 'Left Region',
+            region: 'west',     // center region is required, no width/height specified
+            frame: true,
+            xtype: 'container',
+            layout: 'fit',
+            //margins: '5 5 0 0',
+            items: [
+            {
+				xtype: 'panel',
+				frame: true,
+				layout: 'vbox',
+				items: [
+					{
+						xtype: 'panel',
+						style: 'text-align:center',
+						html: '<br> Utilities<br>'
+					},
+					{
+						xtype: 'button',
+						style: 'margin-bottom:5px',
+						text: 'Groups',
+						handler: function(){
+							ijfUtils.clearAll();
+							ijf.lists.renderGroupList_Borderlayout('ijfContent');
+						}
+					},
+					{
+						xtype: 'button',
+						text: 'Users',
+						//margin: '5 5 5 5',
+						handler: function(){
+							ijfUtils.clearAll();
+							ijf.lists.renderUserList_Borderlayout('ijfContent');
+						}
+					}
+				]
+			}
+            ]
+        }]
+    });
+
+    var tElement = document.getElementById(inContainerId+"_1_1");
+    pnl.render(tElement);
+    ijf.main.controlSet[tElement.id] =   new itemControl(tElement.id, null, null, pnl, null);
+
+},
 renderItemList_Borderlayout:function(inContainerId)
 {
     //state is no item, so display selected or default item selector....

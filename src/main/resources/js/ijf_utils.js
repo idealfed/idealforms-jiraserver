@@ -392,7 +392,7 @@ var ijfUtils = {
 				 }
              },
              error: function(e) {
-				 if(e.status==201) //  && (e.statusText=="Created"))
+				 if((e.status==201) || (e.status==200)) //  && (e.statusText=="Created"))
                  {
 					 retVal="OK";
 				 }
@@ -658,6 +658,49 @@ readBinaryFile:function(event, onLoadHandler)
 	if(ijf.main.callbacks.hasOwnProperty(onLoadHandler))
 	reader.onload = ijf.main.callbacks[onLoadHandler];
 	reader.readAsArrayBuffer(input.files[0]);
+},
+readJiraGroupsConfigFile:function(event)
+{
+	    var input = event.target;
+	    var reader = new FileReader();
+	    reader.onload = function(){
+	      var text = reader.result;
+	      ijfUtils.writeJiraGroupsConfig(reader.result, true);
+	    };
+  		reader.readAsText(input.files[0]);
+},
+writeJiraGroupsConfig:function(inConfig, doReset)
+{
+	try
+	{
+	   //the inConfig is a simple /n list of groups.  parse it and attempt to load each group....
+	   var grps = inConfig.split("\n");
+
+	   grps.forEach(function(g)
+	   {
+		    if(g.length<1) return;
+		   //add the group to JIRA, IF it does not exist....
+		    var jsonString = {};
+		    jsonString.name=g.trim();
+			var saveRes = ijfUtils.jiraApiSync("POST","/rest/api/2/group",JSON.stringify(jsonString));
+			if(saveRes!="OK")
+			{
+				console.log(g + " " + saveRes);
+			}
+			else
+			{
+				console.log(g + " - group added");
+			}
+
+	   });
+	   ijfUtils.modalDialogMessage("Information","Group list processed.");
+
+	}
+	catch(e)
+	{
+		ijfUtils.modalDialogMessage("Error","Sorry, failed to parse the type file. " + e.message);
+	}
+
 },
 readTypeConfigFile:function(event)
 {
