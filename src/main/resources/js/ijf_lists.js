@@ -299,7 +299,7 @@ renderReportList_Borderlayout:function(inContainerId)
     });
     listColumns.push({
 		            header: 'Type',
-		            width:'28%',
+		            flex: 1,
 		            sortable: true,
 		            hidden: false,
 		            dataIndex: 'iTypeType',
@@ -348,7 +348,7 @@ renderReportList_Borderlayout:function(inContainerId)
 		var focusOnList = function()
 		{
 			var c = Ext.getCmp('typeReportListViewId')
-	    	c.focus();
+	    	if(c) c.focus();
 		}
 		window.setTimeout(focusOnList,200);
     }
@@ -574,7 +574,7 @@ renderGroupList_Borderlayout:function(inContainerId)
             header: 'Name',
             sortable: true,
             hidden: false,
-            width: '47%',
+            flex: 1,
             dataIndex: 'iName',
             filter: {
                 type: 'string'
@@ -582,7 +582,7 @@ renderGroupList_Borderlayout:function(inContainerId)
     });
     listColumns.push({
 			header: 'HTML Name',
-			width:'47%',
+			flex: 1,
 			sortable: true,
 			hidden: false,
 			dataIndex: 'iHtmlName',
@@ -609,17 +609,19 @@ renderGroupList_Borderlayout:function(inContainerId)
 
    var refreshList = function()
    {
-
+		var totalGroups = 0;
 	    var grps = ijfUtils.jiraApiSync("GET","/rest/api/2/groups/picker?maxResults=1000",null);
 
 		var cts = new Array();
 
 		grps.groups.forEach(function(gp){
 			cts.push([false,gp.name, gp.name, gp.html]);
+			totalGroups++;
 		});
 
 		ijf.lists.groupStore.removeAll();
 		ijf.lists.groupStore.loadData(cts);
+		groupsPnl.setTitle("IJF Group Administration, Total Groups: "+totalGroups);
 		var focusOnList = function()
 		{
 			var c = Ext.getCmp('groupReportListViewId');
@@ -666,7 +668,7 @@ renderGroupList_Borderlayout:function(inContainerId)
 			text:'Export',
 				handler: function(f,i,n){
 					var outStr = "";
-					debugger;
+
 					groupListView.getStore().getData().each(function(r){
 							outStr+=r.data["iName"] + "\n";
 					});
@@ -689,7 +691,7 @@ renderGroupList_Borderlayout:function(inContainerId)
 					   jQuery('#groupUploadFileId').val("");
 					   jQuery('#groupUploadFileId').trigger('click');
 				   };
-				   ijfUtils.modalDialog("Warning","You are about to upload a group configuration file.  If the same group exists by name, this will skip.",uploadGroupFunction);
+				   ijfUtils.modalDialog("Warning","You are about to upload a group configuration file.  If the same group exists by name, this will skip.<br>Logging for this activity is captured in the console which can be viewed by clicking F12.",uploadGroupFunction);
 				}
 			},
             {text:'Add',
@@ -704,8 +706,8 @@ renderGroupList_Borderlayout:function(inContainerId)
 
 				 var gridStore = groupListView.getStore()
 				 var lData = gridStore.getData();
-				var delGrps = [];
-
+				 var delGrps = [];
+				var outMessage = "";
 				lData.items.forEach(function(r)
 				{
 					var cb = r.get('chkbx');
@@ -724,12 +726,15 @@ renderGroupList_Borderlayout:function(inContainerId)
 						if(delRes!="OK")
 						{
 							console.log(groupName + " " + delRes);
+							outMessage+=groupName +  " errored: " + delRes+ "<br>";
 						}
 						else
 						{
 							console.log(groupName + " - group deleted");
+							outMessage+=groupName + " - group deleted<br>";
 						}
 					});
+					ijfUtils.modalMessage("Results",outMessage);
 					ijf.lists.refreshList();
 			 	}
 				ijfUtils.modalDialog("Warning","You are about to delete these groups, procede?",deleteThem);
@@ -799,24 +804,25 @@ renderGroupList_Borderlayout:function(inContainerId)
         },{
             title: 'Left Region',
             region: 'west',     // center region is required, no width/height specified
-            frame: true,
             xtype: 'container',
             layout: 'fit',
-            //margins: '5 5 0 0',
+            width:120,
             items: [
             {
 				xtype: 'panel',
 				frame: true,
+				border: false,
 				layout: 'vbox',
+				padding: '0 0 0 10',
 				items: [
 					{
 						xtype: 'panel',
-						style: 'text-align:center',
-						html: '<br> Utilities<br>'
+						style: 'margin:18 0 15 0',
+						html: '<b>Utilities:</b>'
 					},
 					{
-						xtype: 'button',
-						style: 'margin-bottom:5px',
+						xtype: 'simplelink',
+						style: 'color:#157fcc;border-bottom:solid #157fcc 1px;margin-bottom:5px',
 						text: 'Groups',
 						handler: function(){
                             ijfUtils.clearAll();
@@ -824,9 +830,9 @@ renderGroupList_Borderlayout:function(inContainerId)
 						}
 					},
 					{
-						xtype: 'button',
+						xtype: 'simplelink',
 						text: 'Users',
-						shadow: true,
+						style: 'color:#157fcc',
 						//margin: '5 5 5 5',
 						handler: function(){
 							ijfUtils.clearAll();
@@ -848,7 +854,7 @@ ijfUsersHeaderTopChecked:function(inSelf)
 {
 			var grid = Ext.getCmp("userReportListViewId");
 			var gridData = grid.getStore().getData();
-			var c = cb.checked;
+			var c = inSelf.checked;
 			gridData.items.forEach(function(r)
 			{
 				r.set('chkbx',c);
@@ -898,7 +904,7 @@ renderUserList_Borderlayout:function(inContainerId)
             header: 'Name',
             sortable: true,
             hidden: false,
-            width: '70%',
+            flex: 70,
             dataIndex: 'iName',
             filter: {
                 type: 'string'
@@ -906,13 +912,13 @@ renderUserList_Borderlayout:function(inContainerId)
     });
     listColumns.push({
 			header: 'Active',
-			width:'28%',
+			flex: 30,
 			align: 'center',
 			sortable: true,
 			hidden: false,
 			dataIndex: 'iActive',
 			filter: {
-				type: 'string'
+				type: 'list'
 			}
     });
 
@@ -932,25 +938,31 @@ renderUserList_Borderlayout:function(inContainerId)
 
     if(Ext.getCmp('userReportListViewId')) Ext.getCmp('userReportListViewId').destroy();
 
+
    var refreshList = function()
    {
-
+        var totalUsers = 0;
+        var totalActive = 0;
 	    var users = ijfUtils.jiraApiSync("GET","/rest/api/2/user/search?username=.&includeInactive=true&maxResults=1000",null);
 
 		var cts = new Array();
 
 		users.forEach(function(gp){
-			cts.push([gp.username,false, gp.displayName, gp.active]);
+			cts.push([gp.key,false, gp.displayName, gp.active]);
+			totalUsers++;
+			if(gp.active) totalActive++;
 		});
 
 		ijf.lists.userStore.removeAll();
 		ijf.lists.userStore.loadData(cts);
+		userPnl.setTitle("IJF User Administration, Total Users: "+totalUsers+", Active Users: " + totalActive);
 		var focusOnList = function()
 		{
 			var c = Ext.getCmp('userReportListViewId');
 			if(c) 	c.focus();
 		}
 		window.setTimeout(focusOnList,200);
+
     }
 
 
@@ -991,7 +1003,7 @@ renderUserList_Borderlayout:function(inContainerId)
 			text:'Export',
 				handler: function(f,i,n){
 					var outStr = "";
-					debugger;
+
 					userListView.getStore().getData().each(function(r){
 							outStr+=r.data["iid"] + "," +r.data["iName"] + "," + r.data["iActive"] + "\n";
 					});
@@ -1005,34 +1017,64 @@ renderUserList_Borderlayout:function(inContainerId)
 				 var gridStore = userListView.getStore()
 				 var lData = gridStore.getData();
 				var dUsers = [];
-
+                var outMessage = "Note, users assigned as Project owners will not deactivate.<br><br>";
 				lData.items.forEach(function(r)
 				{
 					var cb = r.get('chkbx');
 					if(cb)
 					{
 						var uid=r.get("iid").trim();
-						dUsers.push(uid);
+						var uName=r.get("iName").trim();
+						dUsers.push([uid,uName]);
 					}
 				});
+
+				var deactivateUser = function(inKey) {
+
+						var baseUrl = "/rest/scriptrunner/latest/custom/deactivateUser?userkey=" + inKey;
+						var retVal = null;
+						jQuery.ajax({
+							async: false,
+							type: 'GET',
+							url: baseUrl,
+							timeout: 60000,
+							success: function(d) {
+								retVal = d;
+							},
+							error: function(e) {
+								retVal = e;
+							}
+						});
+
+						return retVal;
+					}
 
 				 var deactivateThem = function()
 				 {
 					dUsers.forEach(function(u)
 					{
-						var putObj = {};
-						putObj["active"]=false;
-						var jData = JSON.stringify(putObj);
-						var delRes = ijfUtils.jiraApiSync("PUT","/rest/api/2/user?username="+u,jData);
-						if(delRes!="OK")
+						var delRes = deactivateUser(u[0]);
+						if(delRes.result=="OK")
 						{
-							console.log(u + " " + delRes);
+							console.log(u[0] + " - user deactivated");
+							outMessage+=u[1] + " - user deactivated<br>";
 						}
 						else
 						{
-							console.log(u + " - user deactivated");
+							if(delRes.result)
+							{
+								console.log(u[0] + " Not Deactivated " + delRes.result);
+								outMessage+=u[1] + " Not Deactivated " + delRes.result + "<br>";
+							}
+							else
+							{
+								console.log(u[0] + " Not Deactivated " + JSON.stringify(delRes));
+								outMessage+=u[1] + " Not Deactivated " + JSON.stringify(delRes) + "<br>";
+							}
+
 						}
 					});
+					ijfUtils.modalMessage("Results",outMessage);
 					ijf.lists.refreshList();
 			 	}
 				ijfUtils.modalDialog("Warning","You are about to deactivate these users, procede?",deactivateThem);
@@ -1077,8 +1119,6 @@ renderUserList_Borderlayout:function(inContainerId)
             frame: false,
             bodyStyle: 'background-color:#3892d4',
             split: false,         // enable resizing
-
-            margins: '0 5 5 5',
            // id: 'itemsNorth',
            header: {
 			   titlePosition: 0,
@@ -1097,39 +1137,39 @@ renderUserList_Borderlayout:function(inContainerId)
             frame: true,
             xtype: 'container',
             layout: 'fit',
-            margins: '5 5 0 0',
             items: [userPnl]
         },{
             title: 'Left Region',
             region: 'west',     // center region is required, no width/height specified
-            frame: true,
             xtype: 'container',
             layout: 'fit',
-            //margins: '5 5 0 0',
+            width: 120,
             items: [
             {
 				xtype: 'panel',
 				frame: true,
+				border: false,
 				layout: 'vbox',
+				padding: '0 0 0 10',
 				items: [
 					{
 						xtype: 'panel',
-						style: 'text-align:center',
-						html: '<br> Utilities<br>'
+						style: 'margin:18 0 15 0',
+						html: '<b>Utilities:</b>'
 					},
 					{
-						xtype: 'button',
-						style: 'margin-bottom:5px',
-						text: 'Groups',
+						xtype: 'simplelink',
+						style: 'color:#157fcc;margin-bottom:5px',
+						text: ' Groups ',
 						handler: function(){
 							ijfUtils.clearAll();
 							ijf.lists.renderGroupList_Borderlayout('ijfContent');
 						}
 					},
 					{
-						xtype: 'button',
-						text: 'Users',
-						//margin: '5 5 5 5',
+						xtype: 'simplelink',
+						style: 'color:#157fcc;border-bottom:solid #157fcc 1px',
+						text: ' Users ',
 						handler: function(){
 							ijfUtils.clearAll();
 							ijf.lists.renderUserList_Borderlayout('ijfContent');
@@ -1373,7 +1413,7 @@ renderItemList_Borderlayout:function(inContainerId)
 	            width:ijf.fw.listFormNameWidth,
 	            sortable: true,
 	            hidden: false,
-	            width:185,
+	            flex: 1,
 	            dataIndex: 'iname',
 	            filter: {
 	                type: 'list'
@@ -2633,6 +2673,8 @@ addEditCustomType:function (inFrmId)
               if(!tId) return;
               if(rowIndex.data.iTypeType=="GRID")
               	ijf.lists.addEditCustomTypeDetails(tId);
+	 		  else if(rowIndex.data.iTypeType=="FILE ATTRIBUTES")
+					ijf.lists.addEditCustomTypeDetails(tId,false);
 	 		  else if(rowIndex.data.iTypeType=="FILE")
 					ijf.lists.addEditCustomFileReference(tId,false);
               else
@@ -2700,6 +2742,8 @@ addEditCustomType:function (inFrmId)
 				if(!thisT) return;
 				if(thisT.customType=="GRID")
 					ijf.lists.addEditCustomTypeDetails(thisId);
+				else if(thisT.customType=="FILE ATTRIBUTES")
+					ijf.lists.addEditCustomTypeDetails(thisId,false);
 				else if(thisT.customType=="FILE")
 					ijf.lists.addEditCustomFileReference(thisId,false);
 				else
@@ -3936,7 +3980,7 @@ addEditType:function (inTypeId,isReportView)
 
 	fieldLookup.sort();
 
-    var typeLookup = ["GRID","REFERENCE","FILE"];
+    var typeLookup = ["GRID","REFERENCE","FILE","FILE ATTRIBUTES"];
 
     var tit = "IJF Custom Type Settings";
     if(isReportView) tit = "IJF Report Settings";
@@ -4054,7 +4098,7 @@ addEditType:function (inTypeId,isReportView)
 				if(thisCustomType.customType=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the type cannot be blank."); return;}
 
 				//if type ==GRID then
-				if(thisCustomType.customType=="GRID")
+				if((thisCustomType.customType=="GRID") || (thisCustomType.customType=="FILE ATTRIBUTES"))
 				{
 					if(thisCustomType.fieldName=="") {ijfUtils.modalDialogMessage("Form Error","Sorry, the fieldname cannot be blank."); return;}
 				}

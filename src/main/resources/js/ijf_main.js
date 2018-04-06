@@ -216,13 +216,9 @@ function processSetup(inContainerId)
 		{
 			ijf.lists.renderReportList_Borderlayout(inContainerId);
 		}
-		if(window.location.search.indexOf("mode=groups")>-1)
+		else if(window.location.search.indexOf("mode=admin")>-1)
 		{
 			ijf.lists.renderGroupList_Borderlayout(inContainerId);
-		}
-		else if(window.location.search.indexOf("mode=report")>-1)
-		{
-			ijf.lists.renderReport_noforms(inContainerId);
 		}
 		else
 		{

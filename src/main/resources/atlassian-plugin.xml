@@ -12,7 +12,7 @@
     <param name="plugin-logo">images/pluginLogo.png</param>
     <param name="plugin-summary">Ideal Forms for JIRA creates and serves simplified customized user interfaces that help many use cases.</param>
     <param name="plugin-tagline">Custom forms for simplified access, for mobile access and for process automation.</param>    
-    <param name="atlassian-licensing-enabled">true</param>     
+    <param name="atlassian-licensing-enabled">false</param>     
      <screenshots>
             <screenshot image="images/admin.png"/>
             <screenshot image="images/list.png"/>
@@ -81,9 +81,9 @@
     <link linkId="ijfReportsAdminId">/plugins/servlet/iforms?decorator=admin&amp;mode=reports</link>
   </web-item>
 
-  <web-item key="ijf_links_link2" name="Admin on IJF Links Main Section" section="admin_plugins_menu/ijf_web_section" weight="20">
-    <label>Ideal Groups Admin</label>
-    <link linkId="ijfGroupsAdminId">/plugins/servlet/iforms?decorator=admin&amp;mode=groups</link>
+  <web-item key="ijf_links_link3" name="Admin on IJF Links Main Section" section="admin_plugins_menu/ijf_web_section" weight="20">
+    <label>Ideal Administration</label>
+    <link linkId="ijfGroupsAdminId">/plugins/servlet/iforms?decorator=admin&amp;mode=admin</link>
   </web-item>
     
   <!-- import from the product container -->

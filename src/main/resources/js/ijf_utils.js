@@ -683,13 +683,13 @@ writeJiraGroupsConfig:function(inConfig, doReset)
 		    var jsonString = {};
 		    jsonString.name=g.trim();
 			var saveRes = ijfUtils.jiraApiSync("POST","/rest/api/2/group",JSON.stringify(jsonString));
-			if(saveRes!="OK")
+			if(!saveRes.name)
 			{
 				console.log(g + " " + saveRes);
 			}
 			else
 			{
-				console.log(g + " - group added");
+				console.log(saveRes.name + " - group added");
 			}
 
 	   });
@@ -1157,6 +1157,36 @@ modalDialog:function(inTitle,inMessage,inFunction)
 			}
 	    }
     });
+
+},
+
+modalMessage:function(inTitle,inMessage)
+{
+
+			 var rWin = new Ext.Window({
+					title: inTitle,
+					width: 800,
+					height: 500,
+					closable: true,
+					scrollable: true,
+					items:[
+					{
+						xtype: 'panel',
+						layout: 'fit',
+						margin: '10 0 0 10',
+						html: inMessage
+					}
+					],
+					buttons:[
+						{
+							text:'Close',
+							handler: function(){
+								rWin.close();
+							}}
+					],
+					modal: true
+				});
+		rWin.show();
 
 },
 

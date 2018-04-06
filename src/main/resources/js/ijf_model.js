@@ -498,11 +498,10 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
     //OK, value in the control, is now the value you want to save...
     //need to switch on the type of control, text or grid
 	var tSection = ijfUtils.getFieldDef(ijf.main.itemId,this.field.dataSource);
-
+	var thisT = {};
 	//manage custom types first....
 	if(!tSection.jiraMeta)
 	{
-		var thisT = {};
 		var testDs = this.field.dataSource;
 		ijf.fw.CustomTypes.forEach(function(t){if(t.name==testDs) thisT=t;});
 		if(thisT)
@@ -514,6 +513,16 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				tSection["jiraField"]={};
 				tSection.jiraField["id"] = ijf.jiraFieldsKeyed[thisT.fieldName].id; //jira id of the custom type field store
 			}
+
+			//we have a custom type....
+			if(thisT.customType=="FILE ATTRIBUTES")
+			{
+				tSection = {"jiraMeta":{"schema":{"type":"fileattributes"}}};
+				tSection["jiraField"]={};
+				tSection.jiraField["id"] = ijf.jiraFieldsKeyed[thisT.fieldName].id; //jira id of the custom type field store
+			}
+
+
 		}
 	}
 
@@ -681,6 +690,54 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				//std text value
 				var gridData = this.control.getStore().getData();
 				var dataArray = gridData.items.map(function(r){return r.data;});
+				//sanitize grid
+				var rawGrid = JSON.stringify(dataArray);
+				rawGrid = ijfUtils.sanitize(rawGrid);
+				this.newVal = rawGrid;
+				break;
+			case 'fileattributes':
+				//std text value
+				var gridData = this.control.getStore().getData();
+				var dataArray = gridData.items.map(function(r){return r.data;});
+
+				//clean the data for just custom type columns
+				var gCols=null;
+				if(thisT)
+				{
+					gCols = JSON.parse(thisT.settings);
+					dataArray = dataArray.reduce(function(inArr,r)
+					{
+						var retObj = {};
+						retObj.fileid=r.fileid;
+						//now each custom type column, + name maybe
+							gCols.forEach(function(col)
+							{
+								if(r.hasOwnProperty(col.columnName)) retObj[col.columnName]=r[col.columnName];
+							});
+						inArr.push(retObj);
+
+						//now do it again if this object has children....
+						if(r.children)
+						{
+							inArr = r.children.reduce(function(innerArr,r)
+							{
+								var retObj = {};
+								retObj.fileid=r.fileid;
+								//now each custom type column, + name maybe
+									gCols.forEach(function(col)
+									{
+										if(r.hasOwnProperty(col.columnName)) retObj[col.columnName]=r[col.columnName];
+									});
+								innerArr.push(retObj);
+								return innerArr;
+							},inArr);
+						}
+
+						return inArr;
+					},[]);
+				}
+
+
 				//sanitize grid
 				var rawGrid = JSON.stringify(dataArray);
 				rawGrid = ijfUtils.sanitize(rawGrid);

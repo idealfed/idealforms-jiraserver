@@ -114,6 +114,9 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'attachmentlistgrid':
                 ijf.extUtils.renderAttchmentListGrid (inFormKey,item,inField,inContainer);
                 break;
+            case 'attachmentlisttree':
+                ijf.extUtils.renderAttchmentListTree (inFormKey,item,inField,inContainer);
+                break;
             case 'attachmentmanaged':
                 ijf.extUtils.renderAttchmentManaged (inFormKey,item,inField,inContainer);
                 break;
@@ -767,7 +770,7 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
 		return a>b ? -1 : a<b ? 1 : 0;
 	});
 
-    if(inField.dataReference)
+    /*if(inField.dataReference)
     {
 		//filter out any occurence of the CSV list...
 		sortedAttachments = sortedAttachments.reduce(function(inArray, f)
@@ -775,7 +778,7 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
 			if(f.filename.indexOf(inField.dataReference)>-1) inArray.push(f);
 			return inArray;
 		},[]);
-	}
+	}*/
 
     if(inField.referenceFilter)
     {
@@ -870,7 +873,7 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
 			header: "File",
 			sortable: true,
 			hidden: false,
-			width: '45%',
+			flex: 70,
 			dataIndex: "filename",
 			filter: {
 				type: 'string'
@@ -882,7 +885,7 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
 			header: "User",
 			sortable: true,
 			hidden: false,
-			width: '20%',
+			flex: 30,
 			dataIndex: "fUser",
 			filter: {
 				type: 'string'
@@ -896,7 +899,7 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
 			hidden: false,
 			xtype: 'datecolumn',
 			formatter:'date("m/d/y h:i:s A")',
-			width: '20%',
+			width: 150,
 			dataIndex: "created",
 			filter: {
 				type: 'date'
@@ -906,7 +909,7 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
 	{
 		listColumns.push({xtype: 'actioncolumn',
 			  header: "Action",
-			  width: '10%',
+			  width: 70,
 			  items: [{icon: '' },{
 					icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/tree/drop-no.png',
 					handler: function(grid, rowIndex, colIndex, itm) {
@@ -948,7 +951,7 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
         model: inFormKey+'_mdl_'+inField.formCell.replace(",","_")
     });
     var fArray = sortedAttachments.map(function(a){
-		    return {"fileid":a.id,"created":a.created,"filename":"<a href='"+a.content+"' target='_blank'>" + a.filename + "</a>","fUser":a.author.displayName};
+		    return {"fileid":a.id,"created":a.created,"filename":a.filename + " <a href='"+a.content+"' target='_blank'>open</a>","fUser":a.author.displayName};
 	});
 	gridStore.loadData(fArray);
 
@@ -968,6 +971,698 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
         frame: true,
         collapsible: collapsible,
         collapsed: collapsed
+    });
+	//gridStore.parentGridPanel = gridPanel;
+
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](gridPanel, inFormKey,item, inField, inContainer);
+    gridPanel.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, gridPanel, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](gridPanel, inFormKey,item, inField, inContainer);
+
+},
+renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
+{
+    inContainer.title = inField.toolTip;
+
+   //look for file attributes
+	var thisT = null;
+	var indexedData = null;
+
+	if(inField.dataSource)
+	{
+		for(var tF in ijf.fw.CustomTypes){
+			if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+			if(ijf.fw.CustomTypes[tF].name==inField.dataSource) thisT=ijf.fw.CustomTypes[tF];
+		}
+		if(!thisT)
+		{
+			ijfUtils.footLog("Unable to get file att spec from  " + inField.dataSource);
+		}else
+		{
+			var jfFieldMeta = ijf.jiraMetaKeyed[thisT.fieldName];
+			var jfFieldDef = ijf.jiraFieldsKeyed[thisT.fieldName];
+			var jf=item.fields[jfFieldDef.id];
+			var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+			if(data)
+			{
+				data = JSON.parse(data);
+				indexedData=[];
+				data.forEach(function(r){indexedData[r.fileid]=r});
+			}
+		}
+	}
+
+	//sort asc by TITILE + date
+	var sortedAttachments = item.fields.attachment.sort(function(a, b)
+	{
+		a = a.filename + moment(a.created).format('YYYY-MM-DD HH:mm:ss');
+		b = b.filename + moment(b.created).format('YYYY-MM-DD HH:mm:ss');
+		return a>b ? -1 : a<b ? 1 : 0;
+	});
+
+    if(inField.referenceFilter)
+    {
+		//filter out any occurence of the CSV list...
+		sortedAttachments = sortedAttachments.reduce(function(inArray, f)
+		{
+			if(inField.referenceFilter.indexOf(f.filename)>-1) return inArray;
+			inArray.push(f);
+			return inArray;
+		},[]);
+	}
+
+	//these are sorted by title, the FIRST title is NOT a leaf...
+	// if it has children they are next and leaf with parent...
+	var lastName = "";
+	var parentId = "";
+	var lastObj = {};
+
+    var fArray = sortedAttachments.map(function(a){
+			    var retObj =  {"fileid":a.id,"created":a.created,"filename":a.filename + " <a href='"+a.content+"' target='_blank'>open</a>","fUser":a.author.displayName};
+
+			    //add data if exists
+			    if(indexedData)
+			    {
+					if(indexedData.hasOwnProperty(a.id))
+					{
+						//add all the attributes to this record...
+						var fileAtts = indexedData[a.id];
+						Object.keys(fileAtts).forEach(function(a){
+							if(a=="fildid") return;
+							retObj[a]=fileAtts[a];
+						});
+					}
+				}
+
+
+			    //is it leaf?  is it parent....
+			    retObj.leaf=false;
+			    if(a.filename==lastName)
+			    {
+					//this is a child....
+				    retObj.leaf=true;
+				    retObj.moved=true;
+					lastObj.children.push(retObj);
+				}
+				else
+				{
+					retObj.children=[];
+					lastObj=retObj;
+				}
+				lastName = a.filename;
+			    return retObj;
+	});
+	fArray = fArray.reduce(function(inArray,i){
+			if(i.moved) return inArray;
+			inArray.push(i);
+			return inArray;
+		},[]);
+
+   //end data prep
+
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
+
+    var ocf =  ijfUtils.getEvent(inField);
+
+    var hideField = ijfUtils.renderIfShowField("",inField);
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
+    var collapsible = true;
+    if (l_fieldStyle.indexOf('collapsible:false')>-1)
+    {
+        collapsible=false;
+    }
+    var collapsed = false;
+    if (l_fieldStyle.indexOf('collapsed:true')>-1)
+    {
+        collapsed=true;
+    }
+    var canDelete = false;
+    if (l_fieldStyle.indexOf('delete:true')>-1)
+    {
+        canDelete=true;
+    }
+	if(!perms.canEdit) canDelete=false;
+
+
+	var l_Height = 300;
+    var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
+    if(l_Height=="")
+    {
+		l_Height=300;
+	}
+	else
+	{
+    	l_Height = l_Height.replace("px","")/1;
+	}
+
+	var l_Width = 600;
+    var l_Width=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"width");
+    if(l_Width=="")
+    {
+		l_Width=600;
+	}
+	else
+	{
+    	l_Width = l_Width.replace("px","")/1;
+	}
+
+    var colWidths=[];
+	var colHeaders = [];
+	if(inField.tableWidths) colWidths=inField.tableWidths.split(",");
+	if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
+
+	var thisColWidth = 120;
+	var thisColHeader = "";
+
+    //base columns
+    var listColumns = [];
+    var tFields = [];
+    var colObj = {};
+    var cIndex=0;
+
+    var setColWidth = function(inCol,inIndex,inColWidths,inDefault)
+    {
+			if(inColWidths[inIndex])
+			{
+				var tW = inColWidths[inIndex];
+				//if numeric, set width, if %, remove % and set flex
+				if(isNaN(tW)) inCol.flex=tW.replace("%","")/1;
+				else inCol.width=tW/1;
+			}
+			else
+			{
+				if(isNaN(inDefault))
+				{
+					try
+					{
+						inCol.flex=inDefault.replace("%","")/1;
+					}
+					catch(e)
+					{
+						inCol.flex=15;
+					}
+				}
+				else
+					inCol.width=inDefault/1;
+			}
+	}
+
+    tFields.push({name: "fileid", type: 'string'});
+	listColumns.push({
+			header: "FID",
+			sortable: true,
+			hidden: true,
+			width: 10,
+			dataIndex: "fileid"
+	});
+
+
+	thisColHeader = "File";
+	if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+    tFields.push({name: "filename", type: 'string'});
+	colObj={
+			xtype: 'treecolumn',
+			header: thisColHeader,
+			sortable: true,
+			hidden: false,
+			dataIndex: "filename",
+			filter: {
+				type: 'string'
+			}
+	};
+	setColWidth(colObj,cIndex,colWidths,"70%");
+    listColumns.push(colObj);
+	cIndex++;
+
+	thisColHeader = "User";
+	if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+    tFields.push({name: "fUser", type: 'string'});
+	colObj={
+			header: thisColHeader,
+			sortable: true,
+			hidden: false,
+			dataIndex: "fUser",
+			filter: {
+				type: 'list'
+			}
+	};
+	setColWidth(colObj,cIndex,colWidths,"30%");
+    listColumns.push(colObj);
+	cIndex++;
+
+
+	thisColHeader = "Date";
+	if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+	tFields.push({name: "created", type: 'date'});
+	colObj={
+			header: thisColHeader,
+			sortable: true,
+			hidden: false,
+			xtype: 'datecolumn',
+			formatter:'date("m/d/y h:i:s A")',
+			dataIndex: "created",
+			filter: {
+				type: 'date'
+				}
+	};
+	setColWidth(colObj,cIndex,colWidths,150);
+    listColumns.push(colObj);
+	cIndex++;
+
+
+	//section for custom attributes...
+	var gCols=null;
+	if(thisT)
+	{
+	    gCols = JSON.parse(thisT.settings);
+	    //order by order
+	    gCols = gCols.sort(function(a,b){return (a.order-b.order);});
+		var cIndex = 0;
+		var lookups = [];
+		gCols.forEach(function(col)
+		{
+
+			var lValidator = function(v){return true};
+			if((col.regEx!=null) && (col.regEx!=""))
+			{
+				lValidator = function(v)
+				{
+					var rgx = new RegExp(col.regEx);
+					if (!rgx.exec(v)) {
+						return col.regExMess;
+					}
+					return true;
+				}
+			}
+
+            var validRenderer = function (val, meta, rec, rowIndex, colIndex, store) {
+					//at this poing you have the column def, if required or regex fails, make pink
+
+					if((col.required=="Yes") && (!val))
+					{
+						meta.style = "background-color:pink;";
+					}
+					if((col.regEx!=null) && (col.regEx!=""))
+					{
+						var rgxRenderCheck = new RegExp(col.regEx);
+						if (!rgxRenderCheck.exec(val)) {
+							meta.style = "background-color:pink;";
+						}
+					}
+
+				//now manage the value formatting....
+				switch(col.controlType)
+				{
+					case "datefield":
+						return Ext.util.Format.dateRenderer(col.format)(val); //moment(val).format(col.format);
+						break;
+					case "combobox":
+						//if value lookup is two dimensional, lookup value of val...
+						var retVal = val;
+						if(lookups[col.columnName])
+						{
+							var lLookup = lookups[col.columnName];
+							if(lLookup)
+							{
+								if((typeof lLookup[0]) == "object") lLookup.forEach(function(r){if(r[0]==val) retVal=r[1];});
+							}
+						}
+						return retVal;
+						break;
+					case "numberfield":
+						if(col.format) return Ext.util.Format.numberRenderer(col.format)(val); //moment(val).format(col.format);
+						return val;
+						break;
+					default:
+						return val;
+				}
+			}
+
+			//create columns for each type....
+			thisColHeader = col.columnName;
+			if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+			switch(col.controlType)
+			{
+				case "datefield":
+						tFields.push({name: col.columnName, type: 'date'});
+						if(col.format==null) col.format = 'm/d/Y';
+						if(col.format=="") col.format = 'm/d/Y';
+						colObj={
+								header: thisColHeader,
+								sortable: true,
+								hidden: false,
+								xtype: 'datecolumn',
+								renderer: validRenderer,
+								ijfColumn: col,
+								width: thisColWidth,
+								dataIndex: col.columnName,
+								filter: {
+									type: 'date'
+								},
+								editor: {
+									completeOnEnter: true,
+									field: {
+										xtype: col.controlType,
+										allowBlank: (col.required!="Yes"),
+										validator: lValidator,
+										format:col.format,
+										listeners: {
+											change: function(n,o,f)
+											{
+												ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+											}
+										}
+									}
+								}
+				};
+				break;
+				case "numberfield":
+						tFields.push({name: col.columnName, type: 'number'});
+						colObj={
+								header: thisColHeader,
+								sortable: true,
+								hidden: false,
+								xtype: 'numbercolumn',
+								renderer: validRenderer,
+								align: 'end',
+								width: thisColWidth,
+								dataIndex: col.columnName,
+								filter: {
+									type: 'number'
+								},
+								editor: {
+									completeOnEnter: true,
+									field: {
+										xtype: col.controlType,
+										allowBlank: (col.required!="Yes"),
+										validator: lValidator,
+										format:col.format,
+										listeners: {
+											change: function(n,o,f)
+											{
+												ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+											}
+										}
+									}
+								}
+				};
+				break;
+				case "checkbox":
+					tFields.push({name: col.columnName, type: 'boolean'});
+					colObj={
+							header: thisColHeader,
+							sortable: true,
+							hidden: false,
+							xtype: 'checkcolumn',
+							centered:true,
+							//renderer: validRenderer,
+							width: thisColWidth,
+							dataIndex: col.columnName,
+							listeners: {
+								checkchange: function(n,o,f)
+								{
+									ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+								}
+							}
+				};
+				break;
+				case "combobox":
+						tFields.push({name: col.columnName, type: 'string'});
+						//The lookup may be simple 1D array or part of a complex cascade.  The syntax of co.reference tells
+						var cLookupDef = {"index":"0"};
+						var cListener = {
+											change: function(n,o,f)
+											{
+												ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+											},
+											focus: function(){
+												this.validate();
+											}
+										};
+						if(ijf.fw.CustomTypes.reduce(function(inObj,t){if(t.name==col.reference) inObj=t; return inObj;},null))
+						{
+							lookups[col.columnName] = ijfUtils.getReferenceDataByName(col.reference,"0");
+						}
+						else
+						{
+							//complex cascade...
+							try
+							{
+								cLookupDef = JSON.parse(col.reference);
+								lookups[col.columnName] = ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index);
+
+								//establish a listener for this combo if necessary
+								if(cLookupDef.parents)
+								{
+									var parentIds = cLookupDef.parents;
+									var cFilters = parentIds.reduce(function(inFilter,p){
+											inFilter.push({"property":p.dataIndex.toString(), "value":"tbd", "columnName":p.columnName});
+											return inFilter;
+										},[]);
+									cListener["beforeQuery"] = function(query) {
+												var cContainer = this.up();
+												//cFilters["value"]= cValue;
+												cFilters.forEach(function(f){
+													//for each filter param, we need to get the correct value...
+													var cValue = cContainer.grid.getSelectionModel().getSelected().items[0].data[f.columnName];
+													if(!cValue) cValue = 'novaluetofilterwith';
+													f.value=cValue;
+												});
+												this.store.clearFilter();
+												this.store.filter(cFilters);
+											};
+								}
+
+								//for each child, you need to clear it's value
+								if(cLookupDef.children)
+								{
+									var childFields = cLookupDef.children;
+									cListener["change"]= function(n,o,f)
+									{
+											var cContainer = this.up();
+											childFields.forEach(function(f){
+												cContainer.grid.getSelectionModel().getSelected().items[0].set(f,null);
+											});
+											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+									};
+								}
+
+							}
+							catch(le)
+							{
+								ijfUtils.footLog("failed to handle complex lookup: " + le.message);
+								lookups[col.columnName] = [];
+							}
+						}
+						colObj={
+								header: thisColHeader,
+								sortable: true,
+								hidden: false,
+								width: thisColWidth,
+								dataIndex: col.columnName,
+								renderer: validRenderer,
+								filter: {
+									type: 'list'
+								},
+								editor: {
+									completeOnEnter: true,
+									field: {
+										xtype: col.controlType,
+										allowBlank: (col.required!="Yes"),
+										validator: lValidator,
+										forceSelection: true,
+										store: lookups[col.columnName],
+										lookupDef: cLookupDef,
+										displayField: cLookupDef.index,
+										valueField: cLookupDef.index,
+										//triggerAction: 'all',
+										//mode: 'local',
+										//lastQuery: '',
+										listeners: cListener
+									}
+								}
+				};
+				break;
+				default:
+						tFields.push({name: col.columnName, type: 'string'});
+
+						colObj={
+								header: thisColHeader,
+								sortable: true,
+								hidden: false,
+								width: thisColWidth,
+								dataIndex: col.columnName,
+								renderer: validRenderer,
+								filter: {
+									type: 'string'
+								},
+								editor: {
+									completeOnEnter: true,
+									field: {
+										xtype: col.controlType,
+										allowBlank: (col.required!="Yes"),
+										validator: lValidator,
+										listeners: {
+											change: function(n,o,f)
+											{
+												ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+											},
+											focus: function(){
+												this.validate();
+											}
+										}
+									}
+								}
+				};
+			}
+
+			setColWidth(colObj,cIndex,colWidths,150);
+		    listColumns.push(colObj);
+
+			cIndex++;
+
+		});
+
+	}
+
+
+	//adding can Delete at END
+	if(canDelete)
+	{
+		listColumns.push({xtype: 'actioncolumn',
+			  header: "Action",
+			  width: 70,
+			  items: [{icon: '' },{
+					icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/tree/drop-no.png',
+					handler: function(grid, rowIndex, colIndex, itm) {
+						  try
+						  {
+							  var fileId = grid.getStore().getData().items[rowIndex].data["fileid"];
+							  //function to delete and remove the record....
+							  var removeFile = function()
+							  {
+								   var delRes = ijfUtils.jiraApiSync("DELETE","/rest/api/2/attachment/"+fileId,null);
+								   if(delRes!="OK")
+								   {
+										ijfUtils.modalDialogMessage("Error","Unable to delete the file: " + delRes);
+										return;
+								   }
+								  //remove the row from the grid....
+								  var rec = grid.getStore().getData().items[rowIndex];
+								  if(rec.childNodes)
+								  {
+									  var cIndex = rec.parentNode.indexOf(rec);
+									  if(rec.childNodes.length>0)
+									  {
+									  //FIRST one is now the parent....
+										  var newSet = [];
+										  var newRootFile = rec.childNodes[0];
+										  newRootFile.leaf=false;
+										  for(var i=1;i<rec.childNodes.length;i++)
+										  {
+											  newRootFile.insertChild((i-1),rec.childNodes[i]);
+										  }
+										  //add to the tree root
+  									      rec.parentNode.insertChild(cIndex,newRootFile);
+								  	  }
+								  }
+								  rec.parentNode.removeChild(rec);
+								  return;
+							  }
+							  ijfUtils.modalDialog("Warning","You are about to permanently remove this file, continue?",removeFile);
+						  }
+						  catch(e)
+						  {
+							  footLog("Failed delete action ");
+						  }
+					}
+				}]
+	  	});
+    }
+
+    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(",","_")))
+    {
+        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(",","_"), {
+            extend: 'Ext.data.Model',
+            fields: tFields
+        });
+    }
+    var gridStore = new Ext.data.TreeStore({
+        model: inFormKey+'_mdl_'+inField.formCell.replace(",","_"),
+        root: {
+		 	expanded:false,
+		 	children: fArray
+		}
+    });
+	//gridStore.loadData(fArray);
+
+	var headerButtons =[];
+		headerButtons.push({
+						xtype:'button',
+						text: 'Save',
+						scope: this,
+						handler: function(){
+							 //create record...
+							var onSuccessSave = function()
+							{
+								ijfUtils.hideProgress();
+								if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
+								ijf.main.setAllClean();
+								ijf.main.resetForm();
+							};
+							Ext.getBody().mask("Saving...");
+							var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,inField.form,item)};
+							window.setTimeout(saveIt,50);
+						}
+					});
+
+    var gridPanel = new Ext.tree.Panel({
+		 header:{
+				titlePosition: 0,
+				items: headerButtons
+		},
+		 title:  inField.caption,
+		 style: l_Style,
+		 hidden: hideField,
+		 bodyStyle: l_panelStyle,
+		 height: l_Height,
+        store: gridStore,
+         rootVisible: false,
+        width:l_Width,
+        plugins: ['gridfilters',{
+			ptype: 'cellediting',
+			clicksToEdit: 1
+        }],
+        id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+        //reserveScrollOffset: true,
+        columns: listColumns,
+        frame: true,
+        collapsible: collapsible,
+        collapsed: collapsed
+
     });
 	//gridStore.parentGridPanel = gridPanel;
 
@@ -7861,6 +8556,8 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 		{
 			case "datefield":
 					tFields.push({name: col.columnName, type: 'date'});
+						if(col.format==null) col.format = 'm/d/Y';
+						if(col.format=="") col.format = 'm/d/Y';
 					listColumns.push({
 							header: thisColHeader,
 							sortable: true,
