@@ -110,18 +110,18 @@ a.x-simplelink-default:hover {
 	.ijfAttachListHeadName{
 		display: table-cell;
 		text-align:center;
-		width:50%;
+		width:calc(100%-260px);
 		padding: 5px;
 	}
 	.ijfAttachListHeadAuthor{
 		display: table-cell;
 		text-align:center;
-		width:25%;
+		width:130px;
 	}
 	.ijfAttachListHeadDate{
 		display: table-cell;
 		text-align:center;
-		width:25%;
+		width:130px;
 	}
 	.ijfAttachListRow{
 		display: table-row;
@@ -135,18 +135,18 @@ a.x-simplelink-default:hover {
 		display: table-cell;
 		text-align:left;
 		vertical-align: middle;
-		width:50%;
+		width:calc(100%-260px);
 	}
 	.ijfAttachListAuthor{
 		display: table-cell;
 		text-align:left;
-		width:25%;
+		width:130px;
 		padding: 5px;
 	}
 	.ijfAttachListDate{
 		display: table-cell;
 		text-align:left;
-		width:25%;
+		width:130px;
 		padding: 5px;
 	}
 	

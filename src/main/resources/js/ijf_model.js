@@ -681,6 +681,20 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 					}
 					this.newVal = JSON.stringify(saveVal);
 				}
+				else if(this.field.controlType=="attachmentmanaged")
+				{
+					//this managed attachment is backed by a field to store name...
+					//datasource is the field, newValue is
+
+					var fNameHtml = this.control.items.items[0].getHeader().items.items[0].body.dom.innerHTML;
+					var fNameParts = fNameHtml.split('<span style="color:yellow">');
+					var fNameParts2 = fNameParts[1].split('</span');
+					this.newVal=fNameParts2[0];
+
+					//set a flag to have save routine also save this value...
+					this.field.dynamicAttachementManaged=true;
+
+				}
 				else
 				{
 					this.newVal = this.control.items.items[0].getValue();

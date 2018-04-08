@@ -33,7 +33,7 @@ helpLink:function(inLabel, inCaller)
 		case "Reference Editor":
 				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-37#" + inLabel);
 		break;
-		case "itemlistedit":
+		case "attachmentlisttree":
 				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-36#" + inLabel);
 		break;
 		case "itemlistHTML":

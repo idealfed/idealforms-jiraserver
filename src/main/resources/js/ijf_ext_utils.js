@@ -36,9 +36,6 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'Reference Editor':
                 ijf.extUtils.renderGridRefEditor(inFormKey,item,inField,inContainer);
                 break;
-            case 'itemlistedit':
-                ijf.extUtils.renderItemListEdit (inFormKey,item,inField,inContainer);
-                break;
             case 'itemlistHTML':
                 ijf.extUtils.renderItemlistHtml(inFormKey,item,inField,inContainer);
                 break;
@@ -929,7 +926,7 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
 								  grid.getStore().removeAt(rowIndex);
 								  return;
 							  }
-							  ijfUtils.modalDialog("Warning","You are about to permanently remove this file, continue?",removeFile);
+							  ijfUtils.modalDialog("Warning","You are about to permanently remove this file. Note, to see changes in other files lists on this page you must refresh the page. continue?",removeFile);
 						  }
 						  catch(e)
 						  {
@@ -1163,32 +1160,6 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
     var colObj = {};
     var cIndex=0;
 
-    var setColWidth = function(inCol,inIndex,inColWidths,inDefault)
-    {
-			if(inColWidths[inIndex])
-			{
-				var tW = inColWidths[inIndex];
-				//if numeric, set width, if %, remove % and set flex
-				if(isNaN(tW)) inCol.flex=tW.replace("%","")/1;
-				else inCol.width=tW/1;
-			}
-			else
-			{
-				if(isNaN(inDefault))
-				{
-					try
-					{
-						inCol.flex=inDefault.replace("%","")/1;
-					}
-					catch(e)
-					{
-						inCol.flex=15;
-					}
-				}
-				else
-					inCol.width=inDefault/1;
-			}
-	}
 
     tFields.push({name: "fileid", type: 'string'});
 	listColumns.push({
@@ -1213,7 +1184,7 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 				type: 'string'
 			}
 	};
-	setColWidth(colObj,cIndex,colWidths,"70%");
+	ijfUtils.setColWidth(colObj,cIndex,colWidths,"70%");
     listColumns.push(colObj);
 	cIndex++;
 
@@ -1229,7 +1200,7 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 				type: 'list'
 			}
 	};
-	setColWidth(colObj,cIndex,colWidths,"30%");
+	ijfUtils.setColWidth(colObj,cIndex,colWidths,"30%");
     listColumns.push(colObj);
 	cIndex++;
 
@@ -1248,7 +1219,7 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 				type: 'date'
 				}
 	};
-	setColWidth(colObj,cIndex,colWidths,150);
+	ijfUtils.setColWidth(colObj,cIndex,colWidths,150);
     listColumns.push(colObj);
 	cIndex++;
 
@@ -1539,7 +1510,7 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 				};
 			}
 
-			setColWidth(colObj,cIndex,colWidths,150);
+			ijfUtils.setColWidth(colObj,cIndex,colWidths,150);
 		    listColumns.push(colObj);
 
 			cIndex++;
@@ -1592,7 +1563,7 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 								  rec.parentNode.removeChild(rec);
 								  return;
 							  }
-							  ijfUtils.modalDialog("Warning","You are about to permanently remove this file, continue?",removeFile);
+							  ijfUtils.modalDialog("Warning","You are about to permanently remove this file. Note, to see changes in other files lists on this page you must refresh the page. continue?",removeFile);
 						  }
 						  catch(e)
 						  {
@@ -1647,6 +1618,7 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 		 title:  inField.caption,
 		 style: l_Style,
 		 hidden: hideField,
+		 useArrows: true,
 		 bodyStyle: l_panelStyle,
 		 height: l_Height,
         store: gridStore,
@@ -1683,10 +1655,12 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
     var l_labelStyle = inField.labelStyle;
     var l_panelStyle = inField.panelStyle;
     var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
 
     if(!l_labelStyle) l_labelStyle="background:transparent";
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
 
 	var goEditHidden = true;
 	if (inField.fieldStyle.indexOf('goedit:true')>-1)
@@ -1694,9 +1668,84 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 		goEditHidden = false;
     }
 
+	var ocf =  ijfUtils.getEvent(inField);
+
+    var hideField = ijfUtils.renderIfShowField("",inField);
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!hideField) && (!perms.canSee))	hideField=true;
+
+    var canDelete = false;
+    if (l_fieldStyle.indexOf('delete:true')>-1)
+    {
+        canDelete=true;
+    }
+	if(!perms.canEdit) canDelete=false;
+    if(!perms.canSee) rOnly=true;
+
+    var collapsible = true;
+    if (l_fieldStyle.indexOf('collapsible:false')>-1)
+    {
+        collapsible=false;
+    }
+    var collapsed = true;
+    if (l_fieldStyle.indexOf('collapsed:false')>-1)
+    {
+        collapsed=false;
+    }
+
+    var l_Height = 300;
+    var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
+    if(l_Height=="")
+    {
+		l_Height=300;
+	}
+	else
+	{
+    	l_Height = l_Height.replace("px","")/1;
+	}
+
+	var l_Width = 600;
+    var l_Width=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"width");
+    if(l_Width=="")
+    {
+		l_Width=600;
+	}
+	else
+	{
+		if(l_Width.indexOf("px")>-1) l_Width = l_Width.replace("px","")/1;
+	}
+
+
+//The managed file is either explicitly named in dataSource, or dataSource
+//is a single line text that is the name.  If field, then null allows any
+//selection.
+    inField.namedFile = true;
+    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+    var managedFileName = inField.dataSource;
+    if(jfFieldDef)
+    {
+		var jf=item.fields[jfFieldDef.id];
+		var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+		managedFileName=data;
+		inField.namedFile=false;
+	}
+
     var attachments = item.fields.attachment.reduce(function(inArray, a)
 	{
-		if(a.filename==inField.dataSource) inArray.push(a);
+		if(a.filename==managedFileName) inArray.push(a);
 		return inArray;
 	},[]);
 
@@ -1718,42 +1767,142 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 	}
 
 
-    var outHtml = "<div class=ijfAttachList>";
-		outHtml += "<div  class=ijfAttachListHead><div class=ijfAttachListHeadName>Name</div><div class=ijfAttachListHeadAuthor>Author</div><div class=ijfAttachListHeadDate>Date</div></div>";
-    outHtml = sortedAttachments.reduce(function(outHtml,a){
-		outHtml += "<div class=ijfAttachListRow><div  class=ijfAttachListName><a href='"+a.content+"' target='_blank'>" + a.filename + "</a></div><div class=ijfAttachListAuthor>" + a.author.displayName + "</div><div class=ijfAttachListDate>" + moment(a.created).format('lll') + "</div></div>";
-		return outHtml;
-	},outHtml);
-	outHtml+="</div>";
+    var listColumns = [];
+    var tFields = [];
 
+    tFields.push({name: "fileid", type: 'string'});
+	listColumns.push({
+			header: "FID",
+			sortable: true,
+			hidden: true,
+			width: '1%',
+			dataIndex: "fileid"
+	});
 
-    if(!l_Style) l_Style = l_panelStyle;
-    //rendeIf logic
-    var hideField = ijfUtils.renderIfShowField("",inField);
+    tFields.push({name: "filename", type: 'string'});
+	listColumns.push({
+			header: "File Versions",
+			sortable: true,
+			hidden: false,
+			flex: 70,
+			dataIndex: "filename",
+			filter: {
+				type: 'string'
+			}
+	});
 
-	//permissions check....has to exist...
-	if(inField.permissions.enabled)
+    tFields.push({name: "fUser", type: 'string'});
+	listColumns.push({
+			header: "User",
+			sortable: true,
+			hidden: false,
+			flex: 30,
+			dataIndex: "fUser",
+			filter: {
+				type: 'string'
+			}
+	});
+
+	tFields.push({name: "created", type: 'date'});
+	listColumns.push({
+			header: "Date",
+			sortable: true,
+			hidden: false,
+			xtype: 'datecolumn',
+			formatter:'date("m/d/y h:i:s A")',
+			width: 150,
+			dataIndex: "created",
+			filter: {
+				type: 'date'
+				}
+	});
+	if(canDelete)
 	{
-		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
-	}
-	else
-	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
-	}
-	if((!hideField) && (!perms.canSee))	hideField=true;
-	rOnly=false;
-	if(!perms.canEdit) rOnly=true;
+		listColumns.push({xtype: 'actioncolumn',
+			  header: "Action",
+			  width: 70,
+			  items: [{icon: '' },{
+					icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/tree/drop-no.png',
+					handler: function(grid, rowIndex, colIndex, itm) {
+						  try
+						  {
+							  var fileId = grid.store.getData().items[rowIndex].data["fileid"];
+							  //function to delete and remove the record....
+							  var removeFile = function()
+							  {
+								   var delRes = ijfUtils.jiraApiSync("DELETE","/rest/api/2/attachment/"+fileId,null);
+								   if(delRes!="OK")
+								   {
+										ijfUtils.modalDialogMessage("Error","Unable to delete the file: " + delRes);
+										return;
+								   }
+								  //remove the row from the grid....
+								  grid.getStore().removeAt(rowIndex);
+
+								  //Now IF count of this animal is 0 AND it's a managed with field, we need to
+								  //null the field....
+								  if(grid.getStore().getCount()<1)
+								  {
+									  if(jfFieldDef)
+									  {
+										   var res = ijfUtils.updateJiraFieldValue(jfFieldDef.id, "", item);
+										   if(res!="OK")
+										   {
+												ijfUtils.modalDialogMessage("Error","Unable to update the managed file field, please contact support.");
+												return;
+										   }
+										   ijf.main.resetForm();
+											//reload
+									  }
+							  	  }
+								  return;
+							  }
+							  ijfUtils.modalDialog("Warning","You are about to permanently remove this file, Note to see changes in other files lists on this page you must refresh the page. continue?",removeFile);
+						  }
+						  catch(e)
+						  {
+							  footLog("Failed delete action ");
+						  }
+					}
+				}]
+	  	});
+    }
+
+    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(",","_")))
+    {
+        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(",","_"), {
+            extend: 'Ext.data.Model',
+            fields: tFields
+        });
+    }
+    var gridStore = new Ext.data.Store({
+        model: inFormKey+'_mdl_'+inField.formCell.replace(",","_")
+    });
+    var fArray = sortedAttachments.map(function(a){
+		    return {"fileid":a.id,"created":a.created,"filename":a.filename + " <a href='"+a.content+"' target='_blank'>open</a>","fUser":a.author.displayName};
+	});
+	gridStore.loadData(fArray);
 
 
 	//end permissions
 
 	//var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_ctr_'+inField.formCell.replace(",","_")+"' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+inField.dataSource+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+inField.dataSource+"');}\"></form>";
 	//id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId'
-    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+inField.dataSource+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+inField.dataSource+"');}\"></form>";
+	if(managedFileName)
+	{
+	    var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId'>File: " + managedFileName + "<br> uploaded by " + currentAttachment.author.displayName + " on " + moment(currentAttachment.created).format('lll') + "</div>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.replace('C:\\\\fakepath\\\\','')+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
+    }
+    else
+    {
+        var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId'>Managed File has not been Initialized<br>&nbsp;</div>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.replace('C:\\\\fakepath\\\\','')+'</span>'); \"></form>";
+	}
+
 
     var headerItems = [{
 							xtype:'panel',
-							html: "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId'>File: " + inField.dataSource + "<br> uploaded by " + currentAttachment.author.displayName + " on " + moment(currentAttachment.created).format('lll') + "</div>",
+							html: headerHtml,
 							bodyStyle: 'background:transparent;color:white;width:100px'
 						 },
 						{
@@ -1896,6 +2045,9 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 											text:"Upload",
 												listeners: {
 													click: function(f,n,o){
+
+														Ext.get(inFormKey+'_fld_'+inField.formCell.replace(",","_")+'UploadLabelId').update('No file selected...');
+
 														var clickKey = "#"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId";
 														jQuery(clickKey).val("");
 														jQuery(clickKey).trigger('click');
@@ -1906,24 +2058,34 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 					}
 
 
+    //standard file setup...
+    var gridPanel = new Ext.grid.GridPanel({
+		 title:  inField.caption,
+		 header:{
+			titlePosition: 1,
+			items: headerItems
+		 },
+		 style: l_Style,
+		 bodyStyle: l_panelStyle,
+		 height: l_Height,
+        store: gridStore,
+        width:'100%',
+        plugins: 'gridfilters',
+        id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+        //reserveScrollOffset: true,
+        columns: listColumns,
+        frame: true,
+        collapsible: collapsible,
+        collapsed: collapsed
+    });
+
     var pnl = new Ext.FormPanel({
         labelAlign: 'left',
         border:false,
         hidden: hideField,
         bodyStyle: l_Style,
-        items: [{
-		       header:{
-						titlePosition: 1,
-						items: headerItems
-					 },
-			//title: "Attachment: " + inField.dataSource + " uploaded by " + currentAttachment.author.displayName + " on " + moment(currentAttachment.created).format('lll'),
-			collapsible: true,
-			collapsed: true,
-            html: outHtml,
-            frame: true,
-            border: true,
-            bodyStyle:  l_panelStyle,
-            xtype: "panel"},
+        width: l_Width,
+        items: [gridPanel,
            {
             html: fileLoad,
             frame: false,
@@ -6242,28 +6404,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 		{
 			if(colMeta[colNames[i]]) colMeta[colNames[i]].width=100;
 		}
-/*
-		if(colWidths[i]>0)
-		{
 
-			if(colMeta[colNames[i]])
-			{
-				if(colWidths[i].indexOf("%")>-1)
-				{
-					colMeta[colNames[i]].width=colWidths[i];
-				}
-				else
-				{
-					try{
-					colMeta[colNames[i]].width=colWidths[i]/1;}catch(e){}
-				}
-			}
-		}
-		else
-		{
-			if(colMeta[colNames[i]]) colMeta[colNames[i]].width=100;
-		}
-*/
 		if(colHeaders[i])
 		{
 			if(colMeta[colNames[i]]) colMeta[colNames[i]].header=colHeaders[i];
@@ -6347,7 +6488,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         dataIndex: "iid",
         hidden: true,
         style: l_labelStyle,
-        width: 0
+        width: 10
     });
     if(hideKey) delete colMeta["key"];
     /*
@@ -6362,6 +6503,9 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     });
 	delete colMeta["key"];
  	*/
+
+ 	var colObj = {};
+
     Object.keys(colMeta).forEach(function(k){
 		var f = colMeta[k];
 		var hCol = false;
@@ -6389,7 +6533,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				};
 			}
 			gridFieldArray.push({name: f.id, type: "date"});
-			colSettingsArray.push({
+			colObj={
 				header: f.header,
 				dataIndex: f.id,
 				xtype: 'datecolumn',
@@ -6402,7 +6546,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				filter: {
 				  type: 'date'
 	            }
-			});
+			};
 		}
 		else if(f.schema.type=="datetime")
 		{
@@ -6430,7 +6574,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				}
 			}
 			gridFieldArray.push({name: f.id, type: "date"});
-			colSettingsArray.push({
+			colObj={
 				header: f.header,
 				dataIndex: f.id,
 				xtype: 'datecolumn',
@@ -6443,7 +6587,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				filter: {
 				  type: 'date'
 	            }
-			});
+			};
 		}
 	else if(f.schema.type=="datetime")
 		{
@@ -6471,7 +6615,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				}
 			}
 			gridFieldArray.push({name: f.id, type: "date"});
-			colSettingsArray.push({
+			colObj={
 				header: f.header,
 				dataIndex: f.id,
 				xtype: 'datecolumn',
@@ -6484,7 +6628,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				filter: {
 				  type: 'date'
 	            }
-			});
+			};
 		}
 		else if(f.schema.type=="user")
 		{
@@ -6559,7 +6703,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				};
 			}
 			gridFieldArray.push({name: f.id, type: "string"});
-			colSettingsArray.push({
+			colObj={
 				header: f.header,
 				dataIndex: f.id,
 				sourceField: f,
@@ -6571,7 +6715,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				filter: {
 				  type: 'list'
 	            }
-			});
+			};
 		}
 		else
 		{
@@ -6602,7 +6746,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 			var fType = 'list';
 			if(f.id=="summary") fType='string';
 			gridFieldArray.push({name: f.id, type: "string"});
-			colSettingsArray.push({
+			colObj={
 				header: f.header,
 				width: 'auto',
 				dataIndex: f.id,
@@ -6614,9 +6758,16 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				filter: {
 				  type: fType
 	            }
-			});
+			};
         }
+
+	    //set widths here?
+	   	ijfUtils.setColWidthForItemList(colObj);
+		colSettingsArray.push(colObj);
+
+
 	});
+
 
     //preap and apply actions.
     var actions=null;
@@ -6712,6 +6863,8 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				items: actionItems
 			});
 		}
+
+
     }
     if(!Ext.ClassManager.isCreated(inField.dataSource + inField.formCell.replace(",","")))
     {
@@ -7221,10 +7374,17 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 	if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
 	for (var i = 0; i<colNames.length;i++)
 	{
-		if(colWidths[i]>0)
+		if(colWidths[i])
 		{
-			try{
-			if(colMeta[colNames[i]]) colMeta[colNames[i]].width=colWidths[i]/1;}catch(e){}
+			if(isNaN(colWidths[i]))
+			{
+				//it's a string...
+				if(colMeta[colNames[i]]) colMeta[colNames[i]].width=colWidths[i];
+			}
+			else
+			{
+				if(colMeta[colNames[i]]) colMeta[colNames[i]].width=colWidths[i]/1;
+			}
 		}
 		else
 		{
@@ -7320,13 +7480,14 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
     });
 	delete colMeta["key"];
 
+    var colObj={};
 
     Object.keys(colMeta).forEach(function(k){
 		var f = colMeta[k];
 		if(f.schema.type=="date")
 		{
 			gridFieldArray.push({name: f.id, type: "date"});
-			colSettingsArray.push({
+			colObj ={
 				text: f.header,
 				dataIndex: f.id,
 				xtype: 'datecolumn',
@@ -7353,7 +7514,7 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 				filter: {
 				  type: 'date'
 	            }
-			});
+			};
 		}
 		else if(f.schema.type=="option")
 		{
@@ -7388,7 +7549,7 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 			});
 
 			gridFieldArray.push({name: f.id, type: "string"});
-            colSettingsArray.push({
+            colObj ={
 				text: f.header,
 				width: 'auto',
 				dataIndex: f.id,
@@ -7429,13 +7590,13 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 					}
 				}
 
-			});
+			};
 
 		}
 		else if(f.schema.type=="datetime")
 		{
 			gridFieldArray.push({name: f.id, type: "date"});
-			colSettingsArray.push({
+			colObj ={
 				text: f.header,
 				dataIndex: f.id,
 				xtype: 'datecolumn',
@@ -7446,14 +7607,14 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 				filter: {
 				  type: 'date'
 	            }
-			});
+			};
 		}
 		else  if(f.schema.type=="number")
 		{
 			gridFieldArray.push({name: f.id, type: "number"});
 			var hideIt = false;
 			if(f.id==taskOrderKey) hideIt=true;
-			colSettingsArray.push({
+			colObj ={
 				text: f.header,
 				width: 'auto',
 				dataIndex: f.id,
@@ -7481,7 +7642,7 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 					}
 				}
 
-			});
+			};
         }
         else if(f.schema.type=="user")
 		{
@@ -7554,7 +7715,7 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 			};
 
 			gridFieldArray.push({name: f.id, type: "string"});
-			colSettingsArray.push({
+			colObj ={
 				header: f.header,
 				dataIndex: f.id,
 				sourceField: f,
@@ -7565,14 +7726,14 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 				filter: {
 				  type: 'list'
 	            }
-			});
+			};
 		}
 		else
 		{
 			var fType = 'list';
 			if(f.id=="summary") fType='string';
 			gridFieldArray.push({name: f.id, type: "string"});
-			colSettingsArray.push({
+			colObj ={
 				text: f.header,
 				width: 'auto',
 				dataIndex: f.id,
@@ -7599,8 +7760,12 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 					}
 				}
 
-			});
+			};
         }
+
+        //set widths here?
+		ijfUtils.setColWidthForItemList(colObj);
+		colSettingsArray.push(colObj);
 	});
 
     //preap and apply actions.
@@ -8428,6 +8593,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 	}
 
 	if((!hideField) && (!perms.canSee))	hideField=true;
+	if (!perms.canEdit)	rOnly=true;
 	//end permissions
 
     var collapsible = true;
@@ -8487,6 +8653,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
     gCols = gCols.sort(function(a,b){return (a.order-b.order);});
     var cIndex = 0;
     var lookups = [];
+    var colObj = {};
     gCols.forEach(function(col){
 
 		var lValidator = function(v){return true};
@@ -8558,7 +8725,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 					tFields.push({name: col.columnName, type: 'date'});
 						if(col.format==null) col.format = 'm/d/Y';
 						if(col.format=="") col.format = 'm/d/Y';
-					listColumns.push({
+					colObj={
 							header: thisColHeader,
 							sortable: true,
 							hidden: false,
@@ -8585,11 +8752,11 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 									}
 								}
 							}
-			});
+			};
 			break;
 			case "numberfield":
 					tFields.push({name: col.columnName, type: 'number'});
-					listColumns.push({
+					colObj={
 							header: thisColHeader,
 							sortable: true,
 							hidden: false,
@@ -8616,11 +8783,11 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 									}
 								}
 							}
-			});
+			};
 			break;
 			case "checkbox":
 				tFields.push({name: col.columnName, type: 'boolean'});
-				listColumns.push({
+				colObj={
 						header: thisColHeader,
 						sortable: true,
 						hidden: false,
@@ -8635,7 +8802,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 								ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
 							}
 						}
-			});
+			};
 			break;
 			case "combobox":
 					tFields.push({name: col.columnName, type: 'string'});
@@ -8705,7 +8872,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 							lookups[col.columnName] = [];
 						}
 					}
-					listColumns.push({
+					colObj={
 							header: thisColHeader,
 							sortable: true,
 							hidden: false,
@@ -8732,12 +8899,12 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 									listeners: cListener
 								}
 							}
-			});
+			};
 			break;
 			default:
 					tFields.push({name: col.columnName, type: 'string'});
 
-					listColumns.push({
+					colObj={
 							header: thisColHeader,
 							sortable: true,
 							hidden: false,
@@ -8764,8 +8931,10 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 									}
 								}
 							}
-			});
+			};
 		}
+		ijfUtils.setColWidth(colObj,cIndex,colWidths,120);
+		listColumns.push(colObj);
 		cIndex++;
 	});
 

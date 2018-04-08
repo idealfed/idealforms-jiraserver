@@ -787,7 +787,7 @@ function saveBatch(onSuccess,inFields,inForm, item)
             {
 				if(!attachment) attachment=[];
 				attachment.push(thisCnt);
-				continue;
+				if(!thisCnt.field.dynamicAttachementManaged)	continue;
 			}
             var thisSect = thisCnt.batchSaveSection;
 			fields[thisSect.jiraField.id]=thisCnt.newVal;

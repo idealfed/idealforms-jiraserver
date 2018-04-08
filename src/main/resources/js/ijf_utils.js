@@ -431,6 +431,18 @@ var ijfUtils = {
              error: onError
         });
 },
+updateJiraFieldValue: function(inFieldKey, inValue, inItem) {
+        //update the issue and the local item
+
+        var tIssue = {};
+        tIssue.key = inItem.key;
+        tIssue.fields = {};
+        tIssue.fields[inFieldKey] = inValue;
+        var jData = JSON.stringify(tIssue);
+        var tApi = "/rest/api/2/issue/" + inItem.key;
+        var saveRes = ijfUtils.jiraApiSync("PUT", tApi, jData);
+        return saveRes;
+    },
 loadIssueTypeDetails:function(projectKey)
 {
 	if(!ijf.jiraAddMeta.hasOwnProperty(projectKey))
@@ -1469,7 +1481,48 @@ replaceWordChars:function(text) {
 			return true;
 		return false;
 	},
+    setColWidth:function(inCol,inIndex,inColWidths,inDefault)
+    {
+			if(inColWidths[inIndex])
+			{
+				var tW = inColWidths[inIndex];
+				//if numeric, set width, if %, remove % and set flex
+				if(isNaN(tW)) inCol.flex=tW.replace("%","")/1;
+				else inCol.width=tW/1;
+			}
+			else
+			{
+				if(isNaN(inDefault))
+				{
+					try
+					{
+						inCol.flex=inDefault.replace("%","")/1;
+					}
+					catch(e)
+					{
+						inCol.flex=15;
+					}
+				}
+				else
+					inCol.width=inDefault/1;
+			}
+	},
+    setColWidthForItemList:function(inCol)
+    {
+			if(isNaN(inCol.width))
+			{
+				try
+				{
+					inCol.flex=inCol.width.replace("%","")/1;
+					inCol.width=null;
+				}
+				catch(e)
+				{
+					ijfUtils.footLog("Invalid column width: " + inCol.width);
 
+				}
+			}
+	},
 	getComboList:function(inList, inComboRef, inKeys)
 	{
 
