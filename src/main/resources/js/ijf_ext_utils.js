@@ -27,12 +27,34 @@ renderField:function(inFormKey, item, inField, inContainer)
 			inField.permissions=JSON.parse(inField.rawPermissions);
 		}
 	}
-
     //attempt to pull data....
     try
     {
         switch(inField.controlType) {
+			//REACT Section
+            case 'muiTextbox':
+                ijf.reactUtils.renderTextbox(inFormKey,item,inField,inContainer);
+                break;
+            case 'muiTextarea':
+                ijf.reactUtils.renderTextarea(inFormKey,item,inField,inContainer);
+                break;
+            case 'muiButton':
+                ijf.reactUtils.renderButton(inFormKey,item,inField,inContainer);
+                break;
+            case 'muiCardList':
+                ijf.reactUtils.renderCardList(inFormKey,item,inField,inContainer);
+                break;
+            case 'muiDrawer':
+                ijf.reactUtils.renderDrawer(inFormKey,item,inField,inContainer);
+                break;
+            case 'muiIcon':
+                ijf.reactUtils.renderIcon(inFormKey,item,inField,inContainer);
+                break;
+            case 'muiSelect':
+                ijf.reactUtils.renderSelect(inFormKey,item,inField,inContainer);
+                break;
 
+			//SENCHA Section
             case 'Reference Editor':
                 ijf.extUtils.renderGridRefEditor(inFormKey,item,inField,inContainer);
                 break;
@@ -305,7 +327,7 @@ renderField:function(inFormKey, item, inField, inContainer)
                 ijf.main.gSubformParams = null;
             }
         }
-        var nfId = inFormKey+inField.formCell.replace(",","")+"_nest";
+        var nfId = inFormKey+inField.formCell.replace(/,/g,"")+"_nest";
         var nfContainer = "<div id=\"" + nfId + "\">Initial</div>";
         var simple = new Ext.Panel({
             //labelAlign: 'left',
@@ -364,7 +386,7 @@ renderField:function(inFormKey, item, inField, inContainer)
 ,
 renderPopupForm:function(inFormKey,inItem, inAction)
 {
-    var nfId = inFormKey+inAction.inField.formCell.replace(",","")+"_pop";
+    var nfId = inFormKey+inAction.inField.formCell.replace(/,/g,"")+"_pop";
     var nfContainer = "<div id=\"" + nfId + "\">Initial</div>";
     var rItem = inItem;
 
@@ -937,15 +959,15 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
 	  	});
     }
 
-    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(",","_")))
+    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")))
     {
-        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(",","_"), {
+        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_"), {
             extend: 'Ext.data.Model',
             fields: tFields
         });
     }
     var gridStore = new Ext.data.Store({
-        model: inFormKey+'_mdl_'+inField.formCell.replace(",","_")
+        model: inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")
     });
     var fArray = sortedAttachments.map(function(a){
 		    return {"fileid":a.id,"created":a.created,"filename":a.filename + " <a href='"+a.content+"' target='_blank'>open</a>","fUser":a.author.displayName};
@@ -962,7 +984,7 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
         store: gridStore,
         width:l_Width,
         plugins: 'gridfilters',
-        id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+        id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
         //reserveScrollOffset: true,
         columns: listColumns,
         frame: true,
@@ -1574,15 +1596,15 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 	  	});
     }
 
-    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(",","_")))
+    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")))
     {
-        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(",","_"), {
+        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_"), {
             extend: 'Ext.data.Model',
             fields: tFields
         });
     }
     var gridStore = new Ext.data.TreeStore({
-        model: inFormKey+'_mdl_'+inField.formCell.replace(",","_"),
+        model: inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_"),
         root: {
 		 	expanded:false,
 		 	children: fArray
@@ -1628,7 +1650,7 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 			ptype: 'cellediting',
 			clicksToEdit: 1
         }],
-        id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+        id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
         //reserveScrollOffset: true,
         columns: listColumns,
         frame: true,
@@ -1868,15 +1890,15 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 	  	});
     }
 
-    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(",","_")))
+    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")))
     {
-        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(",","_"), {
+        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_"), {
             extend: 'Ext.data.Model',
             fields: tFields
         });
     }
     var gridStore = new Ext.data.Store({
-        model: inFormKey+'_mdl_'+inField.formCell.replace(",","_")
+        model: inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")
     });
     var fArray = sortedAttachments.map(function(a){
 		    return {"fileid":a.id,"created":a.created,"filename":a.filename + " <a href='"+a.content+"' target='_blank'>open</a>","fUser":a.author.displayName};
@@ -1886,17 +1908,17 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 
 	//end permissions
 
-	//var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_ctr_'+inField.formCell.replace(",","_")+"' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+inField.dataSource+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+inField.dataSource+"');}\"></form>";
-	//id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId'
+	//var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+inField.dataSource+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+inField.dataSource+"');}\"></form>";
+	//id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId'
 	if(managedFileName)
 	{
-	    var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId'>File: " + managedFileName + "<br> uploaded by " + currentAttachment.author.displayName + " on " + moment(currentAttachment.created).format('lll') + "</div>";
-	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.replace('C:\\\\fakepath\\\\','')+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
+	    var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>File: " + managedFileName + "<br> uploaded by " + currentAttachment.author.displayName + " on " + moment(currentAttachment.created).format('lll') + "</div>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.replace('C:\\\\fakepath\\\\','')+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
     }
     else
     {
-        var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId'>Managed File has not been Initialized<br>&nbsp;</div>";
-	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.replace('C:\\\\fakepath\\\\','')+'</span>'); \"></form>";
+        var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>Managed File has not been Initialized<br>&nbsp;</div>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.replace('C:\\\\fakepath\\\\','')+'</span>'); \"></form>";
 	}
 
 
@@ -2046,9 +2068,9 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 												listeners: {
 													click: function(f,n,o){
 
-														Ext.get(inFormKey+'_fld_'+inField.formCell.replace(",","_")+'UploadLabelId').update('No file selected...');
+														Ext.get(inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+'UploadLabelId').update('No file selected...');
 
-														var clickKey = "#"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId";
+														var clickKey = "#"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId";
 														jQuery(clickKey).val("");
 														jQuery(clickKey).trigger('click');
 													}
@@ -2071,7 +2093,7 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
         store: gridStore,
         width:'100%',
         plugins: 'gridfilters',
-        id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+        id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
         //reserveScrollOffset: true,
         columns: listColumns,
         frame: true,
@@ -2123,6 +2145,36 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     {
 	    var outHtml = ijfUtils.replaceKeyValues(inField.dataSource,item);
 	}
+
+	//section for dynamic control rendering using !{x,y,z}  where it's a key to a field
+	var dynamicFields = [];
+    var setDynamicControls = function(inText)
+    {
+		var retText = inText;
+		var pat = "\!\{.*?\}";
+		var rgx = new RegExp(pat);
+		var m = rgx.exec(retText);
+
+		if(m==null)
+		{
+			return retText;
+		}
+		else
+		{
+			//you have a dynamic field....
+			var keyVal = m[0].replace("!{","");
+			keyVal = keyVal.replace("}","");
+            var dFieldId=inFormKey+'_ctr_d_'+keyVal.replace(/,/g,"_");
+            //var dFieldTblId = inFormKey+'_tbl_d_'+keyVal.replace(/,/g,"_");
+            //var dFieldTbl = "<table  role='presentation' id='"+dFieldTblId+"' cellspacing=0 cellpadding=3><tr><td>";
+			retText = retText.replace(m[0],"<div style='display:inline-block' id='"+dFieldId+"'></div>");
+			dynamicFields.push({"containerId":dFieldId,"fieldId":keyVal});
+            return setDynamicControls(retText);
+		}
+	}
+    outHtml = setDynamicControls(outHtml);
+
+
     //outHtml = ijfUtils.sanitize(outHtml);
     if(!l_Style) l_Style = l_panelStyle;
     //rendeIf logic
@@ -2144,7 +2196,7 @@ renderHtml:function(inFormKey,item, inField, inContainer)
         labelAlign: 'left',
         border:false,
         hidden: hideField,
-        bodyStyle: l_Style,
+        style: l_Style,
         items: {
             html: outHtml,
             frame: false,
@@ -2159,6 +2211,31 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     ijf.main.controlSet[thisControl.id]=thisControl;
     //after render....
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
+
+    //now that it's rendered...render dynamic fields
+//dynamicFields=[];
+    dynamicFields.forEach(function(f)
+    {
+		//find field by key....
+		if(inField.form.fields.hasOwnProperty(f.fieldId)) var targetField = inField.form.fields[f.fieldId];
+		else
+			var targetField = inField.form.fields.reduce(function(inObj,ff){if(ff.formCell==f.fieldId) inObj=ff; return inObj;},null);
+		var container = document.getElementById(f.containerId);
+		if((!targetField) || (!container))
+		{
+			ijfUtils.footLog("Failed to render dynamic field " + f.fieldId);
+			return;
+		}
+		try
+		{
+			targetField.form=inField.form;
+			ijf.extUtils.renderField(inFormKey,item,targetField,container);
+		}
+		catch(e)
+		{
+			ijfUtils.footLog(targetField.formCell + " " + targetField.controlType + " failed to render: " + e.message);
+        }
+	});
 
 }
 ,
@@ -2733,7 +2810,7 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
 	if(rOnly) l_fieldStyle="background:lightgray";
 
     var ocf =  ijfUtils.getEvent(inField);
-	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('attachmentFileDisplayId').update(ijfUtils.getFileInputName(this,'attachmentFileDisplayId')); multiple></form>";
+	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('attachmentFileDisplayId').update(ijfUtils.getFileInputName(this,'attachmentFileDisplayId')); multiple></form>";
     var simple = new Ext.FormPanel({
         border:false,
         hidden: hideField,
@@ -2748,11 +2825,11 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
             validator: lValidator,
             text: lCaption,
             readOnly: rOnly,
-            id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+            id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
             listeners: {
                 click: function(f,n,o){
-					jQuery("#"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId").val("");
-					jQuery("#"+inFormKey+'_fld_'+inField.formCell.replace(",","_")+"UploadFileId").trigger('click');
+					jQuery("#"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId").val("");
+					jQuery("#"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId").trigger('click');
                 }
             }
         },{
@@ -2898,7 +2975,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
             readOnly: rOnly,
             //width: lWidth,
             value: data,
-            id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+            id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
             listeners: {
 					afterrender: function(f)
 					{
@@ -2931,7 +3008,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
     {
             sItems.push({
 						xtype: 'button',
-						icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/magnify.png',
+						icon: '/download/resources5/com.idealfed.poc.idealforms:jiraforms-resources/images/magnify.png',
 						handler: function(f,n,o) {
 							var cup = this.up();
 							var tVal = cup.items.items[0].getValue();
@@ -2943,7 +3020,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
     var simple = new Ext.FormPanel({
         border:false,
         hidden: hideField,
-        bodyStyle: l_Style,
+        style: l_Style,
         layout: 'hbox',
         items: sItems
     });
@@ -3176,8 +3253,8 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
     var simple = new Ext.FormPanel({
         border:false,
         hidden: hideField,
-        width: 'auto',
         bodyStyle: l_Style,
+        style: l_Style,
         items:[{
             xtype: 'datefield',
             labelStyle: l_labelStyle,
@@ -3190,7 +3267,7 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
             readOnly: rOnly,
             value: d,
             invalidText: "Date must be in format mm/dd/yyyy",
-            id: inFormKey+'_ctr_'+ inField.formCell.replace(",","_"),
+            id: inFormKey+'_ctr_'+ inField.formCell.replace(/,/g,"_"),
             listeners: {
                 afterrender: function(f)
                 {
@@ -3449,7 +3526,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 					triggerAction: 'all',
 					emptyText:'Please select...',
 					selectOnFocus:true,
-					id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+					id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 					listeners: cListener
 					};
 
@@ -3498,7 +3575,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 			triggerAction: 'all',
 			emptyText:'Please select...',
 			selectOnFocus:true,
-			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+			id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 			listeners: {
 				afterrender: function(f)
 				{
@@ -3523,7 +3600,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
     var simple = new Ext.FormPanel({
         hidden: hideField,
         border:false,
-        bodyStyle: l_Style,
+        style: l_Style,
         items:[combo]
     });
     //before render....
@@ -3588,15 +3665,15 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 				  type: 'string'
 	            }
 			});
-		if(!Ext.ClassManager.isCreated(inField.dataSource + inField.formCell.replace(",","")))
+		if(!Ext.ClassManager.isCreated(inField.dataSource + inField.formCell.replace(/,/g,"")))
 		{
-			Ext.define(inField.dataSource + inField.formCell.replace(",",""), {
+			Ext.define(inField.dataSource + inField.formCell.replace(/,/g,""), {
 				extend: 'Ext.data.Model',
 				fields: gridFieldArray
 			});
 		}
 	 	var store = Ext.create('Ext.data.Store', {
-			model: inField.dataSource + inField.formCell.replace(",",""),
+			model: inField.dataSource + inField.formCell.replace(/,/g,""),
 			proxy: {
 				type: 'memory',
 				reader: {
@@ -3732,7 +3809,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 			triggerAction: 'all',
 			emptyText:'Please select...',
 			selectOnFocus:true,
-			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+			id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 			listeners: {
 				afterrender: function(f)
 				{
@@ -3928,7 +4005,7 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 			minChars: 2,
 			emptyText:'Start typing...',
 			selectOnFocus:true,
-			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+			id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 			listeners: {
 				afterrender: function(f)
 				{
@@ -4099,7 +4176,7 @@ renderUserMultiselect:function(inFormKey,item, inField, inContainer)
 			queryParam: fParam,
 			minChars: 2,
 			emptyText:'Start typing...',
-			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+			id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 			listeners: {
 				afterrender: function(f)
 				{
@@ -4268,7 +4345,7 @@ renderGroupPicker:function(inFormKey,item, inField, inContainer)
 			minChars: 2,
 			emptyText:'Please select...',
 			selectOnFocus:true,
-			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+			id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 			listeners: {
 				afterrender: function(f)
 				{
@@ -4435,7 +4512,7 @@ renderGroupMultiselect:function(inFormKey,item, inField, inContainer)
 			queryParam: fParam,
 			minChars: 2,
 			emptyText:'Please select...',
-			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+			id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 			listeners: {
 				afterrender: function(f)
 				{
@@ -4718,7 +4795,7 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
 			triggerAction: 'all',
 			emptyText:'Please select...',
 			selectOnFocus:true,
-			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+			id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 			listeners: cListener
 		}]
     });
@@ -4895,7 +4972,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 			allowBlank: lAllowBlank,
 			readOnly: rOnly,
 			selectOnFocus:true,
-			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+			id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 			items: rOptions,
 			listeners: {
 				afterrender: function(f)
@@ -5047,8 +5124,11 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 		  var jfFieldDef = {};
 		  jfFieldDef.id=inField.formCell;
 		  var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
-
-		  if(!data) data=inField.dataReference2;
+		  try
+		  {
+		  	if(!data) data=JSON.parse(inField.dataReference2);
+	      }
+	      catch(e) {}
 	}
 	else
 	{
@@ -5151,7 +5231,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
   			hideLabel: hideLabel,
   			allowBlank: lAllowBlank,
   			selectOnFocus:true,
-  			id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+  			id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
   			items: rOptions,
   			listeners: {
   				afterrender: function(f)
@@ -5666,7 +5746,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 	            validator: lValidator,
 	            readOnly: rOnly,
 	            value: data,
-	            id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+	            id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 	            listeners: {
 	                afterrender: function(f)
 	                {
@@ -5886,7 +5966,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 					//validator: lValidator,
 					readOnly: rOnly,
 					value: data,
-					id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+					id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 					listeners: {
 						afterrender: function(f)
 						{
@@ -6866,9 +6946,9 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 
 
     }
-    if(!Ext.ClassManager.isCreated(inField.dataSource + inField.formCell.replace(",","")))
+    if(!Ext.ClassManager.isCreated(inField.dataSource + inField.formCell.replace(/,/g,"")))
     {
-        Ext.define(inField.dataSource + inField.formCell.replace(",",""), {
+        Ext.define(inField.dataSource + inField.formCell.replace(/,/g,""), {
             extend: 'Ext.data.Model',
             fields: gridFieldArray
         });
@@ -6877,7 +6957,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     if(!jqlType)
     {
 		var store = Ext.create('Ext.data.Store', {
-			model: inField.dataSource + inField.formCell.replace(",",""),
+			model: inField.dataSource + inField.formCell.replace(/,/g,""),
 			proxy: {
 				type: 'memory',
 				reader: {
@@ -6912,7 +6992,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 	    }
 
         var store = Ext.create('Ext.data.Store', {
-            model: inField.dataSource + inField.formCell.replace(",",""),
+            model: inField.dataSource + inField.formCell.replace(/,/g,""),
 	        pageSize: itemsPerPage,
         	proxy: {
 			        type: 'ajax',
@@ -7772,15 +7852,15 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
     var actions=null;
     var aWidth = 10;
 
-    if(!Ext.ClassManager.isCreated(inField.dataSource + inField.formCell.replace(",","")))
+    if(!Ext.ClassManager.isCreated(inField.dataSource + inField.formCell.replace(/,/g,"")))
     {
-        Ext.define(inField.dataSource + inField.formCell.replace(",",""), {
+        Ext.define(inField.dataSource + inField.formCell.replace(/,/g,""), {
             extend: 'Ext.data.Model',
             fields: gridFieldArray
         });
     }
     var store = Ext.create('Ext.data.TreeStore', {
-        model: inField.dataSource + inField.formCell.replace(",",""),
+        model: inField.dataSource + inField.formCell.replace(/,/g,""),
         root: {
 			 	expanded:true,
 			 	children: dataItems
@@ -8130,7 +8210,7 @@ treeMenu.add({  text: 'Move Down', handler: function()  {
         useArrows: true,
         width: "100%",
         ijfForm: inField,
-       	id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+       	id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
         rootVisible: false,
         columns: colSettingsArray,
         ijfForm: inField,
@@ -8291,7 +8371,7 @@ renderItemlistHtml:function(inFormKey,item, inField, inContainer)
 	//create Table from Json
     var gCols = translateFields.split(",");
 
-    var tOut = "<table id="+inFormKey+'_tbl_'+inField.formCell.replace(",","_")+" cellspacing=0 cellpadding=4 style='"+l_fieldStyle+"'><tr>";
+    var tOut = "<table id="+inFormKey+'_tbl_'+inField.formCell.replace(/,/g,"_")+" cellspacing=0 cellpadding=4 style='"+l_fieldStyle+"'><tr>";
     var cIndex=0;
     gCols.forEach(function(col){
 			var thisColWidth = 120;
@@ -8422,7 +8502,7 @@ renderGridHtml:function(inFormKey,item, inField, inContainer)
     var cIndex = 0;
     //write out the header
 
-    var tOut = "<table id="+inFormKey+'_tbl_'+inField.formCell.replace(",","_")+" cellspacing=0 cellpadding=4 style='"+l_fieldStyle+"'><tr>";
+    var tOut = "<table id="+inFormKey+'_tbl_'+inField.formCell.replace(/,/g,"_")+" cellspacing=0 cellpadding=4 style='"+l_fieldStyle+"'><tr>";
     gCols.forEach(function(col){
 			var thisColWidth = 120;
 			if(colWidths[cIndex]) thisColWidth=colWidths[cIndex]/1;
@@ -8938,16 +9018,16 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 		cIndex++;
 	});
 
-    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(",","_")))
+    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")))
     {
-        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(",","_"), {
+        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_"), {
             extend: 'Ext.data.Model',
             fields: tFields
         });
     }
 
     var gridStore = new Ext.data.Store({
-        model: inFormKey+'_mdl_'+inField.formCell.replace(",","_")
+        model: inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")
     });
 	gridStore.ijfCols = gCols;
 
@@ -9069,7 +9149,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 					}
 				});
 			headerButtons.push({
-				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upGrdFrm_'+inField.formCell.replace(",","_")+"'><input id='"+inFormKey+'_upGrd_'+inField.formCell.replace(",","_")+"' type='file' name='file' onchange='ijfUtils.gridUploadCsvFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(",","_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\");'></form>",
+				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upGrdFrm_'+inField.formCell.replace(/,/g,"_")+"'><input id='"+inFormKey+'_upGrd_'+inField.formCell.replace(/,/g,"_")+"' type='file' name='file' onchange='ijfUtils.gridUploadCsvFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\");'></form>",
 				frame: false,
 				hidden: true,
 				border: false,
@@ -9080,7 +9160,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 				scope: this,
 				handler: function(){
 				   //need the formset ID...
-				   var jKey = '#'+inFormKey+'_upGrd_'+inField.formCell.replace(",","_");
+				   var jKey = '#'+inFormKey+'_upGrd_'+inField.formCell.replace(/,/g,"_");
 				   jQuery(jKey).val("");
 				   jQuery(jKey).trigger('click');
 				}
@@ -9099,7 +9179,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 		},
         store: gridStore,
         width:l_Width,
-        id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+        id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
         //reserveScrollOffset: true,
         columns: listColumns,
         frame: true,
@@ -9330,16 +9410,16 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
 		cIndex++;
 	});
 
-    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(",","_")))
+    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")))
     {
-        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(",","_"), {
+        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_"), {
             extend: 'Ext.data.Model',
             fields: tFields
         });
     }
 
     var gridStore = new Ext.data.Store({
-        model: inFormKey+'_mdl_'+inField.formCell.replace(",","_")
+        model: inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")
     });
 	gridStore.ijfCols = gCols;
 
@@ -9450,7 +9530,7 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
 					}
 				});
 			headerButtons.push({
-				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upGrdFrm_'+inField.formCell.replace(",","_")+"'><input id='"+inFormKey+'_upGrd_'+inField.formCell.replace(",","_")+"' type='file' name='file' onchange='ijfUtils.gridUploadCsvFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(",","_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\");'></form>",
+				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upGrdFrm_'+inField.formCell.replace(/,/g,"_")+"'><input id='"+inFormKey+'_upGrd_'+inField.formCell.replace(/,/g,"_")+"' type='file' name='file' onchange='ijfUtils.gridUploadCsvFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\");'></form>",
 				frame: false,
 				hidden: true,
 				border: false,
@@ -9461,7 +9541,7 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
 				scope: this,
 				handler: function(){
 				   //need the formset ID...
-				   var jKey = '#'+inFormKey+'_upGrd_'+inField.formCell.replace(",","_");
+				   var jKey = '#'+inFormKey+'_upGrd_'+inField.formCell.replace(/,/g,"_");
 				   jQuery(jKey).val("");
 				   jQuery(jKey).trigger('click');
 				}
@@ -9479,7 +9559,7 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
 		},
         store: gridStore,
         width:l_Width,
-        id: inFormKey+'_ctr_'+inField.formCell.replace(",","_"),
+        id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
         //reserveScrollOffset: true,
         columns: listColumns,
         frame: true,

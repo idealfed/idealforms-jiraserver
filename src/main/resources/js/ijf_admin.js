@@ -1412,7 +1412,7 @@ addEditForm:function (sRow)
 		});
 
 
-		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentlisttree","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","GRIDHTML","grouppicker","grouppickermulti","html","htmleditor","historylist","iframe","itemlist","itemlistHTML","itemtree","multiselect","navigatetoform","Reference Editor","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
+		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentlisttree","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","GRIDHTML","grouppicker","grouppickermulti","html","htmleditor","historylist","iframe","itemlist","itemlistHTML","itemtree","muiButton","muiCardList","muiDrawer","muiIcon","muiSelect","muiTextarea","muiTextbox","multiselect","navigatetoform","Reference Editor","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
 
 	    var  sectionLookup = [];
 
@@ -2592,6 +2592,10 @@ addEditForm:function (sRow)
 			var thisField = ijf.admin.cwfAdmin_form.fields[f];
 			thisField.form = ijf.admin.cwfAdmin_form;
 			var frmCell = thisField.formCell.split(",");
+
+			//if this is a nested FIELD in html, skip
+            if(frmCell.length>2) continue;
+
 			var targetCell =  inContainerId+"_"+frmCell[0]+"_"+frmCell[1];
 			var container = document.getElementById(targetCell);
 			try

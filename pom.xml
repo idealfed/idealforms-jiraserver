@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.idealfed.poc</groupId>
     <artifactId>idealforms</artifactId>
-    <version>4.1.10-STABLE</version>
+    <version>5.0.8-UNL</version>
     <organization>
         <name>Ideal Federal LLC</name>
         <url>http://www.idealfed.com</url>
@@ -136,6 +136,7 @@
                 <version>${amps.version}</version>
                 <extensions>true</extensions>
                 <configuration>
+                    <compressResources>false</compressResources>
                     <pluginArtifacts>
 				    <pluginArtifact>
                         <groupId>com.atlassian.activeobjects</groupId>

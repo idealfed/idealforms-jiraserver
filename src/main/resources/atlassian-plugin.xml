@@ -12,7 +12,7 @@
     <param name="plugin-logo">images/pluginLogo.png</param>
     <param name="plugin-summary">Ideal Forms for JIRA creates and serves simplified customized user interfaces that help many use cases.</param>
     <param name="plugin-tagline">Custom forms for simplified access, for mobile access and for process automation.</param>    
-    <param name="atlassian-licensing-enabled">true</param>     
+    <param name="atlassian-licensing-enabled">false</param>     
      <screenshots>
             <screenshot image="images/admin.png"/>
             <screenshot image="images/list.png"/>
@@ -22,7 +22,7 @@
   <resource type="i18n" name="i18n" location="craft"/>
  
   <!-- add our web resources -->
-  <web-resource key="jiraforms-resources" name="craft Web Resources">
+  <web-resource key="jiraforms-resources5" name="craft Web Resources">
 
     <resource type="download" name="images/" location="/images"/>  
     <resource type="download" name="craft.css" location="/css/craft.css"/>
@@ -32,7 +32,12 @@
     <resource type="download" name="theme-neptune-all_2.css" location="/css/theme-neptune-all_2.css"/>          
     <resource type="download" name="charts-all.css" location="/css/charts-all.css"/>  
     <resource type="download" name="charts-all-rtl.css" location="/css/charts-all-rtl.css"/>  
-    
+    <resource type="download" name="material-ui.css" location="/css/material-ui.css"/>  
+     
+    <resource type="download" name="react.js" location="/js/react.js"/>  
+    <resource type="download" name="react-dom.js" location="/js/react-dom.js"/>        
+    <resource type="download" name="material-ui.js" location="/js/material-ui.js"/> 
+        
     <resource type="download" name="jquery-1.11.2.min.js" location="/js/jquery-1.11.2.min.js"/>
     <resource type="download" name="ext-all.js" location="/js/ext-all.js"/>
     <resource type="download" name="FileSaver.min.js" location="/js/FileSaver.min.js"/>
@@ -50,6 +55,7 @@
     <resource type="download" name="ijf_lists.js" location="/js/ijf_lists.js"/>
     <resource type="download" name="ijf_admin.js" location="/js/ijf_admin.js"/>
     <resource type="download" name="ijf_ext_utils.js" location="/js/ijf_ext_utils.js"/>
+    <resource type="download" name="ijf_react_utils.js" location="/js/ijf_react_utils.js"/>
 
     <context>craft</context>
   </web-resource>

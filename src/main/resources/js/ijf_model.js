@@ -586,6 +586,16 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 					  }
 				      this.newVal = tv;
 				  }
+				  else  if(this.field.controlType=="muiSelect")
+				  {
+					  sc = this.control.state.svalue;
+					  if(sc)
+						  var tv = {"id":sc};
+					  else
+						  var tv = null;
+
+ 					  this.newVal = tv;
+				  }
 				  else
 				  {
 					  sc = this.control.items.items[0].getSelection();
@@ -697,7 +707,14 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				}
 				else
 				{
-					this.newVal = this.control.items.items[0].getValue();
+					if(this.field.controlType.substring(0,3)=="mui")
+					{
+						this.newVal = this.control.state.value
+					}
+					else
+					{
+						this.newVal = this.control.items.items[0].getValue();
+					}
 				}
 				break;
 			case 'grid':

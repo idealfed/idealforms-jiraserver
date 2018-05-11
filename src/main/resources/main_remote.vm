@@ -1,28 +1,48 @@
 <html>
   <head>
     <title>IJF</title>
-    $webResourceManager.requireResource("com.idealfed.poc.idealforms:jiraforms-resources")
 
 
-    <link type="text/css" href="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/craft.css" rel="stylesheet" />
-    <link type="text/css" href="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/theme-neptune-all_1.css" rel="stylesheet" />
-    <link type="text/css" href="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/theme-neptune-all_2.css" rel="stylesheet" />
-    <link type="text/css" href="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/charts-all.css" rel="stylesheet" />
-    <link type="text/css" href="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/charts-all-rtl.css" rel="stylesheet" />
-                   
-             
-    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/jquery-1.11.2.min.js" type="text/javascript"></script>
-    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/ext-all.js" type="text/javascript"></script>
-    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/moment.js" type="text/javascript"></script> 
-    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/FileSaver.min.js" type="text/javascript"></script>
-    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/charts.js" type="text/javascript"></script>
-    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/jszip_v2.js" type="text/javascript"></script>
-    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/diff.js" type="text/javascript"></script>
-   
+
+    <link type="text/css" href="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/craft.css" rel="stylesheet" />
+    <link type="text/css" href="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/theme-neptune-all_1.css" rel="stylesheet" />
+    <link type="text/css" href="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/theme-neptune-all_2.css" rel="stylesheet" />
+    <link type="text/css" href="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/charts-all.css" rel="stylesheet" />
+    <link type="text/css" href="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/charts-all-rtl.css" rel="stylesheet" />
+    <link type="text/css" href="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/material-ui.css" rel="stylesheet" />
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/react.js" type="text/javascript"></script>
+    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/react-dom.js" type="text/javascript"></script>
+    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/material-ui.js" type="text/javascript"></script>              
+    
+    
+    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/jquery-1.11.2.min.js" type="text/javascript"></script>
+    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/ext-all.js" type="text/javascript"></script>
+    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/moment.js" type="text/javascript"></script> 
+    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/FileSaver.min.js" type="text/javascript"></script>
+    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/charts.js" type="text/javascript"></script>
+    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/xumenter.js" type="text/javascript"></script>
+    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/jszip_v2.js" type="text/javascript"></script>
+    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/diff.js" type="text/javascript"></script>
+
+     
+    <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/craft.js" type="text/javascript"></script>
+    
+    <script src="https://www.idealfed.com/lib/ijf_utils.js" type="text/javascript"></script>
+    <script src="https://www.idealfed.com/lib/ijf_model.js" type="text/javascript"></script>
+    <script src="https://www.idealfed.com/lib/ijf_main.js" type="text/javascript"></script>
+    <script src="https://www.idealfed.com/lib/ijf_framework.js" type="text/javascript"></script>
+    <script src="https://www.idealfed.com/lib/ijf_lists.js" type="text/javascript"></script>
+    <script src="https://www.idealfed.com/lib/ijf_ext_utils.js" type="text/javascript"></script>
+    <script src="https://www.idealfed.com/lib/ijf_react_utils.js" type="text/javascript"></script>
+ 
     
     <metaname="decorator"content="none"/>
 
   <script>
+     
       g_username = "$ijfUsername";
       g_version = "$ijfVersion";
       g_iwfFormSetId = "firstFormSet";
@@ -30,77 +50,12 @@
       g_itemId = "$ijfItemId";
       g_debug =  "$ijfDebug";
       g_root = "$ijfRoot";
-      g_imagesRoot = g_root + "/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/";
+      g_imagesRoot = g_root + "/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/images/";
       g_args =  '';
       g_craft = "$ijfCraft";
       g_dashboard = '';
       g_configDir = 'IJF_Configuration';
-            
-      //document on ready here.. init or load and then init...
-      
-      ijfLoadCount = 0;
-      function ijfLoaded()
-      {
-          ijfLoadCount++;
-          if(ijfLoadCount==7)
-          {
-          	ijf.main.init(0);
-          }
-      }
-   
-     
-	  jQuery.ajax({
-			url: "https://www.idealfed.com/$ijfRemote/ijf_utils.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});
-	  jQuery.ajax({
-			url: "https://www.idealfed.com/$ijfRemote/ijf_model.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});		
-	  jQuery.ajax({
-			url: "https://www.idealfed.com/$ijfRemote/ijf_main.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});
-	  jQuery.ajax({
-			url: "https://www.idealfed.com/$ijfRemote/ijf_framework.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});
-	  jQuery.ajax({
-			url: "https://www.idealfed.com/$ijfRemote/ijf_lists.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});				      
-				
-	  jQuery.ajax({
-			url: "https://www.idealfed.com/$ijfRemote/ijf_ext_utils.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});
-	  jQuery.ajax({
-			url: "https://www.idealfed.com/$ijfRemote/xumenter.js",
-			type: "get",
-			cache: false,
-			dataType: "script",
-			success: ijfLoaded
-		});		
-
-	
+                  
   </script>
 
 </head>

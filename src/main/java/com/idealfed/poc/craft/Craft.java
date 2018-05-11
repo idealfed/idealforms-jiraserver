@@ -117,7 +117,7 @@ public class Craft extends HttpServlet
 
 //section to comment or uncomment license
 
-
+/*
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -139,7 +139,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-
+*/
 
 //end comment section
 
@@ -182,7 +182,7 @@ public class Craft extends HttpServlet
 //comment for unlicensed running
 //determine if Admin call or a Craft call, either way, require Administrator....
 
-
+/*
         if(iwfAction.equals("noAction"))
         {
 			if ((craftFlag.equals("true")) || (formId.equals("")))
@@ -203,7 +203,7 @@ public class Craft extends HttpServlet
 				}
 			}
 	    }
-
+*/
 
 //end comment section
 

@@ -1454,26 +1454,48 @@ replaceWordChars:function(text) {
 		{
 			for(var c in ijf.main.controlSet)
 			{
+				//special handling for htmleditor, must clear all these manually FIRST
+			   if(ijf.main.controlSet[c].hasOwnProperty('control'))
+			   {
+				   if(ijf.main.controlSet[c].field)
+				   {
+
+					   if(ijf.main.controlSet[c].field.controlType == "htmleditor")
+					   {
+							ijf.main.controlSet[c].control.removeAll(true);
+							//console.log("Removed " + c);
+					        delete ijf.main.controlSet[c];
+				       }
+				   }
+			   }
+			}
+
+			for(var c in ijf.main.controlSet)
+			{
 			   if(ijf.main.controlSet.hasOwnProperty(c))
 			   {
+				   /*
 				   if(ijf.main.controlSet[c].hasOwnProperty('control'))
 				   {
 					   if(ijf.main.controlSet[c].control)
 					   {
 						   try
 						   {
-								controlSet[c].control.removeAll(true);
+							   ijf.main.controlSet[c].control.removeAll(true);
 						   }
-						   catch(e){}
+						   catch(e){
+							   ijfUtils.footLog("Failed clear on " + c + " message=" + e.message);
+						   }
 					   }
 				   }
+				   */
 				   if (ijf.main.controlSet[c].control) {
-					Ext.destroy(ijf.main.controlSet[c].control);
+						 Ext.destroy(ijf.main.controlSet[c].control);
 				   }
 			   }
 			}
 		}
-		controlSet = new Array();
+		ijf.main.controlSet = new Array();
 	},
 
 	IsNumeric:function(_in) {
@@ -1880,6 +1902,39 @@ replaceWordChars:function(text) {
 			retText = this.switchAtts(retText);
 		}
 		return retText;
+	},
+	switchAttsGeneric:function(inText,inData)
+		{
+			if(!inData) return inText;
+			var retText = inText;
+			var pat = "\#\{.*?\}";
+			var rgx = new RegExp(pat);
+			var m = rgx.exec(inText);
+
+			if(m==null)
+			{
+				return retText;
+			}
+			else
+			{
+				var keyVal = m[0].replace("#{","");
+				keyVal = keyVal.replace("}","");
+
+				var repVal = "";
+				if(inData.hasOwnProperty(keyVal))
+				{
+					var jField = inData[keyVal];
+					retText = inText.replace(m[0],jField);
+				}
+				else
+				{
+					//retText = inText.replace(m[0], " ("+keyVal+" not found) ");
+					ijfUtils.footLog(keyVal + " not found");
+					retText = inText.replace(m[0], "");
+				}
+				retText = this.switchAttsGeneric(retText,inData);
+			}
+			return retText;
 	},
     getJiraFieldValue:function(inName, inIssue, forDisplay, noSanitize)
     {

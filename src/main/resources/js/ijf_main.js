@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "4.1.9";
+    window.g_version = "5.0.7";
 
     console.log("Initializing IJF version: " + window.g_version);
     //prevent double initializing....
@@ -645,9 +645,14 @@ function renderForm(inContainerId, inFormId, isNested, item, afterRender)
 
         if(!thisForm.fields.hasOwnProperty(f)) continue;
 
+
         var thisField = thisForm.fields[f];
         thisField.form = thisForm;
         var frmCell = thisField.formCell.split(",");
+
+        //if this is a nested FIELD in html, skip
+        if(frmCell.length>2) continue;
+
         var targetCell =  inContainerId+"_"+frmCell[0]+"_"+frmCell[1];
         var container = document.getElementById(targetCell);
         try
