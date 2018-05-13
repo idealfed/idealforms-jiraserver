@@ -53,6 +53,9 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'muiSelect':
                 ijf.reactUtils.renderSelect(inFormKey,item,inField,inContainer);
                 break;
+            case 'muiRadio':
+                ijf.reactUtils.renderRadio(inFormKey,item,inField,inContainer);
+                break;
 
 			//SENCHA Section
             case 'Reference Editor':

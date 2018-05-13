@@ -32,6 +32,10 @@ compile to working....
 
 npx babel ijf_react_utils_dev.js --out-file ../src/main/resources/js/ijf_react_utils.js
 
+To watch files...
+npx babel ijf_react_utils_dev.js -w --out-file ../src/main/resources/js/ijf_react_utils.js
+
+
 
 test with remote
 

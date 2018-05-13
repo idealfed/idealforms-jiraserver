@@ -588,7 +588,17 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				  }
 				  else  if(this.field.controlType=="muiSelect")
 				  {
-					  sc = this.control.state.svalue;
+					  sc = this.control.state.value;
+					  if(sc)
+						  var tv = {"id":sc};
+					  else
+						  var tv = null;
+
+ 					  this.newVal = tv;
+				  }
+				  else  if(this.field.controlType=="muiRadio")
+				  {
+					  sc = this.control.state.value;
 					  if(sc)
 						  var tv = {"id":sc};
 					  else
