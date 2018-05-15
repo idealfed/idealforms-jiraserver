@@ -729,7 +729,15 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				break;
 			case 'grid':
 				//std text value
-				var gridData = this.control.getStore().getData();
+					var str = this.control.getStore();
+					var gridData = str.getData();
+					if(str.isFiltered())
+					{
+						var allData = gridData.getSource();
+						gridData=allData;
+					}
+
+
 				var dataArray = gridData.items.map(function(r){return r.data;});
 				//sanitize grid
 				var rawGrid = JSON.stringify(dataArray);

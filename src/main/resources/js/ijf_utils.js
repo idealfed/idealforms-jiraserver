@@ -2556,26 +2556,24 @@ CSVtoArray:function (strData, strDelimiter ){
 
 						//filter lookup for distinct elements for index
 						var uniqueVals = {};
-						lookup = lookup.filter(function(r)
+						lookup = lookup.reduce(function(inArr,r)
 						{
-							//harder...this needs to consider the immediate parent as well for uniqueness
-
+							//harder...this needs to consider all the parents for uniqueness
 							var filterKey=r[keyIndex];
 							if(keyIndex>0)
 							{
-								filterKey=r[keyIndex-1]+r[keyIndex];
+								//this has to go up the tree to get a unique value for this row....
+								var curIndex=keyIndex-1;
+								while(curIndex > -1) filterKey=r[curIndex--] + filterKey;
 							}
-
-							if(uniqueVals.hasOwnProperty(filterKey))
-							{
-								return false;
-							}
-							else
+							if(!uniqueVals.hasOwnProperty(filterKey))
 							{
 								uniqueVals[filterKey]=true;
-								return true;
+								inArr.push(r);
 							}
-						});
+							return inArr;
+						},[]);
+
 						if(asArray)
 						{
 							retRef=lookup;

@@ -56,6 +56,10 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'muiRadio':
                 ijf.reactUtils.renderRadio(inFormKey,item,inField,inContainer);
                 break;
+            case 'muiGrid':
+                ijf.reactUtils.renderGrid(inFormKey,item,inField,inContainer);
+                break;
+
 
 			//SENCHA Section
             case 'Reference Editor':
@@ -933,7 +937,7 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
 			  header: "Action",
 			  width: 70,
 			  items: [{icon: '' },{
-					icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/tree/drop-no.png',
+					icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/images/tree/drop-no.png',
 					handler: function(grid, rowIndex, colIndex, itm) {
 						  try
 						  {
@@ -1552,7 +1556,7 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 			  header: "Action",
 			  width: 70,
 			  items: [{icon: '' },{
-					icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/tree/drop-no.png',
+					icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/images/tree/drop-no.png',
 					handler: function(grid, rowIndex, colIndex, itm) {
 						  try
 						  {
@@ -1847,7 +1851,7 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 			  header: "Action",
 			  width: 70,
 			  items: [{icon: '' },{
-					icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources/images/tree/drop-no.png',
+					icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/images/tree/drop-no.png',
 					handler: function(grid, rowIndex, colIndex, itm) {
 						  try
 						  {
@@ -2135,7 +2139,9 @@ renderHtml:function(inFormKey,item, inField, inContainer)
     var l_labelStyle = inField.labelStyle;
     var l_panelStyle = inField.panelStyle;
     var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
 
+    if(!l_fieldStyle) l_fieldStyle="background:transparent";
     if(!l_labelStyle) l_labelStyle="background:transparent";
     if(!l_panelStyle) l_panelStyle="background:transparent";
     if(!l_Style) l_Style="background:transparent";
@@ -2175,6 +2181,13 @@ renderHtml:function(inFormKey,item, inField, inContainer)
             return setDynamicControls(retText);
 		}
 	}
+
+	if(ijf.snippets.hasOwnProperty(inField.event))
+	{
+		var ocf =  ijfUtils.getEvent(inField);
+   	    outHtml = ocf(outHtml);
+    }
+
     outHtml = setDynamicControls(outHtml);
 
 
@@ -2199,7 +2212,8 @@ renderHtml:function(inFormKey,item, inField, inContainer)
         labelAlign: 'left',
         border:false,
         hidden: hideField,
-        style: l_Style,
+        bodyStyle: l_Style,
+        style: l_fieldStyle,
         items: {
             html: outHtml,
             frame: false,
@@ -3011,7 +3025,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
     {
             sItems.push({
 						xtype: 'button',
-						icon: '/download/resources5/com.idealfed.poc.idealforms:jiraforms-resources/images/magnify.png',
+						icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/images/magnify.png',
 						handler: function(f,n,o) {
 							var cup = this.up();
 							var tVal = cup.items.items[0].getValue();
@@ -3023,7 +3037,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
     var simple = new Ext.FormPanel({
         border:false,
         hidden: hideField,
-        style: l_Style,
+        bodyStyle: l_Style,
         layout: 'hbox',
         items: sItems
     });
@@ -3603,7 +3617,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
     var simple = new Ext.FormPanel({
         hidden: hideField,
         border:false,
-        style: l_Style,
+        bodyStyle: l_Style,
         items:[combo]
     });
     //before render....
@@ -7280,7 +7294,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         //layoutConfig: {
         //    columns: 1
         //},
-        style: l_Style,
+        bodyStyle: l_Style,
         items: [grid]
     });
 
@@ -8287,7 +8301,7 @@ treeMenu.add({  text: 'Move Down', handler: function()  {
         layoutConfig: {
             columns: 1
         },
-        style: l_Style,
+        bodyStyle: l_Style,
         items: [tree]
     });
 
@@ -9670,7 +9684,7 @@ renderPieChart :function(inFormKey,item, inField, inContainer)
         layoutConfig: {
             columns: 1
         },
-        style: l_Style,
+        bodyStyle: l_Style,
         items: [Ext.create('Ext.chart.PolarChart',{
 			        theme: 'default-gradients',
 			        width: '100%',
@@ -9804,7 +9818,7 @@ renderBarChart :function(inFormKey,item, inField, inContainer)
         layoutConfig: {
             columns: 1
         },
-        style: l_Style,
+        bodyStyle: l_Style,
         controller:  Ext.create('Ext.app.ViewController', {
 
 				onAxisLabelRender: function (axis, label, layoutContext) {
