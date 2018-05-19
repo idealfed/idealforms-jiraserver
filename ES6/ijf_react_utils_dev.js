@@ -540,7 +540,72 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		//after render....
 		if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](controlReference, inFormKey,item, inField, inContainer);
 	  },
-	 renderCardList:function(inFormKey,item, inField, inContainer)
+	renderHistoryList:function(inFormKey,item, inField, inContainer)
+	{
+		inField.dataReference = "author,change,date,time";
+		if(!item.changelog)
+		{
+			var tItem = ijfUtils.jiraApiSync("GET","/rest/api/2/issue/" + item.key + "?expand=changelog",null);
+			item.changelog = tItem.changelog;
+		}
+		var sortedLogs = [];
+		if(item.changelog.histories)
+		{
+			//sort desc
+			sortedLogs = item.changelog.histories.sort(function(a, b)
+			{
+				a = new Date(a.created);
+				b = new Date(b.created);
+				return a>b ? -1 : a<b ? 1 : 0;
+			});
+
+			sortedLogs = sortedLogs.map(function(a){
+
+				var chng = a.items.reduce(function(oStr,i){
+					oStr += "<b>Field:</b> " + i.field;
+					oStr += "<br>&nbsp;&nbsp;&nbsp;<b>From Value:</b> " + i.fromString;
+					oStr += "<br>&nbsp;&nbsp;&nbsp;<b>To Value:</b> " + i.toString;
+					oStr += "<br><br>";
+					return oStr;
+				},"");
+
+				a.change = chng.replace(/\n/g,"<br>");
+				a.author = a.author.displayName;
+				a.date = moment(a.created).format('ll');
+				a.time = moment(a.created).format('LT');
+
+				return a;
+			});
+
+		}
+		this.renderCardList(inFormKey,item, inField, inContainer, sortedLogs)
+	},
+	renderCommentList:function(inFormKey,item, inField, inContainer)
+	{
+		inField.dataReference = "author,body,date,time";
+		var sortedLogs = [];
+		if(item.fields.comment.comments)
+		{
+			//sort desc
+			var sortedLogs = item.fields.comment.comments.sort(function(a, b)
+			{
+				a = new Date(a.created);
+				b = new Date(b.created);
+				return a>b ? -1 : a<b ? 1 : 0;
+			});
+
+			sortedLogs = sortedLogs.map(function(a){
+				a.body = a.body.replace(/\n/g,"<br>");
+				if(a.author) a.author = a.author.displayName;
+				if(a.updateAuthor) a.author = a.updateAuthor.displayName;
+				a.date = moment(a.created).format('ll');
+				a.time = moment(a.created).format('LT');
+				return a;
+			});
+		}
+		this.renderCardList(inFormKey,item, inField, inContainer, sortedLogs)
+	},
+	renderCardList:function(inFormKey,item, inField, inContainer, inData)
 	{
 		inContainer.title = inField.toolTip;
 
@@ -558,34 +623,41 @@ renderTextbox(inFormKey,item, inField, inContainer)
  	    tSearch = ijfUtils.replaceKeyValues(tSearch,item);
 		var aUrl = '/rest/api/2/search?'+tSearch;
 
-        if(inField.form.formProxy=="true")
+        if(inData)
         {
-			aUrl=aUrl.replace(/ /g,"%20");
- 	   		var rawList = ijfUtils.getProxyApiCallSync(aUrl, inField.form.formSet.id);
-	    }
-	    else
-	    {
-		    var rawList = ijfUtils.jiraApiSync('GET',aUrl, null);
+			var dataItems = inData;
 		}
-        var dataItems = rawList.issues.map(function(i){
-			var retObj ={};
-			translateFields.split(",").forEach(function(f){
-				var thisField = f.trim();
-				var dVal = "";
-				var jField = ijfUtils.getJiraFieldById(thisField);
-				if(i.fields.hasOwnProperty(jField.id))
-				{
-					dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
-				}
-				if(!dVal) dVal="";
-				if(jField.name) retObj[jField.name]= dVal;
-					else retObj[thisField]= dVal;
+		else
+		{
+			if(inField.form.formProxy=="true")
+			{
+				aUrl=aUrl.replace(/ /g,"%20");
+				var rawList = ijfUtils.getProxyApiCallSync(aUrl, inField.form.formSet.id);
+			}
+			else
+			{
+				var rawList = ijfUtils.jiraApiSync('GET',aUrl, null);
+			}
+			var dataItems = rawList.issues.map(function(i){
+				var retObj ={};
+				translateFields.split(",").forEach(function(f){
+					var thisField = f.trim();
+					var dVal = "";
+					var jField = ijfUtils.getJiraFieldById(thisField);
+					if(i.fields.hasOwnProperty(jField.id))
+					{
+						dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
+					}
+					if(!dVal) dVal="";
+					if(jField.name) retObj[jField.name]= dVal;
+						else retObj[thisField]= dVal;
+				});
+				//retObj.iid=i.id;
+				retObj.iid=i.key;
+				retObj.key=i.key;
+				return retObj;
 			});
-			//retObj.iid=i.id;
-			retObj.iid=i.key;
-			retObj.key=i.key;
-			return retObj;
-		});
+   	    }
 
 
 		//permissions check....has to exist...
@@ -755,9 +827,9 @@ renderTextbox(inFormKey,item, inField, inContainer)
 											<Icon>{fieldStyle.actionIcon}</Icon>
 										  </IconButton>
 										}
-										title={<Typography variant="headline" component="h2">
-													<DynamicHtml htmlContent={this.state.title} dataRow={this.state.row} />
-												</Typography>}
+										title={
+											<DynamicHtml htmlContent={this.state.title} dataRow={this.state.row} />
+										}
 										subheader={<DynamicHtml htmlContent={this.state.subHeader} dataRow={this.state.row} />}
 							/>
 							<CardContent>
@@ -872,9 +944,15 @@ renderTextbox(inFormKey,item, inField, inContainer)
 	  		var buttonStyle = {}
 	  		if(hideField) buttonStyle.visibility = "hidden";
 
+		    var variant = "persistent";
+		    if(fieldSettings.variant) variant=fieldSettings.variant;
+
+			if(!style.width) style.width="20px";
+			var originalWidth = inContainer.style.width;
 
 			class MuiDrawer extends React.Component {
 			  state = {
+				open: false,
 				top: false,
 				left: false,
 				bottom: false,
@@ -882,11 +960,34 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			  };
 
 			  toggleDrawer = (side, open) => () => {
+
+				if((!open) && (variant=="persistent"))
+				{
+					inContainer.style.width=originalWidth;
+				}
+
 				this.setState({
-				  [side]: open,
+				  [side]: open
+				});
+				this.setState({
+					"open" : open
 				});
 			  };
 
+			  openFromChevron = (side, open) => () => {
+
+				//if this is persistent, alter underlying div width to width of this animal...
+				if(variant=="persistent")
+				{
+					inContainer.style.width=style.width;
+				}
+				this.setState({
+				  [side]: open
+				});
+				this.setState({
+					"open" : open
+				});
+			  };
 
 			  getMenu(menuRows,owningClass)
 			  {
@@ -914,17 +1015,23 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				  });
 			   }
 
-
 			  render() {
 				return (
 				  <div>
-					<Icon style={buttonStyle} onClick={this.toggleDrawer(fieldSettings.direction, true)}>{fieldSettings.icon}</Icon>
-					<Drawer anchor={fieldSettings.direction} open={this.state[fieldSettings.direction]} onClose={this.toggleDrawer(fieldSettings.direction, false)}>
+					<Icon style={buttonStyle} onClick={this.openFromChevron(fieldSettings.direction, true)}>{fieldSettings.icon}</Icon>
+					<Drawer variant={variant} anchor={fieldSettings.direction} open={this.state.open} onClose={this.toggleDrawer(fieldSettings.direction, false)}>
+						<div style={{display: 'flex', alignItems: 'center',justifyContent: 'flex-end', padding: '0 8px'}}>
+						  <IconButton onClick={this.toggleDrawer(fieldSettings.direction,false)}>
+							<Icon>chevron_left</Icon>
+						  </IconButton>
+						</div>
+						<Divider />
+
 					  <div
 						tabIndex={0}
 						role="button"
-						onClick={this.toggleDrawer(fieldSettings.direction, false)}
-						onKeyDown={this.toggleDrawer(fieldSettings.direction, false)}
+						onClick={this.openFromChevron(fieldSettings.direction, true)}
+						onKeyDown={this.openFromChevron(fieldSettings.direction, true)}
 					  >
 					   <div style={style}>
 						 {this.getMenu(fieldSettings.menu, this)}
@@ -1748,32 +1855,55 @@ renderSelect(inFormKey,item, inField, inContainer)
 	}
 
 
-		var l_Height = 300;
-	    var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
-	    if(l_Height=="")
-	    {
-			l_Height=300;
-		}
-		else
-		{
-	    	l_Height = l_Height.replace("px","")/1;
-		}
-
-		var l_Width = 600;
-	    var l_Width=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"width");
-	    if(l_Width=="")
-	    {
-			l_Width=600;
-		}
-		else
-		{
-	    	l_Width = l_Width.replace("px","")/1;
-		}
-
 		var colWidths=[];
 		var colHeaders = [];
-		if(inField.tableWidths) colWidths=inField.tableWidths.split(",");
-		if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
+		try
+		{
+			colHeaders = JSON.parse(inField.tableHeaders);
+
+			colHeaders=colHeaders.reduce(function(inA,h){
+				inA[h.column]=h;
+				return inA;
+			},[]);
+		}
+		catch(e)
+		{
+			colHeaders=[];
+			if(inField.colHeaders)
+			{
+				var tempColWidths=inField.tableHeaders.split(",");
+				var colInd = 0;
+				tempColWidths.forEach(function(c){
+					if(c) var w=c;
+					else var w = "tbd";
+					colWidths[colInd]={"caption":w,"cellStyle":null};
+				})
+			}
+		}
+		try
+		{
+			colWidths = JSON.parse(inField.tableWidths);
+			colWidths=colWidths.reduce(function(inA,h){
+				inA[h.column]=h;
+				return inA;
+			},[]);
+		}
+		catch(e)
+		{
+			colWidths=[];
+			if(inField.tableWidths)
+			{
+				var tempColWidths=inField.tableWidths.split(",");
+				var colInd = 0;
+				tempColWidths.forEach(function(c){
+					if(c) var w=c;
+					else var w = "100px";
+					colWidths[colInd]={"width":w,"cellStyle":null,"numeric":false,"rowStyle":null};
+				});
+			}
+		}
+
+
 
 	    //The grid setup....
 	    var listColumns = [];
@@ -1846,29 +1976,21 @@ renderSelect(inFormKey,item, inField, inContainer)
 				}
 	        }
 
-			var thisColWidth = 120;
-			if(colWidths[cIndex]) thisColWidth=colWidths[cIndex]/1;
 			var thisColHeader = col.columnName;
-			if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+			if((colHeaders[cIndex]) && (colHeaders[cIndex].caption)) thisColHeader=colHeaders[cIndex].caption;
 
 			switch(col.controlType)
 			{
 				case "datefield":
-						tFields.push({name: col.columnName, type: 'date'});
 							if(col.format==null) col.format = 'm/d/Y';
 							if(col.format=="") col.format = 'm/d/Y';
 						colObj={
 								header: thisColHeader,
-								sortable: true,
-								hidden: false,
-								xtype: 'datecolumn',
 								renderer: validRenderer,
 								ijfColumn: col,
-								width: thisColWidth,
+								headerObj: colHeaders[cIndex],
+								widthObj: colWidths[cIndex],
 								dataIndex: col.columnName,
-								filter: {
-									type: 'date'
-								},
 								editor: {
 									completeOnEnter: true,
 									field: {
@@ -1890,16 +2012,11 @@ renderSelect(inFormKey,item, inField, inContainer)
 						tFields.push({name: col.columnName, type: 'number'});
 						colObj={
 								header: thisColHeader,
-								sortable: true,
-								hidden: false,
-								xtype: 'numbercolumn',
 								renderer: validRenderer,
-								align: 'end',
-								width: thisColWidth,
 								dataIndex: col.columnName,
-								filter: {
-									type: 'number'
-								},
+								ijfColumn: col,
+								headerObj: colHeaders[cIndex],
+								widthObj: colWidths[cIndex],
 								editor: {
 									completeOnEnter: true,
 									field: {
@@ -1921,12 +2038,9 @@ renderSelect(inFormKey,item, inField, inContainer)
 					tFields.push({name: col.columnName, type: 'boolean'});
 					colObj={
 							header: thisColHeader,
-							sortable: true,
-							hidden: false,
-							xtype: 'checkcolumn',
-							centered:true,
-							//renderer: validRenderer,
-							width: thisColWidth,
+							ijfColumn: col,
+							headerObj: colHeaders[cIndex],
+							widthObj: colWidths[cIndex],
 							dataIndex: col.columnName,
 							listeners: {
 								checkchange: function(n,o,f)
@@ -2006,14 +2120,11 @@ renderSelect(inFormKey,item, inField, inContainer)
 						}
 						colObj={
 								header: thisColHeader,
-								sortable: true,
-								hidden: false,
-								width: thisColWidth,
+								ijfColumn: col,
+								headerObj: colHeaders[cIndex],
+								widthObj: colWidths[cIndex],
 								dataIndex: col.columnName,
 								renderer: validRenderer,
-								filter: {
-									type: 'list'
-								},
 								editor: {
 									completeOnEnter: true,
 									field: {
@@ -2025,47 +2136,40 @@ renderSelect(inFormKey,item, inField, inContainer)
 										lookupDef: cLookupDef,
 										displayField: cLookupDef.index,
 									    valueField: cLookupDef.index,
-									    //triggerAction: 'all',
-									    //mode: 'local',
-									    //lastQuery: '',
 										listeners: cListener
 									}
 								}
 				};
 				break;
 				default:
-						tFields.push({name: col.columnName, type: 'string'});
+					tFields.push({name: col.columnName, type: 'string'});
 
-						colObj={
-								header: thisColHeader,
-								sortable: true,
-								hidden: false,
-								width: thisColWidth,
-								dataIndex: col.columnName,
-								renderer: validRenderer,
-								filter: {
-									type: 'string'
-								},
-								editor: {
-									completeOnEnter: true,
-									field: {
-										xtype: col.controlType,
-										allowBlank: (col.required!="Yes"),
-										validator: lValidator,
-										listeners: {
-											change: function(n,o,f)
-											{
-												ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
-											},
-											focus: function(){
-												this.validate();
-											}
+					colObj={
+							header: thisColHeader,
+							ijfColumn: col,
+							headerObj: colHeaders[cIndex],
+							widthObj: colWidths[cIndex],
+							dataIndex: col.columnName,
+							renderer: validRenderer,
+							editor: {
+								completeOnEnter: true,
+								field: {
+									xtype: col.controlType,
+									allowBlank: (col.required!="Yes"),
+									validator: lValidator,
+									listeners: {
+										change: function(n,o,f)
+										{
+											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+										},
+										focus: function(){
+											this.validate();
 										}
 									}
 								}
+							}
 				};
 			}
-			ijfUtils.setColWidth(colObj,cIndex,colWidths,120);
 			listColumns.push(colObj);
 			cIndex++;
 		});
@@ -2125,39 +2229,80 @@ renderSelect(inFormKey,item, inField, inContainer)
 		  }
 
 		  getHeaders(){
+
 			  return listColumns.map(function(h)
 			  {
-				return (<MuiTableCell>{h["header"]}</MuiTableCell>);
+				if(h.headerObj)
+				{
+					var test=h.headerObj;
+
+					return (<MuiTableCell style={h.headerObj.cellStyle}>{h["header"]}</MuiTableCell>);
+				}
+				else
+				{
+					return (<MuiTableCell>{h["header"]}</MuiTableCell>);
+				}
+
 			  });
 		  };
 
+
 		  getDataRows(){
 				 return data.map(n => {
+
 					return (
 					  <MuiTableRow key={n.id}>
-						{listColumns.map(c => {
-							return(<MuiTableCell numeric>{n[c["dataIndex"]]}</MuiTableCell>);
-						})}
+						{
+						  listColumns.map(c => {
+
+							var lNumeric = false;
+							var lCellStyle = null;
+							if(c.widthObj)
+							{
+								if (c.widthObj.numeric) lNumeric=c.widthObj.numeric;
+								if (c.widthObj.cellStyle) lCellStyle=c.widthObj.cellStyle;
+							}
+
+							return(<MuiTableCell numeric={lNumeric} style={lCellStyle}>{n[c["dataIndex"]]}</MuiTableCell>);
+							})
+						}
 					  </MuiTableRow>
 					);
 				  });
 		  };
 
 		  render() {
-			return (
-				<MuiPaper style={style}>
-				  <MuiTable style={panelStyle}>
-					<MuiTableHead>
+			if(style.paper)
+			{
+			    return (
+				<MuiPaper>
+				  <MuiTable style={style}>
+					<MuiTableHead style={panelStyle}>
 					  <MuiTableRow>
 						{this.getHeaders()}
 					  </MuiTableRow>
 					</MuiTableHead>
-					<MuiTableBody>
+					<MuiTableBody style={fieldStyle}>
 					  {this.getDataRows()}
 					</MuiTableBody>
 				  </MuiTable>
-				</MuiPaper>
-			);
+				</MuiPaper>);
+			}
+			else
+			{
+				return (
+				  <MuiTable style={style}>
+					<MuiTableHead style={panelStyle}>
+					  <MuiTableRow>
+						{this.getHeaders()}
+					  </MuiTableRow>
+					</MuiTableHead>
+					<MuiTableBody style={fieldStyle}>
+					  {this.getDataRows()}
+					</MuiTableBody>
+				  </MuiTable>);
+			}
+
 		  }
 		}
 

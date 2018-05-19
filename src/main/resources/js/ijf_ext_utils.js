@@ -59,6 +59,12 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'muiGrid':
                 ijf.reactUtils.renderGrid(inFormKey,item,inField,inContainer);
                 break;
+            case 'muiCommentList':
+                ijf.reactUtils.renderCommentList(inFormKey,item,inField,inContainer);
+                break;
+            case 'muiHistoryList':
+                ijf.reactUtils.renderHistoryList(inFormKey,item,inField,inContainer);
+                break;
 
 
 			//SENCHA Section
@@ -7294,7 +7300,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         //layoutConfig: {
         //    columns: 1
         //},
-        bodyStyle: l_Style,
+        style: l_Style,
         items: [grid]
     });
 
