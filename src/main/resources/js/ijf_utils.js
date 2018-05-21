@@ -1859,11 +1859,41 @@ replaceWordChars:function(text) {
 		retText = retText.replace(/\#\{key\}/g,item.key);
 		retText = retText.replace(/\#\{summary\}/g,item.fields.summary);
 		retText = retText.replace(/\#\{status\}/g,item.fields.status.name);
+	    retText = this.switchSessionAtts(retText,item,noSanitize);
 	    retText = this.switchAtts(retText,item,noSanitize);
 
 		return retText;
 	},
+	switchSessionAtts:function(inText,item,noSanitize)
+	{
+		var retText = inText;
+		var pat = "\#\{session:.*?\}";
+		var rgx = new RegExp(pat);
+		var m = rgx.exec(inText);
 
+		if(m==null)
+		{
+			return retText;
+		}
+		else
+		{
+			var keyVal = m[0].replace("#{session:","");
+			keyVal = keyVal.replace("}","");
+
+			if(ijf.session.hasOwnProperty(keyVal))
+			{
+				retText = inText.replace(m[0],ijf.session[keyVal]);
+			}
+			else
+			{
+				//retText = inText.replace(m[0], " ("+keyVal+" not found) ");
+				ijfUtils.footLog(keyVal + " session val not found");
+				retText = inText.replace(m[0], "");
+			}
+			retText = this.switchSessionAtts(retText,item,noSanitize);
+		}
+		return retText;
+	},
 	switchAtts:function(inText,item,noSanitize)
 	{
 		var retText = inText;
@@ -1899,7 +1929,7 @@ replaceWordChars:function(text) {
 				ijfUtils.footLog(keyVal + " not found");
 				retText = inText.replace(m[0], "");
 			}
-			retText = this.switchAtts(retText);
+			retText = this.switchAtts(retText,item,noSanitize);
 		}
 		return retText;
 	},

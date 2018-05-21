@@ -53,6 +53,10 @@ var MuiTableCell = window['material-ui']['TableCell'];
 var MuiTableHead = window['material-ui']['TableHead'];
 var MuiTableRow = window['material-ui']['TableRow'];
 
+var MuiExpansionPanel = window['material-ui']['ExpansionPanel'];
+var MuiExpansionPanelSummary = window['material-ui']['ExpansionPanelSummary'];
+var MuiExpansionPanelDetails = window['material-ui']['ExpansionPanelDetails'];
+
 var ijf = ijf || {};
 ijf.reactUtils = {
 	renderTextbox: function renderTextbox(inFormKey, item, inField, inContainer) {
@@ -539,7 +543,7 @@ ijf.reactUtils = {
 				return a;
 			});
 		}
-		this.renderCardList(inFormKey, item, inField, inContainer, sortedLogs);
+		this.renderCardList(inFormKey, item, inField, inContainer, sortedLogs, true);
 	},
 	renderCommentList: function renderCommentList(inFormKey, item, inField, inContainer) {
 		inField.dataReference = "author,body,date,time";
@@ -561,9 +565,9 @@ ijf.reactUtils = {
 				return a;
 			});
 		}
-		this.renderCardList(inFormKey, item, inField, inContainer, sortedLogs);
+		this.renderCardList(inFormKey, item, inField, inContainer, sortedLogs, true);
 	},
-	renderCardList: function renderCardList(inFormKey, item, inField, inContainer, inData) {
+	renderCardList: function renderCardList(inFormKey, item, inField, inContainer, inData, withExpander) {
 		inContainer.title = inField.toolTip;
 
 		var hideField = ijfUtils.renderIfShowField(null, inField);
@@ -608,6 +612,12 @@ ijf.reactUtils = {
 			});
 		}
 
+		//transform data....
+		if (inField.referenceFilter) {
+			//filter the items...
+			if (ijf.snippets.hasOwnProperty(inField.referenceFilter)) dataItems = ijf.snippets[inField.referenceFilter](dataItems);
+		}
+
 		//permissions check....has to exist...
 		if (inField.permissions.enabled) {
 			var perms = ijfUtils.getPermissionObj(inField.permissions, ijf.currentItem, ijf.main.currentUser);
@@ -632,8 +642,53 @@ ijf.reactUtils = {
 			var fieldStyle = {};
 		}
 
+		//filter section...you have data, and style...bind visibility to style for filter
+		//syntax for filter:  cardFilter_[formcell]
+		//   [array of:
+		//       {name:value}
+		if (ijf.session["cardFilter_" + inField.formCell]) {
+			dataItems.forEach(function (r) {
+				r.visibility = "hidden";
+				ijf.session["cardFilter_" + inField.formCell].forEach(function (f) {
+					if (f.value == r[f.name]) r.visibility = "visible";
+				});
+				//if filters enabled
+			});
+			dataItems = dataItems.reduce(function (inA, r) {
+				if (r.visibility == "visible") inA.push(r);return inA;
+			}, []);
+		} else {
+			dataItems.forEach(function (r) {
+				r.visibility = "visible";
+			});
+		}
+
+		//sort section...if a sort param is here, sort the data on it
+		//syntax for filter:  cardSort_[formcell]
+		//       array of fields to sort by.
+		if (ijf.session["cardSort_" + inField.formCell]) {
+			ijf.session["cardSort_" + inField.formCell].forEach(function (s) {
+				if (dataItems.length < 1) return;
+				if (!dataItems[0].hasOwnProperty(s)) return;
+				dataItems = dataItems.sort(function (a, b) {
+					a = a[s];
+					b = b[s];
+					return a > b ? -1 : a < b ? 1 : 0;
+				});
+			});
+		}
+
 		var disabled = false;
 		if (hideField) style.visibility = "hidden";
+
+		var dataStart = 0;
+		var resultRows = 100000;
+		if (withExpander) {
+			var dataStart = 0;
+			var resultRows = 3;
+		}
+		var raised = false;
+		if (style.raised) raised = true;
 
 		//REACT section
 
@@ -796,6 +851,12 @@ ijf.reactUtils = {
 					return;
 				}
 			}, {
+				key: 'setStyleFilter',
+				value: function setStyleFilter() {
+					style.visibility = this.state.row.visibility;
+					return style;
+				}
+			}, {
 				key: 'render',
 				value: function render() {
 					return React.createElement(
@@ -803,7 +864,7 @@ ijf.reactUtils = {
 						null,
 						React.createElement(
 							Card,
-							{ style: style, onDblClick: this.handleDblClick },
+							{ style: this.setStyleFilter(), raised: raised, onDblClick: this.handleDblClick },
 							React.createElement(CardHeader, { style: panelStyle,
 								avatar: React.createElement(
 									Icon,
@@ -883,10 +944,43 @@ ijf.reactUtils = {
 				}
 			}, {
 				key: 'getCards',
-				value: function getCards(inData, owningClass) {
-					return inData.map(function (r) {
-						return owningClass.getCard(r, owningClass);
+				value: function getCards(inData, owningClass, inStartAt, inReturnVals) {
+					var returnVals = 100000;
+					if (inReturnVals) returnVals = inReturnVals;
+					var startAt = 0;
+					if (inStartAt) startAt = inStartAt;
+					var ctr = 0;
+					var retArr = [];
+					inData.forEach(function (r) {
+						ctr++;
+						if (ctr > returnVals) return;
+						if (ctr < startAt) return;
+						retArr.push(owningClass.getCard(r, owningClass));
 					});
+					return retArr;
+				}
+			}, {
+				key: 'getExpansionCards',
+				value: function getExpansionCards(inData, owningClass) {
+					if (!withExpander) return;
+					return React.createElement(
+						MuiExpansionPanel,
+						null,
+						React.createElement(
+							MuiExpansionPanelSummary,
+							{ expandIcon: React.createElement(
+									Icon,
+									null,
+									'expand_more'
+								) },
+							'Expand for more'
+						),
+						React.createElement(
+							MuiExpansionPanelDetails,
+							null,
+							owningClass.getCards(owningClass.state.value, owningClass, 3, 100000)
+						)
+					);
 				}
 			}, {
 				key: 'render',
@@ -894,7 +988,8 @@ ijf.reactUtils = {
 					return React.createElement(
 						'div',
 						{ style: style },
-						this.getCards(this.state.value, this)
+						this.getCards(this.state.value, this, dataStart, resultRows),
+						this.getExpansionCards(this.state.value, this)
 					);
 				}
 			}]);
@@ -923,6 +1018,11 @@ ijf.reactUtils = {
 
 		var ocf = ijfUtils.getEvent(inField);
 
+		var sessionDrawerOpen = false;
+		if (ijf.session.hasOwnProperty("drawerState_" + inField.formCell)) {
+			sessionDrawerOpen = ijf.session["drawerState_" + inField.formCell];
+		};
+
 		//permissions check....has to exist...
 		if (inField.permissions.enabled) {
 			var perms = ijfUtils.getPermissionObj(inField.permissions, ijf.currentItem, ijf.main.currentUser);
@@ -950,6 +1050,8 @@ ijf.reactUtils = {
 
 		if (!style.width) style.width = "20px";
 		var originalWidth = inContainer.style.width;
+		//if open then set the correct width....
+		if (sessionDrawerOpen) inContainer.style.width = style.width;
 
 		var MuiDrawer = function (_React$Component7) {
 			_inherits(MuiDrawer, _React$Component7);
@@ -966,7 +1068,7 @@ ijf.reactUtils = {
 				}
 
 				return _ret = (_temp = (_this8 = _possibleConstructorReturn(this, (_ref = MuiDrawer.__proto__ || Object.getPrototypeOf(MuiDrawer)).call.apply(_ref, [this].concat(args))), _this8), _this8.state = {
-					open: false,
+					open: sessionDrawerOpen,
 					top: false,
 					left: false,
 					bottom: false,
@@ -974,6 +1076,7 @@ ijf.reactUtils = {
 				}, _this8.toggleDrawer = function (side, open) {
 					return function () {
 
+						ijf.session["drawerState_" + inField.formCell] = open;
 						if (!open && variant == "persistent") {
 							inContainer.style.width = originalWidth;
 						}
@@ -986,6 +1089,7 @@ ijf.reactUtils = {
 				}, _this8.openFromChevron = function (side, open) {
 					return function () {
 
+						ijf.session["drawerState_" + inField.formCell] = open;
 						//if this is persistent, alter underlying div width to width of this animal...
 						if (variant == "persistent") {
 							inContainer.style.width = style.width;
@@ -1119,11 +1223,13 @@ ijf.reactUtils = {
 			}
 		}
 
+		if (!data) data = "tbd";
+
 		var lAllowBlank = true;
 		if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = jfFieldMeta.required ? false : true;
 		if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle, 'required') == "true") lAllowBlank = false;
 
-		//get lookuips
+		//get lookups
 
 		//two forms:  JIRA references or IJF references
 		var combo = {};
@@ -1316,7 +1422,7 @@ ijf.reactUtils = {
 				_this10.handleChange = function (event) {
 					//add OCF call here..
 					if (inField.dataSource == "session") {
-						ijf.session[inFormKey + '_fld_' + inField.formCell] = n;
+						ijf.session[inFormKey + '_fld_' + inField.formCell] = event.target.value;
 					} else {
 						ijf.main.controlChanged(inFormKey + '_fld_' + inField.formCell);
 					}
@@ -2286,6 +2392,185 @@ ijf.reactUtils = {
 		if (ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](LocalMuiTable, inFormKey, item, inField, inContainer);
 
 		var controlReference = ReactDOM.render(React.createElement(LocalMuiTable, null), inContainer);
+
+		var thisControl = new itemControl(inFormKey + '_fld_' + inField.formCell, inField, item, controlReference, inContainer);
+		ijf.main.controlSet[thisControl.id] = thisControl;
+		//after render....
+		if (ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](controlReference, inFormKey, item, inField, inContainer);
+	},
+
+	renderFormButtons: function renderFormButtons(inFormKey, item, inField, inContainer) {
+
+		inContainer.title = inField.toolTip;
+
+		var readOnly = false;
+
+		var ocf = ijfUtils.getEvent(inField);
+
+		//rendeIf logic
+		var hideField = ijfUtils.renderIfShowField("", inField);
+
+		//permissions check....has to exist...
+		if (inField.permissions.enabled) {
+			var perms = ijfUtils.getPermissionObj(inField.permissions, ijf.currentItem, ijf.main.currentUser);
+		} else {
+			var perms = ijfUtils.getPermissionObj(inField.form.permissions, ijf.currentItem, ijf.main.currentUser);
+		}
+		if (!hideField && !perms.canSee) hideField = true;
+		if (!perms.canEdit) readOnly = true;
+		//end permissions
+
+		var l_save = "Save";
+		var l_reload = "Reload";
+		var l_done = "Done";
+		var l_style = inField.style.split(",");
+		if (l_style.length == 3) {
+			l_save = l_style[0];
+			l_reload = l_style[1];
+			l_done = l_style[2];
+		}
+
+		try {
+			var style = JSON.parse(inField.style);
+		} catch (e) {
+			var style = {};
+		}
+		try {
+			var fieldSettings = JSON.parse(inField.fieldStyle);
+		} catch (e) {
+			var fieldSettings = {};
+		}
+
+		var disabled = false;
+		if (hideField) style.visibility = "hidden";
+		if (fieldSettings.readonly) disabled = true;
+		if (readOnly) disabled = true;
+		if (!fieldSettings.size) fieldSettings.size = "medium";
+
+		var getIcon = function getIcon(inLabel) {
+			if (fieldSettings[inLabel + "icon"]) return React.createElement(
+				Icon,
+				null,
+				fieldSettings[inLabel + "icon"]
+			);else return;
+		};
+
+		var handleSave = function handleSave() {
+			if (ijf.snippets.hasOwnProperty(inField["event"])) {
+				var fValFail = ijf.snippets[inField["event"]]();
+				if (!fValFail) {
+					ijfUtils.footLog("form failed validation");
+					return;
+				}
+			}
+
+			if (inField.dataReference) {
+				ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference, item);
+			} else {
+				ijf.main.saveResultMessage = null;
+			}
+			var onSuccessSave = function onSuccessSave() {
+				ijfUtils.hideProgress();
+				if (ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information", ijf.main.saveResultMessage);
+				ijf.main.setAllClean();
+				//ijf.currentItem=ijfUtils.getJiraIssueSync(ijf.main.itemId);
+				g_itemId = ijf.main.itemId;
+				if (inField.referenceFilter) g_formId = inField.referenceFilter;
+				ijf.main.resetForm();
+			};
+			var tForm = inField.form;
+
+			if (ijf.fw.forms.hasOwnProperty(inField.referenceFilter)) {
+				tForm = ijf.fw.forms[inField.referenceFilter];
+			}
+			Ext.getBody().mask("Saving...");
+			var saveIt = function saveIt() {
+				ijf.main.saveForm(onSuccessSave, null, tForm, item);
+			};
+			window.setTimeout(saveIt, 50);
+		};
+
+		var handleReload = function handleReload() {
+			if (window.onbeforeunload == null) {
+				ijf.main.resetForm();
+			} else {
+				var dFunc = function dFunc() {
+					window.onbeforeunload = null;
+					ijf.main.resetForm();
+				};
+				ijfUtils.modalDialog("Warning", ijf.main.gNavigateOnChange, dFunc);
+			}
+		};
+
+		var handleDone = function handleDone() {
+			//target form is dataSource if it exists or default form if it exists...
+			var tForm = "";
+			if (ijf.fw.forms.hasOwnProperty(inField.dataSource)) {
+				tForm = inField.dataSource;
+			} else if (ijf.fw.forms.hasOwnProperty(inField.form.formSet.settings.defaultForm)) {
+				tForm = inField.form.formSet.settings.defaultForm;
+			} else {
+				ijfUtils.modalDialogMessage("Information", "Sorry but the done action needs a form or the form group needs a default form.");
+				return;
+			}
+
+			//12/5/2017 - changing to reset item to null unless persist item  true...
+			var tarItem = item;
+			if (inField.referenceFilter != "persistItem") {
+				tarItem = null;
+				window.g_itemId = null;
+			}
+
+			if (window.onbeforeunload == null) {
+				window.g_formId = tForm;
+				ijf.main.renderForm("ijfContent", tForm, false, tarItem);
+			} else {
+				var dFunc = function dFunc() {
+					window.onbeforeunload = null;
+					window.g_formId = tForm;
+					ijf.main.renderForm("ijfContent", tForm, false, tarItem);
+				};
+				ijfUtils.modalDialog("Warning", ijf.main.gNavigateOnChange, dFunc);
+			}
+		};
+
+		var getSave = function getSave() {
+			if (!l_save) return;else return React.createElement(
+				MuiButton,
+				{ onClick: handleSave, disabled: disabled, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: style },
+				getIcon(l_save),
+				l_save
+			);
+		};
+		var getReload = function getReload() {
+			if (!l_reload) return;else return React.createElement(
+				MuiButton,
+				{ onClick: handleReload, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: style },
+				getIcon(l_reload),
+				l_reload
+			);
+		};
+		var getDone = function getDone() {
+			if (!l_done) return;else return React.createElement(
+				MuiButton,
+				{ onClick: handleDone, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: style },
+				getIcon(l_done),
+				l_done
+			);
+		};
+		var LocalMuiButton = function LocalMuiButton() {
+			return React.createElement(
+				'div',
+				null,
+				getSave(),
+				getReload(),
+				getDone()
+			);
+		};
+		//before render....
+		if (ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](LocalMuiButton, inFormKey, item, inField, inContainer);
+
+		var controlReference = ReactDOM.render(React.createElement(LocalMuiButton, null), inContainer);
 
 		var thisControl = new itemControl(inFormKey + '_fld_' + inField.formCell, inField, item, controlReference, inContainer);
 		ijf.main.controlSet[thisControl.id] = thisControl;

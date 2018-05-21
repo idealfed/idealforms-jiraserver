@@ -667,7 +667,14 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 			  	  }
 				break;
 			case 'comments-page':
-			    var cmt = this.control.items.items[0].getValue();
+				if(this.field.controlType.substring(0,3)=="mui")
+				{
+					var cmt = this.control.state.value
+				}
+				else
+				{
+				    var cmt = this.control.items.items[0].getValue();
+				}
 			    var sc = ijfUtils.sanitize(cmt);
 			 	var tv = {"body":sc};
  				this.newVal =  tv;

@@ -65,6 +65,10 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'muiHistoryList':
                 ijf.reactUtils.renderHistoryList(inFormKey,item,inField,inContainer);
                 break;
+            case 'muiFormButtons':
+                ijf.reactUtils.renderFormButtons(inFormKey,item,inField,inContainer);
+                break;
+
 
 
 			//SENCHA Section
