@@ -161,7 +161,7 @@ ijf.reactUtils = {
 				_this.handleChange = function (event) {
 					//add OCF call here..
 					if (inField.dataSource == "session") {
-						ijf.session[inFormKey + '_fld_' + inField.formCell] = n;
+						ijf.session[inFormKey + '_fld_' + inField.formCell] = event.target.value;
 					} else {
 						ijf.main.controlChanged(inFormKey + '_fld_' + inField.formCell);
 					}
@@ -207,6 +207,7 @@ ijf.reactUtils = {
 								label: lCaption,
 								disabled: rOnly,
 								required: fieldStyle.required,
+								autoFocus: fieldStyle.autoFocus,
 								multiline: false,
 								id: inFormKey + '_ctr_' + inField.formCell.replace(",", "_"),
 								value: this.state.value,
@@ -334,7 +335,7 @@ ijf.reactUtils = {
 				_this2.handleChange = function (event) {
 					//add OCF call here..
 					if (inField.dataSource == "session") {
-						ijf.session[inFormKey + '_fld_' + inField.formCell] = n;
+						ijf.session[inFormKey + '_fld_' + inField.formCell] = event.target.value;
 					} else {
 						ijf.main.controlChanged(inFormKey + '_fld_' + inField.formCell);
 					}
@@ -377,6 +378,7 @@ ijf.reactUtils = {
 							label: lCaption,
 							disabled: rOnly,
 							required: fieldStyle.required,
+							autoFocus: fieldStyle.autoFocus,
 							multiline: true,
 							id: inFormKey + '_ctr_' + inField.formCell.replace(",", "_"),
 							value: this.state.value,
@@ -663,6 +665,29 @@ ijf.reactUtils = {
 			});
 		}
 
+		//card search section...
+		//syntax for filter:  cardSearch_[formcell]
+		//   simple string....
+		if (ijf.session["cardSearch_" + inField.formCell]) {
+			dataItems.forEach(function (r) {
+				r.visibility = "hidden";
+
+				Object.keys(r).forEach(function (k) {
+					try {
+						if (r[k].toLowerCase().indexOf(ijf.session["cardSearch_" + inField.formCell].toLowerCase()) > -1) r.visibility = "visible";
+					} catch (e) {}
+				});
+				//if filters enabled
+			});
+			dataItems = dataItems.reduce(function (inA, r) {
+				if (r.visibility == "visible") inA.push(r);return inA;
+			}, []);
+		} else {
+			dataItems.forEach(function (r) {
+				r.visibility = "visible";
+			});
+		}
+
 		//sort section...if a sort param is here, sort the data on it
 		//syntax for filter:  cardSort_[formcell]
 		//       array of fields to sort by.
@@ -776,8 +801,7 @@ ijf.reactUtils = {
 				};
 
 				_this6.handleDblClick = function (event) {
-					console.log(event.type);
-					debugger;
+					//console.log(event.type);
 					ocf(event, _this6);
 				};
 
@@ -857,6 +881,30 @@ ijf.reactUtils = {
 					return style;
 				}
 			}, {
+				key: 'getAvatar',
+				value: function getAvatar() {
+					if (fieldStyle.avatar) return React.createElement(
+						Icon,
+						{ style: fieldStyle.avatar.style },
+						fieldStyle.avatar.icon
+					);else return;
+				}
+			}, {
+				key: 'getActionIcon',
+				value: function getActionIcon() {
+					if (fieldStyle.actionIcon) return React.createElement(
+						IconButton,
+						{ onClick: this.handleClick,
+							'aria-owns': this.state.anchorEl ? 'simple-menu' : null,
+							'aria-haspopup': 'true' },
+						React.createElement(
+							Icon,
+							null,
+							fieldStyle.actionIcon
+						)
+					);else return;
+				}
+			}, {
 				key: 'render',
 				value: function render() {
 					return React.createElement(
@@ -864,24 +912,10 @@ ijf.reactUtils = {
 						null,
 						React.createElement(
 							Card,
-							{ style: this.setStyleFilter(), raised: raised, onDblClick: this.handleDblClick },
+							{ style: this.setStyleFilter(), raised: raised, onClick: this.handleDblClick },
 							React.createElement(CardHeader, { style: panelStyle,
-								avatar: React.createElement(
-									Icon,
-									{ color: 'primary' },
-									fieldStyle.avatar
-								),
-								action: React.createElement(
-									IconButton,
-									{ onClick: this.handleClick,
-										'aria-owns': this.state.anchorEl ? 'simple-menu' : null,
-										'aria-haspopup': 'true' },
-									React.createElement(
-										Icon,
-										null,
-										fieldStyle.actionIcon
-									)
-								),
+								avatar: this.getAvatar(),
+								action: this.getActionIcon(),
 								title: React.createElement(DynamicHtml, { htmlContent: this.state.title, dataRow: this.state.row }),
 								subheader: React.createElement(DynamicHtml, { htmlContent: this.state.subHeader, dataRow: this.state.row })
 							}),
@@ -1037,6 +1071,11 @@ ijf.reactUtils = {
 			var style = {};
 		}
 		try {
+			var panelStyle = JSON.parse(inField.panelStyle);
+		} catch (e) {
+			var panelStyle = {};
+		}
+		try {
 			var fieldSettings = JSON.parse(inField.fieldStyle);
 		} catch (e) {
 			var fieldSettings = {};
@@ -1048,10 +1087,11 @@ ijf.reactUtils = {
 		var variant = "persistent";
 		if (fieldSettings.variant) variant = fieldSettings.variant;
 
-		if (!style.width) style.width = "20px";
+		if (!panelStyle.width) panelStyle.width = "20px";
 		var originalWidth = inContainer.style.width;
 		//if open then set the correct width....
-		if (sessionDrawerOpen) inContainer.style.width = style.width;
+		if (sessionDrawerOpen) inContainer.style.width = panelStyle.width;
+		if (variant == "permanent") inContainer.style.width = panelStyle.width;
 
 		var MuiDrawer = function (_React$Component7) {
 			_inherits(MuiDrawer, _React$Component7);
@@ -1092,7 +1132,7 @@ ijf.reactUtils = {
 						ijf.session["drawerState_" + inField.formCell] = open;
 						//if this is persistent, alter underlying div width to width of this animal...
 						if (variant == "persistent") {
-							inContainer.style.width = style.width;
+							inContainer.style.width = panelStyle.width;
 						}
 						_this8.setState(_defineProperty({}, side, open));
 						_this8.setState({
@@ -1113,12 +1153,23 @@ ijf.reactUtils = {
 							if (ijf.snippets.hasOwnProperty(m.snippet)) snip = function snip() {
 								ijf.snippets[m.snippet](m);
 							};
+
+							var bStyle = {};
+							if (m.style) bStyle = m.style;
+							if (ijf.session.hasOwnProperty(m.family)) {
+								if (ijf.session[m.family].hasOwnProperty(m.text)) {
+									bStyle = ijf.session[m.family][m.text].style;
+								} else {
+									bStyle = {};
+								}
+							}
+
 							return React.createElement(
 								List,
 								{ component: 'nav' },
 								React.createElement(
 									ListItem,
-									{ button: true, onClick: snip },
+									{ button: true, onClick: snip, style: bStyle },
 									React.createElement(
 										Icon,
 										null,
@@ -1132,6 +1183,43 @@ ijf.reactUtils = {
 							return React.createElement(Divider, null);
 						}
 					});
+				}
+			}, {
+				key: 'getIcon',
+				value: function getIcon() {
+					if (variant == "permanent") return;else return React.createElement(
+						IconButton,
+						{ onClick: this.toggleDrawer(fieldSettings.direction, false) },
+						React.createElement(
+							Icon,
+							null,
+							'chevron_left'
+						)
+					);
+				}
+			}, {
+				key: 'getHeaderIcon',
+				value: function getHeaderIcon() {
+					if (!style.headerIcon) return;else {
+						return React.createElement(
+							Icon,
+							null,
+							style.headerIcon
+						);
+					}
+				}
+			}, {
+				key: 'getDrawerTitle',
+				value: function getDrawerTitle() {
+					if (!style.headerCaption) return;else {
+						//look for icon...
+						return React.createElement(
+							'span',
+							null,
+							'\xA0',
+							style.headerCaption
+						);
+					}
 				}
 			}, {
 				key: 'render',
@@ -1149,16 +1237,10 @@ ijf.reactUtils = {
 							{ variant: variant, anchor: fieldSettings.direction, open: this.state.open, onClose: this.toggleDrawer(fieldSettings.direction, false) },
 							React.createElement(
 								'div',
-								{ style: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 8px' } },
-								React.createElement(
-									IconButton,
-									{ onClick: this.toggleDrawer(fieldSettings.direction, false) },
-									React.createElement(
-										Icon,
-										null,
-										'chevron_left'
-									)
-								)
+								{ style: style },
+								this.getHeaderIcon(),
+								this.getDrawerTitle(),
+								this.getIcon()
 							),
 							React.createElement(Divider, null),
 							React.createElement(
@@ -1171,7 +1253,7 @@ ijf.reactUtils = {
 								},
 								React.createElement(
 									'div',
-									{ style: style },
+									{ style: panelStyle },
 									this.getMenu(fieldSettings.menu, this)
 								)
 							)
@@ -1796,7 +1878,7 @@ ijf.reactUtils = {
 					//if(lCaption) return (<MuiInputLabel component="legend">{lCaption}</MuiInputLabel>)
 					if (lCaption) return React.createElement(
 						MuiInputLabel,
-						null,
+						{ disableAnimation: true },
 						lCaption
 					);
 					return;
@@ -1809,7 +1891,7 @@ ijf.reactUtils = {
 						{ style: style },
 						React.createElement(
 							MuiFormControl,
-							{ style: panelStyle, component: 'fieldset', required: fieldStyle.required },
+							{ margin: panelStyle.margin, style: panelStyle, component: 'fieldset', required: fieldStyle.required },
 							this.getCaption(),
 							React.createElement(
 								MuiRadioGroup,
@@ -1999,6 +2081,7 @@ ijf.reactUtils = {
 		var lookups = [];
 		var colObj = {};
 		gCols.forEach(function (col) {
+			var _colObj;
 
 			var lValidator = function lValidator(v) {
 				return true;
@@ -2062,28 +2145,29 @@ ijf.reactUtils = {
 				case "datefield":
 					if (col.format == null) col.format = 'm/d/Y';
 					if (col.format == "") col.format = 'm/d/Y';
-					colObj = {
+					colObj = (_colObj = {
 						header: thisColHeader,
 						renderer: validRenderer,
 						ijfColumn: col,
 						headerObj: colHeaders[cIndex],
-						widthObj: colWidths[cIndex],
-						dataIndex: col.columnName,
-						editor: {
-							completeOnEnter: true,
-							field: {
-								xtype: col.controlType,
-								allowBlank: col.required != "Yes",
-								validator: lValidator,
-								format: col.format,
-								listeners: {
-									change: function change(n, o, f) {
-										ijf.main.controlChanged(inFormKey + '_fld_' + inField.formCell);
-									}
+						widthObj: colWidths[cIndex]
+					}, _defineProperty(_colObj, 'renderer', function renderer(inVal) {
+						return Ext.util.Format.dateRenderer(col.format)(new Date(inVal));
+						//moment(new Date(inVal)).format(col.format);
+					}), _defineProperty(_colObj, 'dataIndex', col.columnName), _defineProperty(_colObj, 'editor', {
+						completeOnEnter: true,
+						field: {
+							xtype: col.controlType,
+							allowBlank: col.required != "Yes",
+							validator: lValidator,
+							format: col.format,
+							listeners: {
+								change: function change(n, o, f) {
+									ijf.main.controlChanged(inFormKey + '_fld_' + inField.formCell);
 								}
 							}
 						}
-					};
+					}), _colObj);
 					break;
 				case "numberfield":
 					tFields.push({ name: col.columnName, type: 'number' });
@@ -2250,33 +2334,6 @@ ijf.reactUtils = {
 			}
 		}
 
-		/*	    var gridPanel = new Ext.grid.GridPanel({
-  			 title: lCaption,
-  			 style: l_Style,
-  			 hidden: hideField,
-  			 bodyStyle: l_panelStyle,
-  			 height: l_Height,
-  			 header:{
-  					titlePosition: 0,
-  					items: headerButtons
-  			},
-  	        store: gridStore,
-  	        width:l_Width,
-  	        id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
-  	        //reserveScrollOffset: true,
-  	        columns: listColumns,
-  	        frame: true,
-  	        collapsible: collapsible,
-  	        collapsed: collapsed,
-  	        selModel: 'cellmodel',
-  	        disabled: rOnly,
-  	        features: features,
-  			plugins: ['gridfilters',{
-  				ptype: 'cellediting',
-  				clicksToEdit: 1
-  	        }]
-  	    });*/
-
 		var LocalMuiTable = function (_React$Component11) {
 			_inherits(LocalMuiTable, _React$Component11);
 
@@ -2325,10 +2382,12 @@ ijf.reactUtils = {
 									if (c.widthObj.cellStyle) lCellStyle = c.widthObj.cellStyle;
 								}
 
+								var outVal = n[c["dataIndex"]];
+								if (c.renderer) outVal = c.renderer(outVal);
 								return React.createElement(
 									MuiTableCell,
 									{ numeric: lNumeric, style: lCellStyle },
-									n[c["dataIndex"]]
+									outVal
 								);
 							})
 						);
@@ -2423,7 +2482,8 @@ ijf.reactUtils = {
 		var l_save = "Save";
 		var l_reload = "Reload";
 		var l_done = "Done";
-		var l_style = inField.style.split(",");
+
+		var l_style = inField.dataReference2.split(",");
 		if (l_style.length == 3) {
 			l_save = l_style[0];
 			l_reload = l_style[1];
@@ -2434,6 +2494,11 @@ ijf.reactUtils = {
 			var style = JSON.parse(inField.style);
 		} catch (e) {
 			var style = {};
+		}
+		try {
+			var panelStyle = JSON.parse(inField.panelStyle);
+		} catch (e) {
+			var panelStyle = {};
 		}
 		try {
 			var fieldSettings = JSON.parse(inField.fieldStyle);
@@ -2537,7 +2602,7 @@ ijf.reactUtils = {
 		var getSave = function getSave() {
 			if (!l_save) return;else return React.createElement(
 				MuiButton,
-				{ onClick: handleSave, disabled: disabled, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: style },
+				{ onClick: handleSave, disabled: disabled, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: panelStyle },
 				getIcon(l_save),
 				l_save
 			);
@@ -2545,7 +2610,7 @@ ijf.reactUtils = {
 		var getReload = function getReload() {
 			if (!l_reload) return;else return React.createElement(
 				MuiButton,
-				{ onClick: handleReload, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: style },
+				{ onClick: handleReload, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: panelStyle },
 				getIcon(l_reload),
 				l_reload
 			);
@@ -2553,7 +2618,7 @@ ijf.reactUtils = {
 		var getDone = function getDone() {
 			if (!l_done) return;else return React.createElement(
 				MuiButton,
-				{ onClick: handleDone, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: style },
+				{ onClick: handleDone, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: panelStyle },
 				getIcon(l_done),
 				l_done
 			);
@@ -2561,7 +2626,7 @@ ijf.reactUtils = {
 		var LocalMuiButton = function LocalMuiButton() {
 			return React.createElement(
 				'div',
-				null,
+				{ style: style },
 				getSave(),
 				getReload(),
 				getDone()

@@ -183,7 +183,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			//add OCF call here..
 			if(inField.dataSource=="session")
 			{
-				ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+				ijf.session[inFormKey+'_fld_'+inField.formCell]=event.target.value;
 			}
 			else
 			{
@@ -215,6 +215,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				  label={lCaption}
 				  disabled={rOnly}
 				  required={fieldStyle.required}
+				  autoFocus={fieldStyle.autoFocus}
 				  multiline={false}
 				  id={inFormKey+'_ctr_'+inField.formCell.replace(",","_")}
 				  value={this.state.value}
@@ -371,7 +372,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				//add OCF call here..
 				if(inField.dataSource=="session")
 				{
-					ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+					ijf.session[inFormKey+'_fld_'+inField.formCell]=event.target.value;
 				}
 				else
 				{
@@ -393,6 +394,9 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				  if(inField.toolTip) return (<MuiFormHelperText>{inField.toolTip}</MuiFormHelperText>)
 				  return
 			  }
+
+
+
 			  render() {
 				return (
 				  <div style={style}>
@@ -402,6 +406,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 					  label={lCaption}
 					  disabled={rOnly}
 					  required={fieldStyle.required}
+					  autoFocus={fieldStyle.autoFocus}
 					  multiline={true}
 					  id={inFormKey+'_ctr_'+inField.formCell.replace(",","_")}
 					  value={this.state.value}
@@ -733,6 +738,36 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			});
 		}
 
+        //card search section...
+		//syntax for filter:  cardSearch_[formcell]
+		//   simple string....
+		if(ijf.session["cardSearch_" + inField.formCell])
+		{
+			dataItems.forEach(function(r)
+			{
+				r.visibility = "hidden";
+
+				Object.keys(r).forEach(function(k)
+				{
+					try
+					{
+						if(r[k].toLowerCase().indexOf(ijf.session["cardSearch_" + inField.formCell].toLowerCase())>-1) r.visibility="visible";
+					}
+					catch(e)
+					{}
+				});
+				//if filters enabled
+			});
+			dataItems = dataItems.reduce(function(inA,r){if(r.visibility=="visible")inA.push(r);return inA;},[]);
+  		}
+  		else
+  		{
+			dataItems.forEach(function(r)
+			{
+				r.visibility = "visible";
+			});
+		}
+
 		//sort section...if a sort param is here, sort the data on it
 		//syntax for filter:  cardSort_[formcell]
 		//       array of fields to sort by.
@@ -837,8 +872,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			  }
 
 			  handleDblClick = event => {
-				console.log(event.type);
-				debugger;
+				//console.log(event.type);
 				ocf(event,this);
 			  };
 
@@ -883,21 +917,30 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				 style.visibility = this.state.row.visibility;
 				 return style;
 			  }
-
+			  getAvatar()
+			  {
+				if(fieldStyle.avatar) return (<Icon style={fieldStyle.avatar.style}>{fieldStyle.avatar.icon}</Icon>);
+				else return;
+			  }
+			  getActionIcon()
+			  {
+				if(fieldStyle.actionIcon) return (
+					  <IconButton onClick={this.handleClick}
+						  aria-owns={this.state.anchorEl ? 'simple-menu' : null}
+						  aria-haspopup="true">
+						<Icon>{fieldStyle.actionIcon}</Icon>
+					  </IconButton>
+					);
+				else return;
+			  }
 
 			  render()
 			  {
 				return (<div>
-						  <Card style={this.setStyleFilter()} raised={raised} onDblClick={this.handleDblClick}>
+						  <Card style={this.setStyleFilter()} raised={raised} onClick={this.handleDblClick}>
 							<CardHeader style={panelStyle}
-									  avatar = {<Icon color="primary">{fieldStyle.avatar}</Icon>}
-									  action={
-										  <IconButton onClick={this.handleClick}
-											  aria-owns={this.state.anchorEl ? 'simple-menu' : null}
-											  aria-haspopup="true">
-											<Icon>{fieldStyle.actionIcon}</Icon>
-										  </IconButton>
-										}
+									  avatar = {this.getAvatar()}
+									  action={this.getActionIcon()}
 										title={
 											<DynamicHtml htmlContent={this.state.title} dataRow={this.state.row} />
 										}
@@ -1041,6 +1084,14 @@ renderTextbox(inFormKey,item, inField, inContainer)
 	  		{
 	  			var style = {}
 	  		}
+			try
+			{
+				var panelStyle = JSON.parse(inField.panelStyle);
+			}
+			catch(e)
+			{
+				var panelStyle = {}
+			}
 	  		try
 	  		{
 	  			var fieldSettings = JSON.parse(inField.fieldStyle);
@@ -1056,11 +1107,11 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		    var variant = "persistent";
 		    if(fieldSettings.variant) variant=fieldSettings.variant;
 
-			if(!style.width) style.width="20px";
+			if(!panelStyle.width) panelStyle.width="20px";
 			var originalWidth = inContainer.style.width;
 			//if open then set the correct width....
-			if(sessionDrawerOpen) inContainer.style.width=style.width;
-
+			if(sessionDrawerOpen) inContainer.style.width=panelStyle.width;
+			if(variant=="permanent") inContainer.style.width=panelStyle.width;
 
 			class MuiDrawer extends React.Component {
 			  state = {
@@ -1093,7 +1144,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				//if this is persistent, alter underlying div width to width of this animal...
 				if(variant=="persistent")
 				{
-					inContainer.style.width=style.width;
+					inContainer.style.width=panelStyle.width;
 				}
 				this.setState({
 				  [side]: open
@@ -1113,9 +1164,24 @@ renderTextbox(inFormKey,item, inField, inContainer)
 					  {
 						  var snip = function(){};
 						  if(ijf.snippets.hasOwnProperty(m.snippet)) snip = function(){ijf.snippets[m.snippet](m)};
+
+						  var bStyle = {};
+						  if(m.style) bStyle=m.style;
+						  if(ijf.session.hasOwnProperty(m.family))
+						  {
+							  if(ijf.session[m.family].hasOwnProperty(m.text))
+							  {
+								  bStyle=ijf.session[m.family][m.text].style;
+							  }
+							  else
+							  {
+								  bStyle={};
+							  }
+						  }
+
 						  return(
 							  <List component="nav">
-								<ListItem button onClick={snip}>
+								<ListItem button onClick={snip} style={bStyle}>
 									<Icon>{m.icon}</Icon>
 									<ListItemText primary={m.text} />
 								</ListItem>
@@ -1129,15 +1195,43 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				  });
 			   }
 
+			  getIcon()
+			  {
+				  if(variant=="permanent") return;
+				  else
+				  return (
+						  <IconButton onClick={this.toggleDrawer(fieldSettings.direction,false)}>
+							<Icon>chevron_left</Icon>
+						  </IconButton>
+				  );
+			  }
+			  getHeaderIcon()
+			  {
+				  if(!style.headerIcon) return;
+				  else
+				  {
+					  return (<Icon>{style.headerIcon}</Icon>);
+				  }
+			  }
+			  getDrawerTitle()
+			  {
+				  if(!style.headerCaption) return;
+				  else
+				  {
+					  //look for icon...
+					  return (<span>&nbsp;{style.headerCaption}</span>);
+				  }
+			  }
+
 			  render() {
 				return (
 				  <div>
 					<Icon style={buttonStyle} onClick={this.openFromChevron(fieldSettings.direction, true)}>{fieldSettings.icon}</Icon>
 					<Drawer variant={variant} anchor={fieldSettings.direction} open={this.state.open} onClose={this.toggleDrawer(fieldSettings.direction, false)}>
-						<div style={{display: 'flex', alignItems: 'center',justifyContent: 'flex-end', padding: '0 8px'}}>
-						  <IconButton onClick={this.toggleDrawer(fieldSettings.direction,false)}>
-							<Icon>chevron_left</Icon>
-						  </IconButton>
+						<div style={style}>
+						  {this.getHeaderIcon()}
+						  {this.getDrawerTitle()}
+						  {this.getIcon()}
 						</div>
 						<Divider />
 
@@ -1147,7 +1241,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 						onClick={this.openFromChevron(fieldSettings.direction, true)}
 						onKeyDown={this.openFromChevron(fieldSettings.direction, true)}
 					  >
-					   <div style={style}>
+					   <div style={panelStyle}>
 						 {this.getMenu(fieldSettings.menu, this)}
 						</div>
 					  </div>
@@ -1795,7 +1889,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 			  getMenu()
 			  {
 				  if(!this.state.lookup) return;
-				  return this.state.lookup.map(function(r){return (<MuiFormControlLabel value={r[0]} control={<MuiRadio  color="primary" />} label={r[1]} />)});
+				  return this.state.lookup.map(function(r){return (<MuiFormControlLabel value={r[0]} control={<MuiRadio color="primary"/>} label={r[1]} />)});
 			  }
 
 			  getTip()
@@ -1806,7 +1900,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 			  getCaption()
 			  {
 				  //if(lCaption) return (<MuiInputLabel component="legend">{lCaption}</MuiInputLabel>)
-				  if(lCaption) return (<MuiInputLabel>{lCaption}</MuiInputLabel>)
+				  if(lCaption) return (<MuiInputLabel disableAnimation={true}>{lCaption}</MuiInputLabel>)
 				  return
 			  }
 
@@ -1814,7 +1908,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 			  render() {
 				return (
 				  <div style={style}>
-					<MuiFormControl style={panelStyle} component="fieldset" required={fieldStyle.required}>
+					<MuiFormControl margin={panelStyle.margin} style={panelStyle} component="fieldset" required={fieldStyle.required}>
 					  {this.getCaption()}
 					  <MuiRadioGroup style={fieldStyle}
 						name={"radioGroup_name_"+inField.formCell}
@@ -2106,6 +2200,10 @@ renderSelect(inFormKey,item, inField, inContainer)
 								ijfColumn: col,
 								headerObj: colHeaders[cIndex],
 								widthObj: colWidths[cIndex],
+								renderer: function(inVal){
+									return Ext.util.Format.dateRenderer(col.format)(new Date(inVal));
+									//moment(new Date(inVal)).format(col.format);
+								},
 								dataIndex: col.columnName,
 								editor: {
 									completeOnEnter: true,
@@ -2308,35 +2406,6 @@ renderSelect(inFormKey,item, inField, inContainer)
 		}
 
 
-/*	    var gridPanel = new Ext.grid.GridPanel({
-			 title: lCaption,
-			 style: l_Style,
-			 hidden: hideField,
-			 bodyStyle: l_panelStyle,
-			 height: l_Height,
-			 header:{
-					titlePosition: 0,
-					items: headerButtons
-			},
-	        store: gridStore,
-	        width:l_Width,
-	        id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
-	        //reserveScrollOffset: true,
-	        columns: listColumns,
-	        frame: true,
-	        collapsible: collapsible,
-	        collapsed: collapsed,
-	        selModel: 'cellmodel',
-	        disabled: rOnly,
-	        features: features,
-			plugins: ['gridfilters',{
-				ptype: 'cellediting',
-				clicksToEdit: 1
-	        }]
-	    });*/
-
-
-
 
 		class LocalMuiTable extends React.Component {
 
@@ -2379,7 +2448,9 @@ renderSelect(inFormKey,item, inField, inContainer)
 								if (c.widthObj.cellStyle) lCellStyle=c.widthObj.cellStyle;
 							}
 
-							return(<MuiTableCell numeric={lNumeric} style={lCellStyle}>{n[c["dataIndex"]]}</MuiTableCell>);
+							var outVal = n[c["dataIndex"]];
+							if(c.renderer) outVal=c.renderer(outVal);
+							return(<MuiTableCell numeric={lNumeric} style={lCellStyle}>{outVal}</MuiTableCell>);
 							})
 						}
 					  </MuiTableRow>
@@ -2462,14 +2533,14 @@ renderSelect(inFormKey,item, inField, inContainer)
 		var l_save="Save";
 		var l_reload="Reload";
 		var l_done ="Done";
-		var l_style = inField.style.split(",");
+
+		var l_style = inField.dataReference2.split(",");
 		if(l_style.length==3)
 		{
 			l_save=l_style[0];
 			l_reload=l_style[1];
 			l_done =l_style[2];
 		}
-
 
 		try
 		{
@@ -2478,6 +2549,14 @@ renderSelect(inFormKey,item, inField, inContainer)
 		catch(e)
 		{
 			var style = {}
+		}
+		try
+		{
+			var panelStyle = JSON.parse(inField.panelStyle);
+		}
+		catch(e)
+		{
+			var panelStyle = {}
 		}
 		try
 		{
@@ -2604,7 +2683,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 			if(!l_save) return;
 			else
 			return (
- 			  <MuiButton onClick={handleSave} disabled={disabled} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={style}>
+ 			  <MuiButton onClick={handleSave} disabled={disabled} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={panelStyle}>
 				{getIcon(l_save)}{l_save}
 			  </MuiButton>);
 		}
@@ -2613,7 +2692,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 			if(!l_reload) return;
 			else
 			return (
-			  <MuiButton onClick={handleReload} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={style}>
+			  <MuiButton onClick={handleReload} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={panelStyle}>
 				{getIcon(l_reload)}{l_reload}
 			  </MuiButton>);
 		}
@@ -2622,12 +2701,12 @@ renderSelect(inFormKey,item, inField, inContainer)
 			if(!l_done) return;
 			else
 			return (
-  			  <MuiButton onClick={handleDone} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={style}>
+  			  <MuiButton onClick={handleDone} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={panelStyle}>
   				{getIcon(l_done)}{l_done}
 			  </MuiButton>);
 		}
 		const LocalMuiButton = () => (
-		  <div>
+		  <div style={style}>
 			{getSave()}
 			{getReload()}
 			{getDone()}
