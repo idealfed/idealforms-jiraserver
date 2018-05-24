@@ -10,6 +10,7 @@
     <link type="text/css" href="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/material-ui.css" rel="stylesheet" />
 
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.13/css/all.css" integrity="sha384-DNOHZ68U8hZfKXOrtjWvjxusGo9WQnrNx2sqG0tfsghAvtVlRW3tvkXWZh58N9jp" crossorigin="anonymous">    
     
     <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/react.js" type="text/javascript"></script>
     <script src="$ijfRoot/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/react-dom.js" type="text/javascript"></script>
