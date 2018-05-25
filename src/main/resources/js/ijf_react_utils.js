@@ -430,6 +430,11 @@ ijf.reactUtils = {
 			var style = {};
 		}
 		try {
+			var panelStyle = JSON.parse(inField.panelStyle);
+		} catch (e) {
+			var panelStyle = {};
+		}
+		try {
 			var fieldSettings = JSON.parse(inField.fieldStyle);
 		} catch (e) {
 			var fieldSettings = {};
@@ -441,20 +446,23 @@ ijf.reactUtils = {
 		if (!fieldSettings.size) fieldSettings.size = "medium";
 
 		var getIcon = function getIcon() {
-			if (fieldSettings.icon) return React.createElement(
-				Icon,
-				null,
-				fieldSettings.icon
-			);else return;
+
+			if (fieldSettings.icon) {
+				if (fieldSettings.icon.indexOf("fa-") > -1) return React.createElement(Icon, { className: fieldSettings.icon, style: fieldSettings.icon.style });else return React.createElement(
+					Icon,
+					{ style: fieldSettings.icon.style },
+					fieldSettings.icon
+				);
+			} else return;
 		};
 
 		var LocalMuiButton = function LocalMuiButton() {
 			return React.createElement(
 				'div',
-				null,
+				{ style: style },
 				React.createElement(
 					MuiButton,
-					{ onClick: ocf, disabled: disabled, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: style },
+					{ onClick: ocf, disabled: disabled, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: panelStyle },
 					getIcon(),
 					lCaption
 				)
@@ -489,11 +497,14 @@ ijf.reactUtils = {
 			var fieldStyle = {};
 		}
 		var getIcon = function getIcon() {
-			if (inField.dataSource) return React.createElement(
-				Icon,
-				{ style: panelStyle },
-				inField.dataSource
-			);else return;
+
+			if (inField.dataSource) {
+				if (inField.dataSource.indexOf("fa-") > -1) return React.createElement(Icon, { style: panelStyle, className: inField.dataSource });else return React.createElement(
+					Icon,
+					{ style: panelStyle },
+					inField.dataSource
+				);
+			} else return;
 		};
 		var LocalMuiIcon = function LocalMuiIcon() {
 			return React.createElement(
@@ -545,7 +556,7 @@ ijf.reactUtils = {
 				return a;
 			});
 		}
-		this.renderCardList(inFormKey, item, inField, inContainer, sortedLogs, true);
+		this.renderCardList(inFormKey, item, inField, inContainer, sortedLogs, false);
 	},
 	renderCommentList: function renderCommentList(inFormKey, item, inField, inContainer) {
 		inField.dataReference = "author,body,date,time";
@@ -567,7 +578,7 @@ ijf.reactUtils = {
 				return a;
 			});
 		}
-		this.renderCardList(inFormKey, item, inField, inContainer, sortedLogs, true);
+		this.renderCardList(inFormKey, item, inField, inContainer, sortedLogs, false);
 	},
 	renderCardList: function renderCardList(inFormKey, item, inField, inContainer, inData, withExpander) {
 		inContainer.title = inField.toolTip;
@@ -704,7 +715,7 @@ ijf.reactUtils = {
 		}
 
 		var disabled = false;
-		if (hideField) style.visibility = "hidden";
+		if (hideField) fieldStyle.visibility = "hidden";
 
 		var dataStart = 0;
 		var resultRows = 100000;
@@ -713,7 +724,7 @@ ijf.reactUtils = {
 			var resultRows = 3;
 		}
 		var raised = false;
-		if (style.raised) raised = true;
+		if (panelStyle.raised) raised = true;
 
 		//REACT section
 
@@ -843,11 +854,12 @@ ijf.reactUtils = {
 			}, {
 				key: 'getIcon',
 				value: function getIcon(r) {
-					if (r.icon) return React.createElement(
+					if (!r.icon) return;
+					if (r.icon.indexOf("fa-") > -1) return React.createElement(Icon, { className: r.icon });else return React.createElement(
 						Icon,
 						null,
 						r.icon
-					);else return;
+					);
 				}
 			}, {
 				key: 'getCardActions',
@@ -877,17 +889,30 @@ ijf.reactUtils = {
 			}, {
 				key: 'setStyleFilter',
 				value: function setStyleFilter() {
-					style.visibility = this.state.row.visibility;
-					return style;
+					panelStyle.visibility = this.state.row.visibility;
+					return panelStyle;
 				}
 			}, {
 				key: 'getAvatar',
 				value: function getAvatar() {
-					if (fieldStyle.avatar) return React.createElement(
-						Icon,
-						{ style: fieldStyle.avatar.style },
-						fieldStyle.avatar.icon
-					);else return;
+					if (fieldStyle.avatar) {
+						if (fieldStyle.avatar.icon.indexOf("fa-") > -1) return React.createElement(Icon, { className: fieldStyle.avatar.icon, style: fieldStyle.avatar.style });else return React.createElement(
+							Icon,
+							{ style: fieldStyle.avatar.style },
+							fieldStyle.avatar.icon
+						);
+					} else return;
+				}
+			}, {
+				key: 'getActionIconType',
+				value: function getActionIconType() {
+					if (fieldStyle.actionIcon) {
+						if (fieldStyle.actionIcon.icon("fa-") > -1) return React.createElement(Icon, { className: fieldStyle.actionIcon.icon, style: fieldStyle.actionIcon.style });else return React.createElement(
+							Icon,
+							{ style: fieldStyle.actionIcon.style },
+							fieldStyle.actionIcon.icon
+						);
+					} else return;
 				}
 			}, {
 				key: 'getActionIcon',
@@ -897,11 +922,7 @@ ijf.reactUtils = {
 						{ onClick: this.handleClick,
 							'aria-owns': this.state.anchorEl ? 'simple-menu' : null,
 							'aria-haspopup': 'true' },
-						React.createElement(
-							Icon,
-							null,
-							fieldStyle.actionIcon
-						)
+						this.getActionIconType()
 					);else return;
 				}
 			}, {
@@ -909,11 +930,11 @@ ijf.reactUtils = {
 				value: function render() {
 					return React.createElement(
 						'div',
-						null,
+						{ style: style },
 						React.createElement(
 							Card,
 							{ style: this.setStyleFilter(), raised: raised, onClick: this.handleDblClick },
-							React.createElement(CardHeader, { style: panelStyle,
+							React.createElement(CardHeader, { style: fieldStyle.headStyle,
 								avatar: this.getAvatar(),
 								action: this.getActionIcon(),
 								title: React.createElement(DynamicHtml, { htmlContent: this.state.title, dataRow: this.state.row }),
@@ -921,7 +942,7 @@ ijf.reactUtils = {
 							}),
 							React.createElement(
 								CardContent,
-								null,
+								{ style: fieldStyle.contentStyle },
 								React.createElement(
 									Typography,
 									{ component: 'p' },
@@ -1143,6 +1164,16 @@ ijf.reactUtils = {
 			}
 
 			_createClass(MuiDrawer, [{
+				key: 'getMenuIcon',
+				value: function getMenuIcon(m) {
+					if (!m.icon) return;
+					if (m.icon.indexOf("fa-") > -1) return React.createElement(Icon, { className: m.icon, style: { "width": "30px" } });else return React.createElement(
+						Icon,
+						null,
+						m.icon
+					);
+				}
+			}, {
 				key: 'getMenu',
 				value: function getMenu(menuRows, owningClass) {
 					if (!menuRows) return;
@@ -1170,11 +1201,7 @@ ijf.reactUtils = {
 								React.createElement(
 									ListItem,
 									{ button: true, onClick: snip, style: bStyle },
-									React.createElement(
-										Icon,
-										null,
-										m.icon
-									),
+									owningClass.getMenuIcon(m),
 									React.createElement(ListItemText, { primary: m.text })
 								)
 							);
@@ -1201,7 +1228,7 @@ ijf.reactUtils = {
 				key: 'getHeaderIcon',
 				value: function getHeaderIcon() {
 					if (!style.headerIcon) return;else {
-						return React.createElement(
+						if (style.headerIcon.indexOf("fa-") > -1) return React.createElement(Icon, { className: style.headerIcon, style: { "width": "40px" } });else return React.createElement(
 							Icon,
 							null,
 							style.headerIcon

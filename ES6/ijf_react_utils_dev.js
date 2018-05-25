@@ -462,6 +462,14 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		}
 		try
 		{
+			var panelStyle = JSON.parse(inField.panelStyle);
+		}
+		catch(e)
+		{
+			var panelStyle = {}
+		}
+		try
+		{
 			var fieldSettings = JSON.parse(inField.fieldStyle);
 		}
 		catch(e)
@@ -476,13 +484,21 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
         var getIcon=function()
         {
-			if(fieldSettings.icon) return (<Icon>{fieldSettings.icon}</Icon>);
+
+			if(fieldSettings.icon)
+			{
+				if(fieldSettings.icon.indexOf("fa-")>-1)
+					return (<Icon className={fieldSettings.icon} style={fieldSettings.icon.style}/>);
+				else
+					return (<Icon style={fieldSettings.icon.style}>{fieldSettings.icon}</Icon>);
+
+			}
 			else return;
 		}
 
 		const LocalMuiButton = () => (
-		  <div>
-			  <MuiButton onClick={ocf} disabled={disabled} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={style}>
+		  <div style={style}>
+			  <MuiButton onClick={ocf} disabled={disabled} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={panelStyle}>
 				{getIcon()}{lCaption}
 			  </MuiButton>
 		  </div>
@@ -529,7 +545,15 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		}
         var getIcon=function()
         {
-			if(inField.dataSource) return (<Icon style={panelStyle}>{inField.dataSource}</Icon>);
+
+			if(inField.dataSource)
+			{
+				if(inField.dataSource.indexOf("fa-")>-1)
+					return (<Icon style={panelStyle} className={inField.dataSource}/>);
+				else
+					return (<Icon style={panelStyle}>{inField.dataSource}</Icon>);
+			}
+
 			else return;
 		}
 		const LocalMuiIcon = () => (
@@ -586,7 +610,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			});
 
 		}
-		this.renderCardList(inFormKey,item, inField, inContainer, sortedLogs, true)
+		this.renderCardList(inFormKey,item, inField, inContainer, sortedLogs, false)
 	},
 	renderCommentList:function(inFormKey,item, inField, inContainer)
 	{
@@ -611,7 +635,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				return a;
 			});
 		}
-		this.renderCardList(inFormKey,item, inField, inContainer, sortedLogs, true)
+		this.renderCardList(inFormKey,item, inField, inContainer, sortedLogs, false)
 	},
 	renderCardList:function(inFormKey,item, inField, inContainer, inData, withExpander)
 	{
@@ -789,7 +813,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 
 		var disabled = false;
-		if(hideField) style.visibility = "hidden";
+		if(hideField) fieldStyle.visibility = "hidden";
 
 		var dataStart = 0;
 		var resultRows = 100000;
@@ -799,7 +823,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			var resultRows = 3;
 		}
  	    var raised = false;
-		if(style.raised) raised=true;
+		if(panelStyle.raised) raised=true;
 
        //REACT section
        	class DynamicMenuRow extends React.Component {
@@ -894,8 +918,11 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 			  getIcon(r)
 			  {
-				if(r.icon) return (<Icon>{r.icon}</Icon>);
-				else return;
+				if(!r.icon) return;
+				if(r.icon.indexOf("fa-")>-1)
+				 return (<Icon className={r.icon} />);
+				else
+				 return (<Icon>{r.icon}</Icon>);
 			  }
 
 			  getCardActions()
@@ -914,12 +941,30 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			  }
 			  setStyleFilter()
 			  {
-				 style.visibility = this.state.row.visibility;
-				 return style;
+				 panelStyle.visibility = this.state.row.visibility;
+				 return panelStyle;
 			  }
 			  getAvatar()
 			  {
-				if(fieldStyle.avatar) return (<Icon style={fieldStyle.avatar.style}>{fieldStyle.avatar.icon}</Icon>);
+				if(fieldStyle.avatar)
+				{
+					if(fieldStyle.avatar.icon.indexOf("fa-")>-1)
+						return (<Icon className={fieldStyle.avatar.icon} style={fieldStyle.avatar.style} />);
+					else
+						return (<Icon style={fieldStyle.avatar.style}>{fieldStyle.avatar.icon}</Icon>);
+				}
+				else return;
+			  }
+
+			  getActionIconType()
+			  {
+				if(fieldStyle.actionIcon)
+				{
+					if(fieldStyle.actionIcon.icon("fa-")>-1)
+						return (<Icon className={fieldStyle.actionIcon.icon} style={fieldStyle.actionIcon.style} />);
+					else
+						return (<Icon style={fieldStyle.actionIcon.style}>{fieldStyle.actionIcon.icon}</Icon>);
+				}
 				else return;
 			  }
 			  getActionIcon()
@@ -928,7 +973,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 					  <IconButton onClick={this.handleClick}
 						  aria-owns={this.state.anchorEl ? 'simple-menu' : null}
 						  aria-haspopup="true">
-						<Icon>{fieldStyle.actionIcon}</Icon>
+						{this.getActionIconType()}
 					  </IconButton>
 					);
 				else return;
@@ -936,9 +981,9 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 			  render()
 			  {
-				return (<div>
+				return (<div style={style}>
 						  <Card style={this.setStyleFilter()} raised={raised} onClick={this.handleDblClick}>
-							<CardHeader style={panelStyle}
+							<CardHeader style={fieldStyle.headStyle}
 									  avatar = {this.getAvatar()}
 									  action={this.getActionIcon()}
 										title={
@@ -946,7 +991,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 										}
 										subheader={<DynamicHtml htmlContent={this.state.subHeader} dataRow={this.state.row} />}
 							/>
-							<CardContent>
+							<CardContent style={fieldStyle.contentStyle}>
 							   <Typography  component="p">
 								<DynamicHtml htmlContent={this.state.contentOut} dataRow={this.state.row} />
 								</Typography>
@@ -1154,6 +1199,16 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				});
 			  };
 
+			getMenuIcon(m)
+			{
+				  if(!m.icon) return;
+				  if(m.icon.indexOf("fa-")>-1)
+					  return (<Icon className={m.icon} style={{"width":"30px"}} />);
+				  else
+					  return (<Icon>{m.icon}</Icon>);
+			}
+
+
 			  getMenu(menuRows,owningClass)
 			  {
 				  if(!menuRows) return;
@@ -1182,7 +1237,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 						  return(
 							  <List component="nav">
 								<ListItem button onClick={snip} style={bStyle}>
-									<Icon>{m.icon}</Icon>
+									{owningClass.getMenuIcon(m)}
 									<ListItemText primary={m.text} />
 								</ListItem>
 							  </List> );
@@ -1210,7 +1265,10 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				  if(!style.headerIcon) return;
 				  else
 				  {
-					  return (<Icon>{style.headerIcon}</Icon>);
+					  if(style.headerIcon.indexOf("fa-")>-1)
+						  return (<Icon className={style.headerIcon} style={{"width":"40px"}} />);
+					  else
+						  return (<Icon>{style.headerIcon}</Icon>);
 				  }
 			  }
 			  getDrawerTitle()
