@@ -19,6 +19,8 @@ var MuiButton = window['material-ui']["Button"];
 
 var Icon = window['material-ui']['Icon'];
 var IconButton = window['material-ui']['IconButton'];
+var InputAdornment = window['material-ui']['InputAdornment'];
+
 var Card = window['material-ui']['Card'];
 var CardActions = window['material-ui']['CardActions'];
 var CardContent = window['material-ui']['CardContent'];
@@ -57,11 +59,177 @@ var MuiExpansionPanel = window['material-ui']['ExpansionPanel'];
 var MuiExpansionPanelSummary = window['material-ui']['ExpansionPanelSummary'];
 var MuiExpansionPanelDetails = window['material-ui']['ExpansionPanelDetails'];
 
+var MuiAppBar = window['material-ui']['AppBar'];
+var MuiToolBar = window['material-ui']['Toolbar'];
+
+var MuiToolTip = window['material-ui']['Tooltip'];
+
 var ijf = ijf || {};
 ijf.reactUtils = {
-	renderTextbox: function renderTextbox(inFormKey, item, inField, inContainer) {
+	renderAppBar: function renderAppBar(inFormKey, item, inField, inContainer) {
 
 		inContainer.title = inField.toolTip;
+
+		var hideField = ijfUtils.renderIfShowField(null, inField);
+		var hideLabel = false;
+		if (inField.caption == "") var lCaption = inField.dataSource;else if (inField.caption == "none") {
+			var lCaption = "";
+			hideLabel = true;
+		} else var lCaption = inField.caption;
+
+		if (inField.style.indexOf('hidden:true') > -1) {
+			hideLabel = true;
+			hideField = true;
+		}
+		var rOnly = false;
+		if (inField.fieldStyle.indexOf('readonly:true') > -1) {
+			rOnly = true;
+		}
+
+		//permissions check....has to exist...
+		if (inField.permissions.enabled) {
+			var perms = ijfUtils.getPermissionObj(inField.permissions, ijf.currentItem, ijf.main.currentUser);
+		} else {
+			var perms = ijfUtils.getPermissionObj(inField.form.permissions, ijf.currentItem, ijf.main.currentUser);
+		}
+		//console.log(JSON.stringify(perms));
+		if (!rOnly && !perms.canEdit) rOnly = true;
+		if (!hideField && !perms.canSee) hideField = true;
+		//end permissions
+
+
+		//section for dynamic control rendering using !{x,y,z}  where it's a key to a field
+		var dynamicFields = [];
+		var setDynamicControls = function setDynamicControls(inText) {
+			var retText = inText;
+			var pat = "\!\{.*?\}";
+			var rgx = new RegExp(pat);
+			var m = rgx.exec(retText);
+
+			if (m == null) {
+				return retText;
+			} else {
+				//you have a dynamic field....
+				var keyVal = m[0].replace("!{", "");
+				keyVal = keyVal.replace("}", "");
+				var dFieldId = inFormKey + '_ctr_d_' + keyVal.replace(/,/g, "_");
+				//var dFieldTblId = inFormKey+'_tbl_d_'+keyVal.replace(/,/g,"_");
+				//var dFieldTbl = "<table  role='presentation' id='"+dFieldTblId+"' cellspacing=0 cellpadding=3><tr><td>";
+				retText = retText.replace(m[0], "<div style='display:inline-block' id='" + dFieldId + "'></div>");
+				dynamicFields.push({ "containerId": dFieldId, "fieldId": keyVal });
+				return setDynamicControls(retText);
+			}
+		};
+
+		var outHtml = setDynamicControls(lCaption);
+
+		try {
+			var style = JSON.parse(inField.style);
+		} catch (e) {
+			var style = { "flexGrow": 1 };
+		}
+		try {
+			var panelStyle = JSON.parse(inField.panelStyle);
+		} catch (e) {
+			var panelStyle = {};
+		}
+		try {
+			var fieldStyle = JSON.parse(inField.fieldStyle);
+		} catch (e) {
+			var fieldStyle = {};
+		}
+
+		var DynamicHtml = function (_React$Component) {
+			_inherits(DynamicHtml, _React$Component);
+
+			function DynamicHtml(props) {
+				_classCallCheck(this, DynamicHtml);
+
+				//need to do replaces here...
+				var _this = _possibleConstructorReturn(this, (DynamicHtml.__proto__ || Object.getPrototypeOf(DynamicHtml)).call(this, props));
+
+				var tempHtml = outHtml;
+				_this.state = {
+					template: { __html: tempHtml }
+				};
+				return _this;
+			}
+
+			_createClass(DynamicHtml, [{
+				key: 'render',
+				value: function render() {
+					return React.createElement('div', { dangerouslySetInnerHTML: this.state.template });
+				}
+			}]);
+
+			return DynamicHtml;
+		}(React.Component);
+
+		var LocalMuiAppBar = function (_React$Component2) {
+			_inherits(LocalMuiAppBar, _React$Component2);
+
+			function LocalMuiAppBar(props) {
+				_classCallCheck(this, LocalMuiAppBar);
+
+				return _possibleConstructorReturn(this, (LocalMuiAppBar.__proto__ || Object.getPrototypeOf(LocalMuiAppBar)).call(this, props));
+			}
+
+			_createClass(LocalMuiAppBar, [{
+				key: 'render',
+				value: function render() {
+					return React.createElement(
+						'div',
+						{ style: style },
+						React.createElement(
+							MuiAppBar,
+							{ style: panelStyle, color: fieldStyle.color, position: fieldStyle.position },
+							React.createElement(
+								MuiToolBar,
+								{ style: fieldStyle },
+								React.createElement(DynamicHtml, null)
+							)
+						)
+					);
+				}
+			}]);
+
+			return LocalMuiAppBar;
+		}(React.Component);
+
+		//before render....
+
+
+		if (ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](LocalMuiAppBar, inFormKey, item, inField, inContainer);
+
+		var controlReference = ReactDOM.render(React.createElement(LocalMuiAppBar, null), inContainer);
+
+		var thisControl = new itemControl(inFormKey + '_fld_' + inField.formCell, inField, item, controlReference, inContainer);
+
+		ijf.main.controlSet[thisControl.id] = thisControl;
+		//after render....
+		if (ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](controlReference, inFormKey, item, inField, inContainer);
+
+		dynamicFields.forEach(function (f) {
+			//find field by key....
+			if (inField.form.fields.hasOwnProperty(f.fieldId)) var targetField = inField.form.fields[f.fieldId];else var targetField = inField.form.fields.reduce(function (inObj, ff) {
+				if (ff.formCell == f.fieldId) inObj = ff;return inObj;
+			}, null);
+			var container = document.getElementById(f.containerId);
+			if (!targetField || !container) {
+				ijfUtils.footLog("Failed to render dynamic field " + f.fieldId);
+				return;
+			}
+			try {
+				targetField.form = inField.form;
+				ijf.extUtils.renderField(inFormKey, item, targetField, container);
+			} catch (e) {
+				ijfUtils.footLog(targetField.formCell + " " + targetField.controlType + " failed to render: " + e.message);
+			}
+		});
+	},
+	renderTextbox: function renderTextbox(inFormKey, item, inField, inContainer) {
+
+		//inContainer.title = inField.toolTip;
 		var lAllowBlank = true;
 		//adding concept of session vars.
 		if (inField.dataSource == "session") {
@@ -150,15 +318,15 @@ ijf.reactUtils = {
 			};
 		}
 
-		var LocalMuiTextField = function (_React$Component) {
-			_inherits(LocalMuiTextField, _React$Component);
+		var LocalMuiTextField = function (_React$Component3) {
+			_inherits(LocalMuiTextField, _React$Component3);
 
 			function LocalMuiTextField(props) {
 				_classCallCheck(this, LocalMuiTextField);
 
-				var _this = _possibleConstructorReturn(this, (LocalMuiTextField.__proto__ || Object.getPrototypeOf(LocalMuiTextField)).call(this, props));
+				var _this3 = _possibleConstructorReturn(this, (LocalMuiTextField.__proto__ || Object.getPrototypeOf(LocalMuiTextField)).call(this, props));
 
-				_this.handleChange = function (event) {
+				_this3.handleChange = function (event) {
 					//add OCF call here..
 					if (inField.dataSource == "session") {
 						ijf.session[inFormKey + '_fld_' + inField.formCell] = event.target.value;
@@ -166,19 +334,25 @@ ijf.reactUtils = {
 						ijf.main.controlChanged(inFormKey + '_fld_' + inField.formCell);
 					}
 					if (lValidator(event.target.value)) {
-						_this.state.errored = false;
+						_this3.state.errored = false;
 						ocf(event);
-					} else _this.state.errored = true;
-					_this.setState({
+					} else _this3.state.errored = true;
+					_this3.setState({
 						value: event.target.value
 					});
 				};
 
-				_this.state = {
+				_this3.setValue = function (inValue) {
+					_this3.setState({
+						value: inValue
+					});
+				};
+
+				_this3.state = {
 					value: data,
 					errored: false
 				};
-				return _this;
+				return _this3;
 			}
 
 			_createClass(LocalMuiTextField, [{
@@ -192,6 +366,87 @@ ijf.reactUtils = {
 					return;
 				}
 			}, {
+				key: 'getToolTip',
+				value: function getToolTip(curContent, toolTip) {
+					if (toolTip) return React.createElement(
+						MuiToolTip,
+						{ title: toolTip },
+						curContent
+					);
+					return curContent;
+				}
+			}, {
+				key: 'getInputProps',
+				value: function getInputProps() {
+					var retProps = {};
+					if (fieldStyle.inputProps) {
+						if (fieldStyle.inputProps.startAdornment) {
+							var tFunc = function tFunc() {};
+							var tThis = this;
+							if (ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.snippet)) tFunc = function tFunc() {
+								ijf.snippets[fieldStyle.inputProps.startAdornment.snippet](tThis);
+							};
+							if (fieldStyle.inputProps.startAdornment.icon.indexOf("fa-") > -1) {
+								retProps.startAdornment = React.createElement(
+									InputAdornment,
+									{ position: fieldStyle.inputProps.startAdornment.position },
+									this.getToolTip(React.createElement(
+										IconButton,
+										{ onClick: tFunc },
+										React.createElement(Icon, { style: fieldStyle.inputProps.startAdornment.style, className: fieldStyle.inputProps.startAdornment.icon })
+									), fieldStyle.inputProps.startAdornment)
+								);
+							} else {
+								retProps.startAdornment = React.createElement(
+									InputAdornment,
+									{ position: fieldStyle.inputProps.startAdornment.position },
+									this.getToolTip(React.createElement(
+										IconButton,
+										{ onClick: tFunc },
+										React.createElement(
+											Icon,
+											{ style: fieldStyle.inputProps.startAdornment.style },
+											fieldStyle.inputProps.startAdornment.icon
+										)
+									), fieldStyle.inputProps.startAdornment)
+								);
+							}
+						} else if (fieldStyle.inputProps.endAdornment) {
+							var tFunc = function tFunc() {};
+							var tThis = this;
+							if (ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.snippet)) tFunc = function tFunc() {
+								ijf.snippets[fieldStyle.inputProps.endAdornment.snippet](tThis);
+							};
+							if (fieldStyle.inputProps.endAdornment.icon.indexOf("fa-") > -1) {
+								retProps.endAdornment = React.createElement(
+									InputAdornment,
+									{ position: fieldStyle.inputProps.endAdornment.position },
+									this.getToolTip(React.createElement(
+										IconButton,
+										{ onClick: tFunc },
+										React.createElement(Icon, { style: fieldStyle.inputProps.endAdornment.style, className: fieldStyle.inputProps.endAdornment.icon })
+									), fieldStyle.inputProps.endAdornment.toolTip)
+								);
+							} else {
+								retProps.endAdornment = React.createElement(
+									InputAdornment,
+									{ position: fieldStyle.inputProps.endAdornment.position },
+									this.getToolTip(React.createElement(
+										IconButton,
+										{ onClick: tFunc },
+										React.createElement(
+											Icon,
+											{ style: fieldStyle.inputProps.endAdornment.style },
+											fieldStyle.inputProps.endAdornment.icon
+										)
+									), fieldStyle.inputProps.endAdornment.toolTip)
+								);
+							}
+						} else return;
+					}
+					return retProps;
+				}
+			}, {
 				key: 'render',
 				value: function render() {
 					return React.createElement(
@@ -203,6 +458,7 @@ ijf.reactUtils = {
 							React.createElement(MuiTextField, {
 								error: this.state.errored,
 								style: fieldStyle,
+								InputProps: this.getInputProps(),
 								fullWidth: true,
 								label: lCaption,
 								disabled: rOnly,
@@ -324,15 +580,15 @@ ijf.reactUtils = {
 			};
 		}
 
-		var LocalMuiTextField = function (_React$Component2) {
-			_inherits(LocalMuiTextField, _React$Component2);
+		var LocalMuiTextField = function (_React$Component4) {
+			_inherits(LocalMuiTextField, _React$Component4);
 
 			function LocalMuiTextField(props) {
 				_classCallCheck(this, LocalMuiTextField);
 
-				var _this2 = _possibleConstructorReturn(this, (LocalMuiTextField.__proto__ || Object.getPrototypeOf(LocalMuiTextField)).call(this, props));
+				var _this4 = _possibleConstructorReturn(this, (LocalMuiTextField.__proto__ || Object.getPrototypeOf(LocalMuiTextField)).call(this, props));
 
-				_this2.handleChange = function (event) {
+				_this4.handleChange = function (event) {
 					//add OCF call here..
 					if (inField.dataSource == "session") {
 						ijf.session[inFormKey + '_fld_' + inField.formCell] = event.target.value;
@@ -341,19 +597,19 @@ ijf.reactUtils = {
 					}
 					var ocf = ijfUtils.getEvent(inField);
 					if (lValidator(event.target.value)) {
-						_this2.state.errored = false;
+						_this4.state.errored = false;
 						ocf(event);
-					} else _this2.state.errored = true;
-					_this2.setState({
+					} else _this4.state.errored = true;
+					_this4.setState({
 						value: event.target.value
 					});
 				};
 
-				_this2.state = {
+				_this4.state = {
 					value: data,
 					errored: false
 				};
-				return _this2;
+				return _this4;
 			}
 
 			_createClass(LocalMuiTextField, [{
@@ -456,16 +712,163 @@ ijf.reactUtils = {
 			} else return;
 		};
 
+		var LocalMuiButton = function (_React$Component5) {
+			_inherits(LocalMuiButton, _React$Component5);
+
+			function LocalMuiButton() {
+				var _ref;
+
+				var _temp, _this5, _ret;
+
+				_classCallCheck(this, LocalMuiButton);
+
+				for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+					args[_key] = arguments[_key];
+				}
+
+				return _ret = (_temp = (_this5 = _possibleConstructorReturn(this, (_ref = LocalMuiButton.__proto__ || Object.getPrototypeOf(LocalMuiButton)).call.apply(_ref, [this].concat(args))), _this5), _this5.state = {
+					anchorEl: null
+				}, _this5.handleClick = function (event) {
+					_this5.setState({ anchorEl: event.currentTarget });
+					ocf();
+				}, _this5.handleClose = function () {
+					_this5.setState({ anchorEl: null });
+				}, _temp), _possibleConstructorReturn(_this5, _ret);
+			}
+
+			_createClass(LocalMuiButton, [{
+				key: 'getMenuRow',
+				value: function getMenuRow(r, owningClass) {
+					return React.createElement(
+						MenuItem,
+						{ onClick: ijf.snippets[r.snippet] },
+						r.label
+					);
+				}
+			}, {
+				key: 'getMenu',
+				value: function getMenu(fieldSettings, owningClass) {
+					if (!fieldSettings || !fieldSettings.menu) return;
+					return React.createElement(
+						Menu,
+						{
+							anchorEl: owningClass.state.anchorEl,
+							open: Boolean(owningClass.state.anchorEl),
+							onClose: owningClass.handleClose
+						},
+						fieldSettings.menu.map(function (r) {
+							return owningClass.getMenuRow(r, owningClass);
+						})
+					);
+				}
+			}, {
+				key: 'render',
+				value: function render() {
+					var anchorEl = this.state.anchorEl;
+
+
+					return React.createElement(
+						'div',
+						null,
+						React.createElement(
+							MuiButton,
+							{ onClick: this.handleClick, disabled: disabled, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: panelStyle },
+							getIcon(),
+							lCaption
+						),
+						this.getMenu(fieldSettings, this)
+					);
+				}
+			}]);
+
+			return LocalMuiButton;
+		}(React.Component);
+
+		//before render....
+
+
+		if (ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](LocalMuiButton, item, inField, inContainer);
+
+		var controlReference = ReactDOM.render(React.createElement(LocalMuiButton, null), inContainer);
+		var thisControl = new itemControl(inFormKey + '_fld_' + inField.formCell, inField, item, controlReference, inContainer);
+		ijf.main.controlSet[thisControl.id] = thisControl;
+		//after render....
+		if (ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](controlReference, inFormKey, item, inField, inContainer);
+	},
+
+	renderHtml: function renderHtml(inFormKey, item, inField, inContainer) {
+
+		var hideField = ijfUtils.renderIfShowField(null, inField);
+		var readOnly = false;
+		var lCaption = inField.caption;
+
+		var ocf = ijfUtils.getEvent(inField);
+
+		//permissions check....has to exist...
+		if (inField.permissions.enabled) {
+			var perms = ijfUtils.getPermissionObj(inField.permissions, ijf.currentItem, ijf.main.currentUser);
+		} else {
+			var perms = ijfUtils.getPermissionObj(inField.form.permissions, ijf.currentItem, ijf.main.currentUser);
+		}
+		if (!hideField && !perms.canSee) hideField = true;
+		//end permissions
+		try {
+			var style = JSON.parse(inField.style);
+		} catch (e) {
+			var style = {};
+		}
+		try {
+			var panelStyle = JSON.parse(inField.panelStyle);
+		} catch (e) {
+			var panelStyle = {};
+		}
+		try {
+			var fieldSettings = JSON.parse(inField.fieldStyle);
+		} catch (e) {
+			var fieldSettings = {};
+		}
+
+		var disabled = false;
+		if (hideField) style.visibility = "hidden";
+		if (fieldSettings.readonly) disabled = true;
+		if (!fieldSettings.size) fieldSettings.size = "medium";
+
+		if (inField.dataReference == "html") {
+			var outHtml = ijfUtils.replaceKeyValues(inField.dataSource, item, true);
+		} else {
+			var outHtml = ijfUtils.replaceKeyValues(inField.dataSource, item);
+		}
+
+		var DynamicHtml = function (_React$Component6) {
+			_inherits(DynamicHtml, _React$Component6);
+
+			function DynamicHtml(props) {
+				_classCallCheck(this, DynamicHtml);
+
+				//need to do replaces here...
+				var _this6 = _possibleConstructorReturn(this, (DynamicHtml.__proto__ || Object.getPrototypeOf(DynamicHtml)).call(this, props));
+
+				_this6.state = {
+					template: { __html: outHtml }
+				};
+				return _this6;
+			}
+
+			_createClass(DynamicHtml, [{
+				key: 'render',
+				value: function render() {
+					return React.createElement('div', { style: panelStyle, dangerouslySetInnerHTML: this.state.template });
+				}
+			}]);
+
+			return DynamicHtml;
+		}(React.Component);
+
 		var LocalMuiButton = function LocalMuiButton() {
 			return React.createElement(
 				'div',
 				{ style: style },
-				React.createElement(
-					MuiButton,
-					{ onClick: ocf, disabled: disabled, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: panelStyle },
-					getIcon(),
-					lCaption
-				)
+				React.createElement(DynamicHtml, { html: inField.dataSource })
 			);
 		};
 
@@ -478,7 +881,6 @@ ijf.reactUtils = {
 		//after render....
 		if (ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](controlReference, inFormKey, item, inField, inContainer);
 	},
-
 	renderIcon: function renderIcon(inFormKey, item, inField, inContainer) {
 
 		try {
@@ -496,14 +898,42 @@ ijf.reactUtils = {
 		} catch (e) {
 			var fieldStyle = {};
 		}
+		var getToolTip = function getToolTip(curContent) {
+			if (inField.toolTip) return React.createElement(
+				MuiToolTip,
+				{ title: inField.toolTip },
+				curContent
+			);
+			return curContent;
+		};
 		var getIcon = function getIcon() {
 
 			if (inField.dataSource) {
-				if (inField.dataSource.indexOf("fa-") > -1) return React.createElement(Icon, { style: panelStyle, className: inField.dataSource });else return React.createElement(
-					Icon,
-					{ style: panelStyle },
-					inField.dataSource
-				);
+				var muiRet = null;
+				if (inField.event) {
+					if (inField.dataSource.indexOf("fa-") > -1) muiRet = React.createElement(
+						IconButton,
+						{ style: fieldStyle, onClick: ijf.snippets[inField.event] },
+						React.createElement(Icon, { style: panelStyle, className: inField.dataSource })
+					);else muiRet = React.createElement(
+						IconButton,
+						{ style: fieldStyle, onClick: ijf.snippets[inField.event] },
+						React.createElement(
+							Icon,
+							{ style: panelStyle },
+							inField.dataSource
+						)
+					);
+				} else {
+					if (inField.dataSource.indexOf("fa-") > -1) muiRet = React.createElement(Icon, { style: panelStyle, className: inField.dataSource });else muiRet = React.createElement(
+						Icon,
+						{ style: panelStyle },
+						inField.dataSource
+					);
+				}
+
+				muiRet = getToolTip(muiRet);
+				return muiRet;
 			} else return;
 		};
 		var LocalMuiIcon = function LocalMuiIcon() {
@@ -728,19 +1158,19 @@ ijf.reactUtils = {
 
 		//REACT section
 
-		var DynamicMenuRow = function (_React$Component3) {
-			_inherits(DynamicMenuRow, _React$Component3);
+		var DynamicMenuRow = function (_React$Component7) {
+			_inherits(DynamicMenuRow, _React$Component7);
 
 			function DynamicMenuRow(props) {
 				_classCallCheck(this, DynamicMenuRow);
 
-				var _this3 = _possibleConstructorReturn(this, (DynamicMenuRow.__proto__ || Object.getPrototypeOf(DynamicMenuRow)).call(this, props));
+				var _this7 = _possibleConstructorReturn(this, (DynamicMenuRow.__proto__ || Object.getPrototypeOf(DynamicMenuRow)).call(this, props));
 
-				_this3.state = {
+				_this7.state = {
 					menuRow: props.menuRow,
 					owningClass: props.owningClass
 				};
-				return _this3;
+				return _this7;
 			}
 
 			_createClass(DynamicMenuRow, [{
@@ -752,12 +1182,12 @@ ijf.reactUtils = {
 			}, {
 				key: 'render',
 				value: function render() {
-					var _this4 = this;
+					var _this8 = this;
 
 					return React.createElement(
 						MenuItem,
 						{ onClick: function onClick() {
-								return _this4.handleClick(_this4.state.owningClass);
+								return _this8.handleClick(_this8.state.owningClass);
 							} },
 						this.state.menuRow.label
 					);
@@ -767,22 +1197,22 @@ ijf.reactUtils = {
 			return DynamicMenuRow;
 		}(React.Component);
 
-		var DynamicHtml = function (_React$Component4) {
-			_inherits(DynamicHtml, _React$Component4);
+		var DynamicHtml = function (_React$Component8) {
+			_inherits(DynamicHtml, _React$Component8);
 
 			function DynamicHtml(props) {
 				_classCallCheck(this, DynamicHtml);
 
 				//need to do replaces here...
 
-				var _this5 = _possibleConstructorReturn(this, (DynamicHtml.__proto__ || Object.getPrototypeOf(DynamicHtml)).call(this, props));
+				var _this9 = _possibleConstructorReturn(this, (DynamicHtml.__proto__ || Object.getPrototypeOf(DynamicHtml)).call(this, props));
 
 				var tempHtml = ijfUtils.switchAttsGeneric(props.htmlContent, props.dataRow);
-				_this5.state = {
+				_this9.state = {
 					template: { __html: tempHtml },
 					dataRow: props.dataRow
 				};
-				return _this5;
+				return _this9;
 			}
 
 			_createClass(DynamicHtml, [{
@@ -795,28 +1225,28 @@ ijf.reactUtils = {
 			return DynamicHtml;
 		}(React.Component);
 
-		var MuiCard = function (_React$Component5) {
-			_inherits(MuiCard, _React$Component5);
+		var MuiCard = function (_React$Component9) {
+			_inherits(MuiCard, _React$Component9);
 
 			function MuiCard(props) {
 				_classCallCheck(this, MuiCard);
 
-				var _this6 = _possibleConstructorReturn(this, (MuiCard.__proto__ || Object.getPrototypeOf(MuiCard)).call(this, props));
+				var _this10 = _possibleConstructorReturn(this, (MuiCard.__proto__ || Object.getPrototypeOf(MuiCard)).call(this, props));
 
-				_this6.handleClick = function (event) {
-					_this6.setState({ anchorEl: event.currentTarget });
+				_this10.handleClick = function (event) {
+					_this10.setState({ anchorEl: event.currentTarget });
 				};
 
-				_this6.handleClose = function () {
-					_this6.setState({ anchorEl: null });
+				_this10.handleClose = function () {
+					_this10.setState({ anchorEl: null });
 				};
 
-				_this6.handleDblClick = function (event) {
+				_this10.handleDblClick = function (event) {
 					//console.log(event.type);
-					ocf(event, _this6);
+					ocf(event, _this10);
 				};
 
-				_this6.state = {
+				_this10.state = {
 					row: props.dataRow,
 					owningClass: props.owningClass,
 					title: props.title,
@@ -826,7 +1256,7 @@ ijf.reactUtils = {
 					actionMenu: props.actionMenu,
 					anchorEl: null
 				};
-				return _this6;
+				return _this10;
 			}
 
 			_createClass(MuiCard, [{
@@ -907,7 +1337,7 @@ ijf.reactUtils = {
 				key: 'getActionIconType',
 				value: function getActionIconType() {
 					if (fieldStyle.actionIcon) {
-						if (fieldStyle.actionIcon.icon("fa-") > -1) return React.createElement(Icon, { className: fieldStyle.actionIcon.icon, style: fieldStyle.actionIcon.style });else return React.createElement(
+						if (fieldStyle.actionIcon.icon.indexOf("fa-") > -1) return React.createElement(Icon, { className: fieldStyle.actionIcon.icon, style: fieldStyle.actionIcon.style });else return React.createElement(
 							Icon,
 							{ style: fieldStyle.actionIcon.style },
 							fieldStyle.actionIcon.icon
@@ -959,18 +1389,18 @@ ijf.reactUtils = {
 			return MuiCard;
 		}(React.Component);
 
-		var CardList = function (_React$Component6) {
-			_inherits(CardList, _React$Component6);
+		var CardList = function (_React$Component10) {
+			_inherits(CardList, _React$Component10);
 
 			function CardList(props) {
 				_classCallCheck(this, CardList);
 
-				var _this7 = _possibleConstructorReturn(this, (CardList.__proto__ || Object.getPrototypeOf(CardList)).call(this, props));
+				var _this11 = _possibleConstructorReturn(this, (CardList.__proto__ || Object.getPrototypeOf(CardList)).call(this, props));
 
-				_this7.state = {
+				_this11.state = {
 					value: dataItems
 				};
-				return _this7;
+				return _this11;
 			}
 
 			_createClass(CardList, [{
@@ -1114,27 +1544,27 @@ ijf.reactUtils = {
 		if (sessionDrawerOpen) inContainer.style.width = panelStyle.width;
 		if (variant == "permanent") inContainer.style.width = panelStyle.width;
 
-		var MuiDrawer = function (_React$Component7) {
-			_inherits(MuiDrawer, _React$Component7);
+		var MuiDrawer = function (_React$Component11) {
+			_inherits(MuiDrawer, _React$Component11);
 
 			function MuiDrawer() {
-				var _ref;
+				var _ref2;
 
-				var _temp, _this8, _ret;
+				var _temp2, _this12, _ret2;
 
 				_classCallCheck(this, MuiDrawer);
 
-				for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-					args[_key] = arguments[_key];
+				for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+					args[_key2] = arguments[_key2];
 				}
 
-				return _ret = (_temp = (_this8 = _possibleConstructorReturn(this, (_ref = MuiDrawer.__proto__ || Object.getPrototypeOf(MuiDrawer)).call.apply(_ref, [this].concat(args))), _this8), _this8.state = {
+				return _ret2 = (_temp2 = (_this12 = _possibleConstructorReturn(this, (_ref2 = MuiDrawer.__proto__ || Object.getPrototypeOf(MuiDrawer)).call.apply(_ref2, [this].concat(args))), _this12), _this12.state = {
 					open: sessionDrawerOpen,
 					top: false,
 					left: false,
 					bottom: false,
 					right: false
-				}, _this8.toggleDrawer = function (side, open) {
+				}, _this12.toggleDrawer = function (side, open) {
 					return function () {
 
 						ijf.session["drawerState_" + inField.formCell] = open;
@@ -1142,12 +1572,12 @@ ijf.reactUtils = {
 							inContainer.style.width = originalWidth;
 						}
 
-						_this8.setState(_defineProperty({}, side, open));
-						_this8.setState({
+						_this12.setState(_defineProperty({}, side, open));
+						_this12.setState({
 							"open": open
 						});
 					};
-				}, _this8.openFromChevron = function (side, open) {
+				}, _this12.openFromChevron = function (side, open) {
 					return function () {
 
 						ijf.session["drawerState_" + inField.formCell] = open;
@@ -1155,12 +1585,12 @@ ijf.reactUtils = {
 						if (variant == "persistent") {
 							inContainer.style.width = panelStyle.width;
 						}
-						_this8.setState(_defineProperty({}, side, open));
-						_this8.setState({
+						_this12.setState(_defineProperty({}, side, open));
+						_this12.setState({
 							"open": open
 						});
 					};
-				}, _temp), _possibleConstructorReturn(_this8, _ret);
+				}, _temp2), _possibleConstructorReturn(_this12, _ret2);
 			}
 
 			_createClass(MuiDrawer, [{
@@ -1261,7 +1691,8 @@ ijf.reactUtils = {
 						),
 						React.createElement(
 							Drawer,
-							{ variant: variant, anchor: fieldSettings.direction, open: this.state.open, onClose: this.toggleDrawer(fieldSettings.direction, false) },
+							{
+								variant: variant, anchor: fieldSettings.direction, open: this.state.open, onClose: this.toggleDrawer(fieldSettings.direction, false) },
 							React.createElement(
 								'div',
 								{ style: style },
@@ -1362,6 +1793,13 @@ ijf.reactUtils = {
 					lookup = rawLookup.map(function (r) {
 						return [r[cLookupDef.index], r[cLookupDef.index]];
 					});
+					//need just unique values from lookup...
+					var uVals = [];
+					lookup = lookup.reduce(function (inA, v) {
+						if (uVals.indexOf(v[0]) > -1) return inA;
+						inA.push(v);
+						return inA;
+					}, []);
 				} else {
 					//complex cascade...
 					try {
@@ -1371,6 +1809,16 @@ ijf.reactUtils = {
 						lookup = rawLookup.map(function (r) {
 							return [r[cLookupDef.index], r[cLookupDef.index]];
 						});
+
+						//need just unique values from lookup...
+						var uVals = [];
+						lookup = lookup.reduce(function (inA, v) {
+							if (uVals.indexOf(v[0]) > -1) return inA;
+							uVals.push(v[0]);
+							inA.push(v);
+							return inA;
+						}, []);
+
 						//establish a listener for this combo if necessary
 						if (cLookupDef.parents) {
 							var parentIds = cLookupDef.parents;
@@ -1483,22 +1931,22 @@ ijf.reactUtils = {
 			};
 		}
 
-		var LocalMuiMenuItem = function (_React$Component8) {
-			_inherits(LocalMuiMenuItem, _React$Component8);
+		var LocalMuiMenuItem = function (_React$Component12) {
+			_inherits(LocalMuiMenuItem, _React$Component12);
 
 			function LocalMuiMenuItem(props) {
 				_classCallCheck(this, LocalMuiMenuItem);
 
-				var _this9 = _possibleConstructorReturn(this, (LocalMuiMenuItem.__proto__ || Object.getPrototypeOf(LocalMuiMenuItem)).call(this, props));
+				var _this13 = _possibleConstructorReturn(this, (LocalMuiMenuItem.__proto__ || Object.getPrototypeOf(LocalMuiMenuItem)).call(this, props));
 
-				_this9.handleVisibility = function () {
-					_this9.setState({ style: _this9.props.style });
+				_this13.handleVisibility = function () {
+					_this13.setState({ style: _this13.props.style });
 				};
 
-				_this9.state = {
+				_this13.state = {
 					style: props.style
 				};
-				return _this9;
+				return _this13;
 			}
 
 			_createClass(LocalMuiMenuItem, [{
@@ -1515,20 +1963,20 @@ ijf.reactUtils = {
 			return LocalMuiMenuItem;
 		}(React.Component);
 
-		var LocalMuiSelectField = function (_React$Component9) {
-			_inherits(LocalMuiSelectField, _React$Component9);
+		var LocalMuiSelectField = function (_React$Component13) {
+			_inherits(LocalMuiSelectField, _React$Component13);
 
 			function LocalMuiSelectField(props) {
 				_classCallCheck(this, LocalMuiSelectField);
 
-				var _this10 = _possibleConstructorReturn(this, (LocalMuiSelectField.__proto__ || Object.getPrototypeOf(LocalMuiSelectField)).call(this, props));
+				var _this14 = _possibleConstructorReturn(this, (LocalMuiSelectField.__proto__ || Object.getPrototypeOf(LocalMuiSelectField)).call(this, props));
 
-				_this10.handleOpen = function (event) {
+				_this14.handleOpen = function (event) {
 					//if parents, then the getMenu has to change to filter the values...
-					_this10.setState({ open: true });
+					_this14.setState({ open: true });
 				};
 
-				_this10.handleChange = function (event) {
+				_this14.handleChange = function (event) {
 					//add OCF call here..
 					if (inField.dataSource == "session") {
 						ijf.session[inFormKey + '_fld_' + inField.formCell] = event.target.value;
@@ -1536,13 +1984,13 @@ ijf.reactUtils = {
 						ijf.main.controlChanged(inFormKey + '_fld_' + inField.formCell);
 					}
 					if (lValidator(event.target.value)) {
-						_this10.state.errored = false;
+						_this14.state.errored = false;
 						ocf(event);
-					} else _this10.state.errored = true;
+					} else _this14.state.errored = true;
 
 					//now look for children...for each one you need to set the value to null....
-					if (_this10.props.selectChildren) {
-						_this10.props.selectChildren.forEach(function (c) {
+					if (_this14.props.selectChildren) {
+						_this14.props.selectChildren.forEach(function (c) {
 							var ctl = ijfUtils.getControlByDataSource(c);
 							if (!ctl) ctl = ijfUtils.getControlByKey(c);
 							if (ctl) {
@@ -1551,18 +1999,18 @@ ijf.reactUtils = {
 						});
 					}
 
-					_this10.setState(_defineProperty({}, event.target.name, event.target.value));
+					_this14.setState(_defineProperty({}, event.target.name, event.target.value));
 				};
 
-				_this10.handleClose = function () {
-					_this10.setState({ open: false });
+				_this14.handleClose = function () {
+					_this14.setState({ open: false });
 				};
 
-				_this10.clearValue = function () {
-					_this10.setState({ value: null });
+				_this14.clearValue = function () {
+					_this14.setState({ value: null });
 				};
 
-				_this10.state = {
+				_this14.state = {
 					value: data,
 					lookup: lookup,
 					rawlookup: rawLookup,
@@ -1570,7 +2018,7 @@ ijf.reactUtils = {
 					errored: false,
 					open: false
 				};
-				return _this10;
+				return _this14;
 			}
 
 			_createClass(LocalMuiSelectField, [{
@@ -1846,15 +2294,15 @@ ijf.reactUtils = {
 			};
 		}
 
-		var LocalMuiRadioField = function (_React$Component10) {
-			_inherits(LocalMuiRadioField, _React$Component10);
+		var LocalMuiRadioField = function (_React$Component14) {
+			_inherits(LocalMuiRadioField, _React$Component14);
 
 			function LocalMuiRadioField(props) {
 				_classCallCheck(this, LocalMuiRadioField);
 
-				var _this11 = _possibleConstructorReturn(this, (LocalMuiRadioField.__proto__ || Object.getPrototypeOf(LocalMuiRadioField)).call(this, props));
+				var _this15 = _possibleConstructorReturn(this, (LocalMuiRadioField.__proto__ || Object.getPrototypeOf(LocalMuiRadioField)).call(this, props));
 
-				_this11.handleChange = function (event) {
+				_this15.handleChange = function (event) {
 					//add OCF call here..
 					if (inField.dataSource == "session") {
 						ijf.session[inFormKey + '_fld_' + inField.formCell] = n;
@@ -1862,23 +2310,23 @@ ijf.reactUtils = {
 						ijf.main.controlChanged(inFormKey + '_fld_' + inField.formCell);
 					}
 					if (lValidator(event.target.value)) {
-						_this11.state.errored = false;
+						_this15.state.errored = false;
 						ocf(event);
-					} else _this11.state.errored = true;
+					} else _this15.state.errored = true;
 
-					_this11.setState({ value: event.target.value });
+					_this15.setState({ value: event.target.value });
 				};
 
-				_this11.clearValue = function () {
-					_this11.setState({ value: null });
+				_this15.clearValue = function () {
+					_this15.setState({ value: null });
 				};
 
-				_this11.state = {
+				_this15.state = {
 					value: data,
 					lookup: lookup,
 					errored: false
 				};
-				return _this11;
+				return _this15;
 			}
 
 			_createClass(LocalMuiRadioField, [{
@@ -1969,6 +2417,8 @@ ijf.reactUtils = {
 		var jf = item.fields[jfFieldDef.id];
 
 		var data = ijfUtils.handleJiraFieldType(jfFieldDef, jf);
+
+		if (!data) data = [];
 
 		if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle, 'required') == "true") lAllowBlank = false;
 
@@ -2361,8 +2811,8 @@ ijf.reactUtils = {
 			}
 		}
 
-		var LocalMuiTable = function (_React$Component11) {
-			_inherits(LocalMuiTable, _React$Component11);
+		var LocalMuiTable = function (_React$Component15) {
+			_inherits(LocalMuiTable, _React$Component15);
 
 			function LocalMuiTable(props) {
 				_classCallCheck(this, LocalMuiTable);
@@ -2509,12 +2959,15 @@ ijf.reactUtils = {
 		var l_save = "Save";
 		var l_reload = "Reload";
 		var l_done = "Done";
+		var l_style = "";
 
-		var l_style = inField.dataReference2.split(",");
-		if (l_style.length == 3) {
-			l_save = l_style[0];
-			l_reload = l_style[1];
-			l_done = l_style[2];
+		if (inField.dataReference2) {
+			l_style = inField.dataReference2.split(",");
+			if (l_style.length == 3) {
+				l_save = l_style[0];
+				l_reload = l_style[1];
+				l_done = l_style[2];
+			}
 		}
 
 		try {

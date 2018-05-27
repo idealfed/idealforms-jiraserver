@@ -5,6 +5,8 @@ var MuiButton = window['material-ui']["Button"];
 
 var Icon = window['material-ui']['Icon'];
 var IconButton = window['material-ui']['IconButton'];
+var InputAdornment = window['material-ui']['InputAdornment'];
+
 var Card = window['material-ui']['Card'];
 var CardActions =  window['material-ui']['CardActions'];
 var CardContent =  window['material-ui']['CardContent'];
@@ -43,15 +45,192 @@ var MuiExpansionPanel = window['material-ui']['ExpansionPanel'];
 var MuiExpansionPanelSummary = window['material-ui']['ExpansionPanelSummary'];
 var MuiExpansionPanelDetails = window['material-ui']['ExpansionPanelDetails'];
 
+var MuiAppBar = window['material-ui']['AppBar'];
+var MuiToolBar = window['material-ui']['Toolbar'];
+
+var MuiToolTip = window['material-ui']['Tooltip'];
+
+
+
 var ijf = ijf || {};
 ijf.reactUtils ={
 
-
-
-renderTextbox(inFormKey,item, inField, inContainer)
+renderAppBar(inFormKey,item, inField, inContainer)
 {
 
 		inContainer.title = inField.toolTip;
+
+		var hideField = ijfUtils.renderIfShowField(null,inField);
+		var hideLabel = false;
+		if (inField.caption=="")
+			var lCaption = inField.dataSource;
+		else if(inField.caption=="none")
+		{
+			var lCaption = "";
+			hideLabel=true;
+		}
+		else
+			var lCaption = inField.caption;
+
+		if (inField.style.indexOf('hidden:true')>-1)
+		{
+			hideLabel=true;
+			hideField=true;
+		}
+		var rOnly = false;
+		if (inField.fieldStyle.indexOf('readonly:true')>-1)
+		{
+			rOnly=true;
+		}
+
+		//permissions check....has to exist...
+		if(inField.permissions.enabled)
+		{
+			var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+		else
+		{
+			var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+		//console.log(JSON.stringify(perms));
+		if((!rOnly) && (!perms.canEdit)) rOnly=true;
+		if((!hideField) && (!perms.canSee))	hideField=true;
+		//end permissions
+
+
+		//section for dynamic control rendering using !{x,y,z}  where it's a key to a field
+		var dynamicFields = [];
+		var setDynamicControls = function(inText)
+		{
+			var retText = inText;
+			var pat = "\!\{.*?\}";
+			var rgx = new RegExp(pat);
+			var m = rgx.exec(retText);
+
+			if(m==null)
+			{
+				return retText;
+			}
+			else
+			{
+				//you have a dynamic field....
+				var keyVal = m[0].replace("!{","");
+				keyVal = keyVal.replace("}","");
+				var dFieldId=inFormKey+'_ctr_d_'+keyVal.replace(/,/g,"_");
+				//var dFieldTblId = inFormKey+'_tbl_d_'+keyVal.replace(/,/g,"_");
+				//var dFieldTbl = "<table  role='presentation' id='"+dFieldTblId+"' cellspacing=0 cellpadding=3><tr><td>";
+				retText = retText.replace(m[0],"<div style='display:inline-block' id='"+dFieldId+"'></div>");
+				dynamicFields.push({"containerId":dFieldId,"fieldId":keyVal});
+				return setDynamicControls(retText);
+			}
+		}
+
+		var outHtml = setDynamicControls(lCaption);
+
+		try
+		{
+			var style = JSON.parse(inField.style);
+		}
+		catch(e)
+		{
+			var style = {"flexGrow": 1}
+		}
+		try
+		{
+			var panelStyle = JSON.parse(inField.panelStyle);
+		}
+		catch(e)
+		{
+			var panelStyle = {}
+		}
+		try
+		{
+			var fieldStyle = JSON.parse(inField.fieldStyle);
+		}
+		catch(e)
+		{
+			var fieldStyle = {}
+		}
+
+		class DynamicHtml extends React.Component {
+			  constructor(props) {
+				super(props);
+				//need to do replaces here...
+				var tempHtml = outHtml;
+				this.state = {
+				  template: { __html: tempHtml }
+				};
+			  }
+			  render()
+			  {
+				return (
+					<div dangerouslySetInnerHTML={this.state.template} />
+		  		);
+		      }
+	     }
+
+
+		class LocalMuiAppBar extends React.Component {
+
+		  constructor(props) {
+			super(props);
+		  }
+
+
+		  render() {
+			return (
+				<div style={style}>
+				  <MuiAppBar style={panelStyle} color={fieldStyle.color} position={fieldStyle.position}>
+					<MuiToolBar style={fieldStyle}>
+						<DynamicHtml />
+					</MuiToolBar>
+				  </MuiAppBar>
+				</div>
+			);
+		  }
+		}
+
+		//before render....
+		if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](LocalMuiAppBar,inFormKey,item, inField, inContainer);
+
+		var controlReference = ReactDOM.render(<LocalMuiAppBar />, inContainer);
+
+		var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, controlReference, inContainer);
+
+		ijf.main.controlSet[thisControl.id]=thisControl;
+		//after render....
+		if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](controlReference, inFormKey,item, inField, inContainer);
+
+
+		dynamicFields.forEach(function(f)
+		{
+			//find field by key....
+			if(inField.form.fields.hasOwnProperty(f.fieldId)) var targetField = inField.form.fields[f.fieldId];
+			else
+				var targetField = inField.form.fields.reduce(function(inObj,ff){if(ff.formCell==f.fieldId) inObj=ff; return inObj;},null);
+			var container = document.getElementById(f.containerId);
+			if((!targetField) || (!container))
+			{
+				ijfUtils.footLog("Failed to render dynamic field " + f.fieldId);
+				return;
+			}
+			try
+			{
+				targetField.form=inField.form;
+				ijf.extUtils.renderField(inFormKey,item,targetField,container);
+			}
+			catch(e)
+			{
+				ijfUtils.footLog(targetField.formCell + " " + targetField.controlType + " failed to render: " + e.message);
+			}
+		});
+
+
+	},
+renderTextbox(inFormKey,item, inField, inContainer)
+{
+
+		//inContainer.title = inField.toolTip;
 		var lAllowBlank = true;
 		//adding concept of session vars.
 		if(inField.dataSource=="session")
@@ -199,11 +378,81 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			  value: event.target.value,
 			});
 		  };
-			  getTip()
-			  {
-				  if(inField.toolTip) return (<MuiFormHelperText>{inField.toolTip}</MuiFormHelperText>)
-				  return
-			  }
+		  setValue = (inValue) => {
+			this.setState({
+			  value: inValue,
+			});
+		  };
+		  getTip()
+		  {
+		     if(inField.toolTip) return (<MuiFormHelperText>{inField.toolTip}</MuiFormHelperText>)
+		     return
+		  }
+		  getToolTip(curContent,toolTip)
+		  {
+			if(toolTip)	return (<MuiToolTip title={toolTip}>{curContent}</MuiToolTip>);
+			return curContent;
+		  }
+		  getInputProps()
+		  {
+			var retProps = {};
+			if(fieldStyle.inputProps)
+			{
+				if(fieldStyle.inputProps.startAdornment)
+				{
+  	  			    var tFunc = function(){};
+					var tThis=this;
+   					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.snippet)) tFunc=function(){ijf.snippets[fieldStyle.inputProps.startAdornment.snippet](tThis)};
+					if(fieldStyle.inputProps.startAdornment.icon.indexOf("fa-")>-1)
+					{
+						retProps.startAdornment =  (
+							<InputAdornment position={fieldStyle.inputProps.startAdornment.position}>
+							  {this.getToolTip((<IconButton onClick={tFunc}>
+							  	<Icon style={fieldStyle.inputProps.startAdornment.style} className={fieldStyle.inputProps.startAdornment.icon} />
+							  </IconButton>),fieldStyle.inputProps.startAdornment)}
+							</InputAdornment>);
+					}
+					else
+					{
+						retProps.startAdornment =   (
+							<InputAdornment position={fieldStyle.inputProps.startAdornment.position}>
+							 {this.getToolTip((<IconButton onClick={tFunc}>
+							  <Icon style={fieldStyle.inputProps.startAdornment.style}>{fieldStyle.inputProps.startAdornment.icon}</Icon>
+							  </IconButton>),fieldStyle.inputProps.startAdornment)}
+							</InputAdornment>);
+					}
+				}
+				else if(fieldStyle.inputProps.endAdornment)
+				{
+					var tFunc = function(){};
+					var tThis=this;
+					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.snippet))  tFunc=function(){ijf.snippets[fieldStyle.inputProps.endAdornment.snippet](tThis)};
+					if(fieldStyle.inputProps.endAdornment.icon.indexOf("fa-")>-1)
+					{
+						retProps.endAdornment =   (
+							<InputAdornment position={fieldStyle.inputProps.endAdornment.position}>
+							{this.getToolTip((<IconButton onClick={tFunc}>
+							  <Icon style={fieldStyle.inputProps.endAdornment.style} className={fieldStyle.inputProps.endAdornment.icon} />
+							  </IconButton>),fieldStyle.inputProps.endAdornment.toolTip)}
+							</InputAdornment>);
+					}
+					else
+					{
+						retProps.endAdornment =   (
+							<InputAdornment position={fieldStyle.inputProps.endAdornment.position}>
+							{this.getToolTip((<IconButton onClick={tFunc}>
+							  <Icon style={fieldStyle.inputProps.endAdornment.style}>{fieldStyle.inputProps.endAdornment.icon}</Icon>
+							  </IconButton>),fieldStyle.inputProps.endAdornment.toolTip)}
+							</InputAdornment>);
+					}
+				}
+				else
+				return;
+
+			}
+			return retProps;
+		  }
+
 		  render() {
 			return (
 			  <div style={style}>
@@ -211,6 +460,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				<MuiTextField
 				  error={this.state.errored}
 				  style={fieldStyle}
+				  InputProps = {this.getInputProps()}
 				  fullWidth={true}
 				  label={lCaption}
 				  disabled={rOnly}
@@ -496,11 +746,144 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			else return;
 		}
 
+
+		class LocalMuiButton extends React.Component {
+		  state = {
+			anchorEl: null,
+		  };
+
+		  getMenuRow(r,owningClass)
+		  {
+			  return (<MenuItem onClick={ijf.snippets[r.snippet]}>{r.label}</MenuItem>)
+		  }
+
+		  getMenu(fieldSettings, owningClass)
+		  {
+			  if((!fieldSettings) || (!fieldSettings.menu)) return;
+			  return (
+				  <Menu
+						anchorEl={owningClass.state.anchorEl}
+						open={Boolean(owningClass.state.anchorEl)}
+						onClose={owningClass.handleClose}
+					  >
+					   {fieldSettings.menu.map(function(r){return owningClass.getMenuRow(r,owningClass)})}
+				  </Menu>
+			  );
+		  }
+
+
+		  handleClick = event => {
+			this.setState({ anchorEl: event.currentTarget });
+			ocf();
+		  };
+
+		  handleClose = () => {
+			this.setState({ anchorEl: null });
+		  };
+
+		  render() {
+			const { anchorEl } = this.state;
+
+			return (
+			  <div>
+					  <MuiButton  onClick={this.handleClick} disabled={disabled} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={panelStyle}>
+						{getIcon()}{lCaption}
+					  </MuiButton>
+				     {this.getMenu(fieldSettings,this)}
+			  </div>
+			);
+		  }
+		}
+
+
+		//before render....
+		if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](LocalMuiButton, item, inField, inContainer);
+
+		var controlReference = ReactDOM.render(<LocalMuiButton />, inContainer);
+		var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, controlReference, inContainer);
+		ijf.main.controlSet[thisControl.id]=thisControl;
+		//after render....
+		if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](controlReference, inFormKey,item, inField, inContainer);
+	  },
+
+	 renderHtml:function(inFormKey,item, inField, inContainer)
+	{
+
+		var hideField = ijfUtils.renderIfShowField(null,inField);
+        var readOnly = false;
+		var lCaption = inField.caption;
+
+		var ocf =  ijfUtils.getEvent(inField);
+
+		//permissions check....has to exist...
+		if(inField.permissions.enabled)
+		{
+			var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+		else
+		{
+			var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+		if((!hideField) && (!perms.canSee))	hideField=true;
+		//end permissions
+		try
+		{
+			var style = JSON.parse(inField.style);
+		}
+		catch(e)
+		{
+			var style = {}
+		}
+		try
+		{
+			var panelStyle = JSON.parse(inField.panelStyle);
+		}
+		catch(e)
+		{
+			var panelStyle = {}
+		}
+		try
+		{
+			var fieldSettings = JSON.parse(inField.fieldStyle);
+		}
+		catch(e)
+		{
+			var fieldSettings = {}
+		}
+
+		var disabled = false;
+		if(hideField) style.visibility = "hidden";
+		if(fieldSettings.readonly) disabled = true;
+		if(!fieldSettings.size) fieldSettings.size = "medium";
+
+		if(inField.dataReference=="html")
+		{
+			var outHtml = ijfUtils.replaceKeyValues(inField.dataSource,item, true);
+		}
+		else
+		{
+			var outHtml = ijfUtils.replaceKeyValues(inField.dataSource,item);
+		}
+
+		class DynamicHtml extends React.Component {
+			  constructor(props) {
+				super(props);
+				//need to do replaces here...
+				this.state = {
+				  template: { __html: outHtml},
+				};
+			  }
+			  render()
+			  {
+				return (
+				    <div style={panelStyle} dangerouslySetInnerHTML={this.state.template} />
+		  		);
+		      }
+	     }
+
 		const LocalMuiButton = () => (
 		  <div style={style}>
-			  <MuiButton onClick={ocf} disabled={disabled} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={panelStyle}>
-				{getIcon()}{lCaption}
-			  </MuiButton>
+			 <DynamicHtml html={inField.dataSource} />
 		  </div>
 		);
 
@@ -514,7 +897,6 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		//after render....
 		if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](controlReference, inFormKey,item, inField, inContainer);
 	  },
-
 	 renderIcon:function(inFormKey,item, inField, inContainer)
 	{
 
@@ -543,15 +925,35 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		{
 			var fieldStyle = {}
 		}
+		var getToolTip=function(curContent)
+		{
+			if(inField.toolTip)	return (<MuiToolTip title={inField.toolTip}>{curContent}</MuiToolTip>);
+			return curContent;
+		}
         var getIcon=function()
         {
 
 			if(inField.dataSource)
 			{
-				if(inField.dataSource.indexOf("fa-")>-1)
-					return (<Icon style={panelStyle} className={inField.dataSource}/>);
+				var muiRet = null;
+				if(inField.event)
+				{
+					if(inField.dataSource.indexOf("fa-")>-1)
+						muiRet = (<IconButton style={fieldStyle} onClick={ijf.snippets[inField.event]}><Icon style={panelStyle} className={inField.dataSource}/></IconButton>);
+					else
+						muiRet = (<IconButton style={fieldStyle} onClick={ijf.snippets[inField.event]}><Icon style={panelStyle}>{inField.dataSource}</Icon></IconButton>);
+				}
 				else
-					return (<Icon style={panelStyle}>{inField.dataSource}</Icon>);
+				{
+					if(inField.dataSource.indexOf("fa-")>-1)
+						muiRet = (<Icon style={panelStyle} className={inField.dataSource}/>);
+					else
+						muiRet = (<Icon style={panelStyle}>{inField.dataSource}</Icon>);
+
+				}
+
+				muiRet = getToolTip(muiRet);
+				return muiRet;
 			}
 
 			else return;
@@ -960,7 +1362,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			  {
 				if(fieldStyle.actionIcon)
 				{
-					if(fieldStyle.actionIcon.icon("fa-")>-1)
+					if(fieldStyle.actionIcon.icon.indexOf("fa-")>-1)
 						return (<Icon className={fieldStyle.actionIcon.icon} style={fieldStyle.actionIcon.style} />);
 					else
 						return (<Icon style={fieldStyle.actionIcon.style}>{fieldStyle.actionIcon.icon}</Icon>);
@@ -1285,8 +1687,9 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				return (
 				  <div>
 					<Icon style={buttonStyle} onClick={this.openFromChevron(fieldSettings.direction, true)}>{fieldSettings.icon}</Icon>
-					<Drawer variant={variant} anchor={fieldSettings.direction} open={this.state.open} onClose={this.toggleDrawer(fieldSettings.direction, false)}>
-						<div style={style}>
+					<Drawer
+					    variant={variant} anchor={fieldSettings.direction} open={this.state.open} onClose={this.toggleDrawer(fieldSettings.direction, false)}>
+						<div style={style} >
 						  {this.getHeaderIcon()}
 						  {this.getDrawerTitle()}
 						  {this.getIcon()}
@@ -1384,6 +1787,13 @@ renderSelect(inFormKey,item, inField, inContainer)
 					rawLookup = ijfUtils.getReferenceDataByName(inField.referenceFilter,"0",true);
 					myRefIndex=0;
 					lookup = rawLookup.map(function(r){return [r[cLookupDef.index],r[cLookupDef.index]]});
+					//need just unique values from lookup...
+					var uVals = [];
+					lookup = lookup.reduce(function(inA,v){
+						if(uVals.indexOf(v[0])>-1) return inA;
+						inA.push(v);
+						return inA;
+					},[]);
 				}
 				else
 				{
@@ -1394,6 +1804,16 @@ renderSelect(inFormKey,item, inField, inContainer)
 						myRefIndex=cLookupDef.index;
 						rawLookup = ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index,true);
 						lookup = rawLookup.map(function(r){return [r[cLookupDef.index],r[cLookupDef.index]]});
+
+						//need just unique values from lookup...
+						var uVals = [];
+						lookup = lookup.reduce(function(inA,v){
+							if(uVals.indexOf(v[0])>-1) return inA;
+							uVals.push(v[0]);
+							inA.push(v);
+							return inA;
+						},[]);
+
 						//establish a listener for this combo if necessary
 						if(cLookupDef.parents)
 						{
@@ -2012,6 +2432,8 @@ renderSelect(inFormKey,item, inField, inContainer)
 
 		var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 
+        if(!data) data=[];
+
 	    if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
 	    var lMaxsize =  Number.MAX_VALUE;
@@ -2591,14 +3013,18 @@ renderSelect(inFormKey,item, inField, inContainer)
 		var l_save="Save";
 		var l_reload="Reload";
 		var l_done ="Done";
+		var l_style ="";
 
-		var l_style = inField.dataReference2.split(",");
-		if(l_style.length==3)
+		if(inField.dataReference2)
 		{
-			l_save=l_style[0];
-			l_reload=l_style[1];
-			l_done =l_style[2];
-		}
+		    l_style = inField.dataReference2.split(",");
+			if(l_style.length==3)
+			{
+				l_save=l_style[0];
+				l_reload=l_style[1];
+				l_done =l_style[2];
+			}
+	    }
 
 		try
 		{

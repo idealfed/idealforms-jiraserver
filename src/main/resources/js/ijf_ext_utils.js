@@ -68,6 +68,13 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'muiFormButtons':
                 ijf.reactUtils.renderFormButtons(inFormKey,item,inField,inContainer);
                 break;
+            case 'muiAppBar':
+                ijf.reactUtils.renderAppBar(inFormKey,item,inField,inContainer);
+                break;
+            case 'muiHtml':
+                ijf.reactUtils.renderHtml(inFormKey,item,inField,inContainer);
+                break;
+
 
 
 
