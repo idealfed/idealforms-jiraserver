@@ -754,7 +754,8 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 		  getMenuRow(r,owningClass)
 		  {
-			  return (<MenuItem onClick={ijf.snippets[r.snippet]}>{r.label}</MenuItem>)
+			  var handler = function(){owningClass.handleClose(); ijf.snippets[r.snippet](r)};
+			  return (<MenuItem onClick={handler}>{r.label}</MenuItem>)
 		  }
 
 		  getMenu(fieldSettings, owningClass)
@@ -774,7 +775,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 		  handleClick = event => {
 			this.setState({ anchorEl: event.currentTarget });
-			ocf();
+			ocf(event.currentTarget);
 		  };
 
 		  handleClose = () => {
@@ -1414,6 +1415,14 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				};
 			  }
 
+               getState()
+               {
+				   return this.state;
+			   }
+               getValue()
+               {
+				   return this.state.value;
+			   }
 			   getCard(row,owningClass)
 			   {
 				    //must transform content using field Style

@@ -730,7 +730,7 @@ ijf.reactUtils = {
 					anchorEl: null
 				}, _this5.handleClick = function (event) {
 					_this5.setState({ anchorEl: event.currentTarget });
-					ocf();
+					ocf(event.currentTarget);
 				}, _this5.handleClose = function () {
 					_this5.setState({ anchorEl: null });
 				}, _temp), _possibleConstructorReturn(_this5, _ret);
@@ -739,9 +739,12 @@ ijf.reactUtils = {
 			_createClass(LocalMuiButton, [{
 				key: 'getMenuRow',
 				value: function getMenuRow(r, owningClass) {
+					var handler = function handler() {
+						owningClass.handleClose();ijf.snippets[r.snippet](r);
+					};
 					return React.createElement(
 						MenuItem,
-						{ onClick: ijf.snippets[r.snippet] },
+						{ onClick: handler },
 						r.label
 					);
 				}
@@ -1404,6 +1407,16 @@ ijf.reactUtils = {
 			}
 
 			_createClass(CardList, [{
+				key: 'getState',
+				value: function getState() {
+					return this.state;
+				}
+			}, {
+				key: 'getValue',
+				value: function getValue() {
+					return this.state.value;
+				}
+			}, {
 				key: 'getCard',
 				value: function getCard(row, owningClass) {
 					//must transform content using field Style

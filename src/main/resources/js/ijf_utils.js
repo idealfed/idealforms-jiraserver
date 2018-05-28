@@ -1158,7 +1158,7 @@ setContent:function(cId,x,y,colSpans,cellsOnly,rowSpans)
 modalDialog:function(inTitle,inMessage,inFunction)
 {
 
-	Ext.Msg.show({
+	var tm = Ext.Msg.show({
 	    title: inTitle,
 	    message: inMessage,
 	    buttons: Ext.Msg.OKCANCEL,
@@ -1169,6 +1169,8 @@ modalDialog:function(inTitle,inMessage,inFunction)
 			}
 	    }
     });
+
+    tm.setY(window.pageYOffset+300);
 
 },
 
@@ -1199,14 +1201,15 @@ modalMessage:function(inTitle,inMessage)
 					modal: true
 				});
 		rWin.show();
+		rWin.setY(window.pageYOffset+300);
 
 },
 
 modalDialogMessage:function(inTitle,inMessage)
 {
 
-    Ext.Msg.alert(inTitle,inMessage);
-
+    var tm = Ext.Msg.alert(inTitle,inMessage);
+     tm.setY(window.pageYOffset+300);
 },
 
 
@@ -1236,6 +1239,7 @@ modalDialogMessageWithFunction:function(inTitle,inMessage,inFunction)
         modal: true
     });
     dWin.show();
+     dWin.setY(window.pageYOffset+300);
 
 },
 

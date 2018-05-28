@@ -199,7 +199,7 @@ addEditForm:function (sRow)
         layout: 'vbox',
         title: "Javascript business rule editor",
         width: 700,
-        height:570,
+        height:850,
         closable: true,
         items: [
             {
@@ -238,7 +238,7 @@ addEditForm:function (sRow)
 				allowBlank:true,
 				hideLabel: true,
 				width: '100%',
-				height: 500,
+				height: '100%',
 				value: sRow.data.snippet,
 				listeners: {
 					change: function(f, n, o){
@@ -290,6 +290,8 @@ addEditForm:function (sRow)
         modal: true
     });
     ijf.admin.dWin.show();
+    ijf.admin.dWin.setY(window.pageYOffset+25);
+
 },
     readConfigFormFile:function(inFile)
 	{
@@ -2103,6 +2105,7 @@ addEditForm:function (sRow)
 								modal: true
 								});
 								fieldRefWin.show();
+								fieldRefWin.setY(window.pageYOffset+25);
 							}
 						}]
 			},
@@ -2281,7 +2284,7 @@ addEditForm:function (sRow)
         layout: 'vbox',
         title: "Ideal Forms for JIRA Designer:  " + ijf.admin.cwfAdmin_form.name,
         width: 950,
-        height:600,
+        height:850,
         closable: false,
         scrollable: true,
         items: [ijf.admin.cwfAdmin_settingsPanel],
@@ -2337,6 +2340,7 @@ addEditForm:function (sRow)
     });
 
     ijf.lists.dWin.show();
+    ijf.lists.dWin.setY(window.pageYOffset+25);
     ijf.admin.renderForm("ijfContent",false);
 	},
 

@@ -305,6 +305,10 @@ renderField:function(inFormKey, item, inField, inContainer)
     {
         collapsed=true;
     }
+    if (inField.style.indexOf('hidden:true')>-1)
+    {
+        hideField=true;
+    }
     var panelTitle = "";
     if (inField.style.indexOf('panelTitle:')>-1)
     {
@@ -397,7 +401,15 @@ renderField:function(inFormKey, item, inField, inContainer)
     {
 		//before render....
 		if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](null,inFormKey,item, inField, inContainer);
-        if(!hideField) ijf.main.renderForm(inContainer.id.replace(",",""), inField.dataSource, true, item);
+
+		if(hideField)
+		{
+			//set style of target div to be visibility hidden
+			inContainer.style.visibility="hidden";
+		}
+
+        //if(!hideField)
+        ijf.main.renderForm(inContainer.id.replace(",",""), inField.dataSource, true, item);
 	    //after render....
 	    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](null, inFormKey,item, inField, inContainer);
 
@@ -527,6 +539,8 @@ renderPopupForm:function(inFormKey,inItem, inAction)
         }
     });
     dWin.show();
+    dWin.setY(window.pageYOffset+250);
+
     ijf.main.gPopupFormHandle = dWin;
     //need to force the render to get metadata for the new thing, null out the meta...
     ijf.jiraMeta=null;
@@ -2067,6 +2081,7 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 
 
 									dWin2.show();
+									dWin2.setY(window.pageYOffset+250);
 								}
 								else
 								{
@@ -3761,6 +3776,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
             ]
         });
         pickListWindow.show();
+         pickListWindow.setY(window.pageYOffset+250);
 	}
 
     var hideField = ijfUtils.renderIfShowField(data,inField);
