@@ -1661,7 +1661,7 @@ ijf.reactUtils = {
 									ListItem,
 									{ button: true, onClick: snip, style: bStyle },
 									owningClass.getMenuIcon(m),
-									React.createElement(ListItemText, { primary: m.text })
+									React.createElement(ListItemText, { id: m.id, primary: m.text })
 								)
 							);
 
@@ -1770,7 +1770,6 @@ ijf.reactUtils = {
 	},
 
 	renderSelect: function renderSelect(inFormKey, item, inField, inContainer) {
-
 		if (inField.dataSource == "session") {
 			var jfFieldMeta = {};
 			if (inField.dataReference != "ijfReference") jfFieldMeta.allowedValues = JSON.parse(inField.dataReference);
@@ -1779,7 +1778,10 @@ ijf.reactUtils = {
 			jfFieldDef.schema = {};
 			jfFieldDef.schema.type = "option";
 			var data = ijf.session[inFormKey + '_fld_' + inField.formCell];
-			if (!data) data = inField.dataReference2;
+
+			if (!data) {
+				data = inField.dataReference2;
+			}
 		} else {
 			var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
 			var jf = item.fields[jfFieldDef.id];
@@ -1797,7 +1799,9 @@ ijf.reactUtils = {
 			}
 		}
 
-		if (!data) if (inField.dataReference2) data = inField.dataReference2;else data = "tbd";
+		if (!data) {
+			data = "tbd";
+		}
 
 		var lAllowBlank = true;
 		if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = jfFieldMeta.required ? false : true;

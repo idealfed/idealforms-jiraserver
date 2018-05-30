@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "5.0.14";
+    window.g_version = "5.0.15";
 
     console.log("Initializing IJF version: " + window.g_version);
     //prevent double initializing....
@@ -807,7 +807,7 @@ function saveBatch(onSuccess,inFields,inForm, item)
 	var comment = null;
 	if(fields.comment)
 	{
-		comment = {"comment":[{"add":fields.comment}]}
+		if(fields.comment!="") comment = {"comment":[{"add":fields.comment}]}
 		delete fields.comment;
 	}
 	var transition = null;

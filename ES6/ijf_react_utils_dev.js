@@ -1658,7 +1658,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 							  <List component="nav">
 								<ListItem button onClick={snip} style={bStyle}>
 									{owningClass.getMenuIcon(m)}
-									<ListItemText primary={m.text} />
+									<ListItemText id={m.id} primary={m.text} />
 								</ListItem>
 							  </List> );
 
@@ -1748,7 +1748,6 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 renderSelect(inFormKey,item, inField, inContainer)
 {
-
 	if(inField.dataSource=="session")
 	{
 		  var jfFieldMeta = {};
@@ -1758,7 +1757,12 @@ renderSelect(inFormKey,item, inField, inContainer)
 		  jfFieldDef.schema={};
 		  jfFieldDef.schema.type="option";
 		  var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
-		  if(!data) data=inField.dataReference2;	}
+
+		  if(!data)
+		  {
+			  data=inField.dataReference2;
+		  }
+    }
 	else
 	{
 		var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
@@ -1781,7 +1785,10 @@ renderSelect(inFormKey,item, inField, inContainer)
 		}
 	}
 
-    if(!data) if(inField.dataReference2) data = inField.dataReference2; else data ="tbd";
+    if(!data)
+    {
+		data ="tbd";
+	}
 
     var lAllowBlank = true;
     if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
