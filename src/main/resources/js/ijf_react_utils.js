@@ -348,6 +348,10 @@ ijf.reactUtils = {
 					});
 				};
 
+				_this3.getInputId = function () {
+					return inFormKey + '_ctr_' + inField.formCell.replace(",", "_");
+				};
+
 				_this3.state = {
 					value: data,
 					errored: false
@@ -1610,11 +1614,23 @@ ijf.reactUtils = {
 				key: 'getMenuIcon',
 				value: function getMenuIcon(m) {
 					if (!m.icon) return;
-					if (m.icon.indexOf("fa-") > -1) return React.createElement(Icon, { className: m.icon, style: { "width": "30px" } });else return React.createElement(
+					var iconStyle = { "width": "30px" };
+					if (m.iconStyle) iconStyle = m.iconStyle;
+					if (m.icon.indexOf("fa-") > -1) return React.createElement(Icon, { className: m.icon, style: iconStyle });else return React.createElement(
 						Icon,
-						null,
+						{ style: iconStyle },
 						m.icon
 					);
+				}
+			}, {
+				key: 'getToolTip',
+				value: function getToolTip(curContent, m) {
+					if (m.toolTip) return React.createElement(
+						MuiToolTip,
+						{ title: m.toolTip },
+						curContent
+					);
+					return curContent;
 				}
 			}, {
 				key: 'getMenu',
@@ -1638,7 +1654,7 @@ ijf.reactUtils = {
 								}
 							}
 
-							return React.createElement(
+							var myRet = React.createElement(
 								List,
 								{ component: 'nav' },
 								React.createElement(
@@ -1648,6 +1664,9 @@ ijf.reactUtils = {
 									React.createElement(ListItemText, { primary: m.text })
 								)
 							);
+
+							myRet = owningClass.getToolTip(myRet, m);
+							return myRet;
 						} else {
 							//assume divider
 							return React.createElement(Divider, null);
@@ -1671,9 +1690,11 @@ ijf.reactUtils = {
 				key: 'getHeaderIcon',
 				value: function getHeaderIcon() {
 					if (!style.headerIcon) return;else {
-						if (style.headerIcon.indexOf("fa-") > -1) return React.createElement(Icon, { className: style.headerIcon, style: { "width": "40px" } });else return React.createElement(
+						var iconStyle = { "width": "40px" };
+						if (style.headerIconStyle) iconStyle = style.headerIconStyle;
+						if (style.headerIcon.indexOf("fa-") > -1) return React.createElement(Icon, { className: style.headerIcon, style: iconStyle });else return React.createElement(
 							Icon,
-							null,
+							{ style: iconStyle },
 							style.headerIcon
 						);
 					}
@@ -1776,7 +1797,7 @@ ijf.reactUtils = {
 			}
 		}
 
-		if (!data) data = "tbd";
+		if (!data) if (inField.dataReference2) data = inField.dataReference2;else data = "tbd";
 
 		var lAllowBlank = true;
 		if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = jfFieldMeta.required ? false : true;
@@ -2431,7 +2452,7 @@ ijf.reactUtils = {
 
 		var data = ijfUtils.handleJiraFieldType(jfFieldDef, jf);
 
-		if (!data) data = [];
+		if (!data) data = "[]";
 
 		if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle, 'required') == "true") lAllowBlank = false;
 

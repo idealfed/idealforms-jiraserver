@@ -3070,6 +3070,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
         border:false,
         hidden: hideField,
         bodyStyle: l_Style,
+        style: l_Style,
         layout: 'hbox',
         items: sItems
     });
@@ -3650,6 +3651,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
         hidden: hideField,
         border:false,
         bodyStyle: l_Style,
+        style: l_Style,
         items:[combo]
     });
     //before render....
@@ -4053,7 +4055,7 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 			queryMode: 'remote',
 			queryParam: fParam,
 			minChars: 2,
-			emptyText:'Start typing...',
+			emptyText:'Start typing name...',
 			selectOnFocus:true,
 			id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 			listeners: {

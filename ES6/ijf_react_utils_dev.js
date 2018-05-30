@@ -383,6 +383,9 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			  value: inValue,
 			});
 		  };
+		  getInputId = () => {
+			  return inFormKey+'_ctr_'+inField.formCell.replace(",","_");
+		  }
 		  getTip()
 		  {
 		     if(inField.toolTip) return (<MuiFormHelperText>{inField.toolTip}</MuiFormHelperText>)
@@ -1613,14 +1616,20 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			getMenuIcon(m)
 			{
 				  if(!m.icon) return;
+				  var iconStyle = {"width":"30px"};
+				  if(m.iconStyle) iconStyle=m.iconStyle;
 				  if(m.icon.indexOf("fa-")>-1)
-					  return (<Icon className={m.icon} style={{"width":"30px"}} />);
+					  return (<Icon className={m.icon} style={iconStyle} />);
 				  else
-					  return (<Icon>{m.icon}</Icon>);
+					  return (<Icon style={iconStyle}>{m.icon}</Icon>);
 			}
 
-
-			  getMenu(menuRows,owningClass)
+			getToolTip(curContent,m)
+			{
+				if(m.toolTip)	return (<MuiToolTip title={m.toolTip}>{curContent}</MuiToolTip>);
+				return curContent;
+			}
+ 		    getMenu(menuRows,owningClass)
 			  {
 				  if(!menuRows) return;
 
@@ -1645,13 +1654,16 @@ renderTextbox(inFormKey,item, inField, inContainer)
 							  }
 						  }
 
-						  return(
+						  var myRet = (
 							  <List component="nav">
 								<ListItem button onClick={snip} style={bStyle}>
 									{owningClass.getMenuIcon(m)}
 									<ListItemText primary={m.text} />
 								</ListItem>
 							  </List> );
+
+						  myRet = owningClass.getToolTip(myRet,m);
+						  return myRet;
 					   }
 					   else
 					   {
@@ -1676,10 +1688,12 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				  if(!style.headerIcon) return;
 				  else
 				  {
+					  var iconStyle = {"width":"40px"};
+					  if(style.headerIconStyle) iconStyle = style.headerIconStyle;
 					  if(style.headerIcon.indexOf("fa-")>-1)
-						  return (<Icon className={style.headerIcon} style={{"width":"40px"}} />);
+						  return (<Icon className={style.headerIcon} style={iconStyle} />);
 					  else
-						  return (<Icon>{style.headerIcon}</Icon>);
+						  return (<Icon style={iconStyle}>{style.headerIcon}</Icon>);
 				  }
 			  }
 			  getDrawerTitle()
@@ -1767,7 +1781,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 		}
 	}
 
-    if(!data) data="tbd";
+    if(!data) if(inField.dataReference2) data = inField.dataReference2; else data ="tbd";
 
     var lAllowBlank = true;
     if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
@@ -2441,7 +2455,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 
 		var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 
-        if(!data) data=[];
+        if(!data) data="[]";
 
 	    if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
@@ -2893,7 +2907,6 @@ renderSelect(inFormKey,item, inField, inContainer)
 				throw('Failed to parse the grid json');
 			}
 		}
-
 
 
 		class LocalMuiTable extends React.Component {
