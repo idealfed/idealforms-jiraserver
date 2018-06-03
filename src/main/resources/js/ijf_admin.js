@@ -198,7 +198,7 @@ addEditForm:function (sRow)
     ijf.admin.dWin = new Ext.Window({
         layout: 'vbox',
         title: "Javascript business rule editor",
-        width: 700,
+        width: 900,
         height:850,
         closable: true,
         items: [
@@ -2217,14 +2217,14 @@ addEditForm:function (sRow)
 				},
 				{
 					header: 'Name',
-					width:150,
+					width:300,
 					sortable: true,
 					dataIndex: 'name'
 
 				},
 				{
 					header: 'Snippet',
-					width:500,
+					width:350,
 					sortable: true,
 					dataIndex: 'snippet'
 				},

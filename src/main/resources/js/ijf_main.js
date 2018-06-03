@@ -409,6 +409,21 @@ function renderForm(inContainerId, inFormId, isNested, item, afterRender)
 	//and you might be in a subform of an Add event...so, if item.fields exists AND item.jiraMeta exists, then
 	//you want to skip this...I think...
 
+    //5/31, if jiraMeta is basedon the fields (because it's read only) clear the meta in case it's changed...
+
+    if(item)
+    {
+		if(ijf.jiraEditMeta[item.key])
+		{
+			if(ijf.jiraEditMeta[item.key].readonly)
+			{
+				ijf.jiraMeta={};
+				ijf.jiraMetaKeyed=[];
+				ijf.jiraEditMeta[item.key]=null;
+			}
+		}
+    }
+
    	if((!isNested) || (!ijf.jiraMeta)) //should only need this if NOT nested
 	{
 		ijf.jiraMeta={};
@@ -431,12 +446,28 @@ function renderForm(inContainerId, inFormId, isNested, item, afterRender)
 					{
 						//proxy auth
 						ijf.jiraEditMeta[item.key] = ijfUtils.getProxyApiCallSync('/rest/api/2/issue/'+item.key+'/editmeta',thisForm.formSet.id);
+
+						//5/31/18 - adding concept of null meta data to allow 'read only' issues.  result will be a null set of meta data...
+						if(Object.keys(ijf.jiraEditMeta[item.key].fields).length==0)
+						{
+							//we have not edit ability...set the thing to the root fields..all will be viewable, but no writing....
+							ijf.jiraEditMeta[item.key] = {"fields":ijf.jiraFields};
+							ijf.jiraEditMeta[item.key].readonly=true;
+						}
+
 						ijfUtils.footLog('Item edit meta aquired with proxy auth');
 					}
 					else
 					{
 						//normal
 						ijf.jiraEditMeta[item.key] = ijfUtils.getJiraIssueMetaSync(item.key);
+
+						//5/31/18 - adding concept of null meta data to allow 'read only' issues.  result will be a null set of meta data...
+						if(Object.keys(ijf.jiraEditMeta[item.key].fields).length==0)
+						{
+							//we have not edit ability...set the thing to the root fields..all will be viewable, but no writing....
+							ijf.jiraEditMeta[item.key] = {"fields":ijf.jiraFields};
+						}
 					}
 
 					ijf.jiraEditMetaKeyed[item.key] = [];
@@ -711,6 +742,14 @@ function isFormValid()
         var cnt = ijf.main.controlSet[i];
         try
         {
+			if(cnt.control.state)
+			{
+				if(cnt.control.state.hasOwnProperty("errored"))
+				{
+					if(cnt.control.state.errored==true)	return false;
+				}
+			}
+
             if(cnt.control.items.items[0].isValid()==false)
             {
                 return false;

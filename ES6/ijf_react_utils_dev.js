@@ -26,6 +26,7 @@ var ListItemText = window['material-ui']['ListItemText'];
 
 var MuiSelect = window['material-ui']['Select'];
 var MuiInputLabel = window['material-ui']['InputLabel'];
+var MuiFormLabel = window['material-ui']['FormLabel'];
 var MuiFormControl = window['material-ui']['FormControl'];
 var MuiFormHelperText = window['material-ui']['FormHelperText'];
 var MuiInput = window['material-ui']['Input'];
@@ -236,7 +237,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		if(inField.dataSource=="session")
 		{
 			var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
-			if((!data) && (inField.style.indexOf('query:true')<0)) data=inField.dataReference2;
+			if(!data) data=inField.dataReference2;
 		}
 		else
 		{
@@ -272,38 +273,6 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		}
 		else
 			var lCaption = inField.caption;
-		if (inField.style.indexOf('hidden:true')>-1)
-		{
-			hideLabel=true;
-			hideField=true;
-		}
-		var rOnly = false;
-		if (inField.fieldStyle.indexOf('readonly:true')>-1)
-		{
-			rOnly=true;
-		}
-		if (inField.style.indexOf('enteronce:true')>-1)
-		{
-			if (!!data) rOnly=true;
-		}
-
-		//permissions check....has to exist...
-		if(inField.permissions.enabled)
-		{
-			var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
-		}
-		else
-		{
-			var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
-		}
-		//console.log(JSON.stringify(perms));
-		if((!rOnly) && (!perms.canEdit)) rOnly=true;
-		if((!hideField) && (!perms.canSee))	hideField=true;
-		//end permissions
-
-
-		var ocf =  ijfUtils.getEvent(inField);
-
 
 		try
 		{
@@ -329,10 +298,49 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		{
 			var fieldStyle = {}
 		}
+
+		if (style.hidden)
+		{
+			hideLabel=true;
+			hideField=true;
+		}
+		var rOnly = false;
+		if(fieldStyle.readonly) rOnly=true;
+
+		if(fieldStyle.enterOnce) if(!!data) rOnly=true;
+
+		//permissions check....has to exist...
+		if(inField.permissions.enabled)
+		{
+			var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+		else
+		{
+			var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+
+		//console.log(JSON.stringify(perms));
+		if((!rOnly) && (!perms.canEdit)) rOnly=true;
+		if((!hideField) && (!perms.canSee))	hideField=true;
+		//end permissions
+
+		//from meta data, set readonly if we don't have the ability...
+		if(jfFieldMeta)	if((!jfFieldMeta.operations) && (inField.dataSource!="session")) rOnly=true;
+
+
+		var ocf =  ijfUtils.getEvent(inField);
+
+		if(hideField) style.visibility="hidden";
+
 		if(!lAllowBlank) fieldStyle.required = true;
 
 		var lValidator = function(v){
-			if((fieldStyle.required) && ((v==null)||(v==""))) return false;
+			if((fieldStyle.required) && ((v==null)||(v=="")))
+			{
+				inContainer.title = "This field is required";
+				return false;
+			}
+			inContainer.removeAttribute("title");
 			return true
 			};
 		var lRegex =  inField.regEx;
@@ -342,9 +350,15 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			{
 				var rgx = new RegExp(lRegex);
 				if (!rgx.exec(v)) {
-					return inField.regExMessage;
+					inContainer.title = inField.regExMessage;
+					return false;
 				}
-				if((fieldStyle.required) && ((v==null)||(v==""))) return false;
+				if((fieldStyle.required) && ((v==null)||(v=="")))
+				{
+					inContainer.title = "This field is required";
+					return false;
+				}
+			    inContainer.removeAttribute("title");
 				return true;
 			}
 		}
@@ -355,7 +369,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			super(props);
 			this.state = {
 			  value: data,
-			  errored: false
+			  errored: !(lValidator(data))
 			};
 		  }
 		  handleChange = (event) => {
@@ -496,76 +510,48 @@ renderTextbox(inFormKey,item, inField, inContainer)
 	renderTextarea(inFormKey,item, inField, inContainer)
 	{
 
-			inContainer.title = inField.toolTip;
-			var lAllowBlank = true;
-			//adding concept of session vars.
-			if(inField.dataSource=="session")
+		//inContainer.title = inField.toolTip;
+		var lAllowBlank = true;
+		//adding concept of session vars.
+		if(inField.dataSource=="session")
+		{
+			var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+			if((!data) && (inField.style.indexOf('query:true')<0)) data=inField.dataReference2;
+		}
+		else
+		{
+			var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+			var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+			var jf=item.fields[jfFieldDef.id];
+
+			if(inField.dataReference == "html")
 			{
-				var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
-				if((!data) && (inField.style.indexOf('query:true')<0)) data=inField.dataReference2;
+				var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf,false,true);
 			}
 			else
 			{
-				var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
-				var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-				var jf=item.fields[jfFieldDef.id];
-
-				if(inField.dataReference == "html")
-				{
-					var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf,false,true);
-				}
-				else
-				{
-					var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
-				}
-
-				if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
+				var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 			}
 
-			if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
+			if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
+		}
 
-			var lMaxsize =  Number.MAX_VALUE;
+		if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
-			var hideField = ijfUtils.renderIfShowField(data,inField);
-			var hideLabel = false;
-			if (inField.caption=="")
-				var lCaption = inField.dataSource;
-			else if(inField.caption=="none")
-			{
-				var lCaption = "";
-				hideLabel=true;
-			}
-			else
-				var lCaption = inField.caption;
-			if (inField.style.indexOf('hidden:true')>-1)
-			{
-				hideLabel=true;
-				hideField=true;
-			}
-			var rOnly = false;
-			if (inField.fieldStyle.indexOf('readonly:true')>-1)
-			{
-				rOnly=true;
-			}
-			if (inField.style.indexOf('enteronce:true')>-1)
-			{
-				if (!!data) rOnly=true;
-			}
+		var lMaxsize =  Number.MAX_VALUE;
 
-			//permissions check....has to exist...
-			if(inField.permissions.enabled)
-			{
-				var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
-			}
-			else
-			{
-				var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
-			}
-			//console.log(JSON.stringify(perms));
-			if((!rOnly) && (!perms.canEdit)) rOnly=true;
-			if((!hideField) && (!perms.canSee))	hideField=true;
-			//end permissions
 
+		var hideField = ijfUtils.renderIfShowField(data,inField);
+		var hideLabel = false;
+		if (inField.caption=="")
+			var lCaption = inField.dataSource;
+		else if(inField.caption=="none")
+		{
+			var lCaption = "";
+			hideLabel=true;
+		}
+		else
+			var lCaption = inField.caption;
 
 		try
 		{
@@ -591,11 +577,48 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		{
 			var fieldStyle = {}
 		}
+
+		if (style.hidden)
+		{
+			hideLabel=true;
+			hideField=true;
+		}
+		var rOnly = false;
+		if(fieldStyle.readonly) rOnly=true;
+
+		if(fieldStyle.enterOnce) if(!!data) rOnly=true;
+
+		//permissions check....has to exist...
+		if(inField.permissions.enabled)
+		{
+			var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+		else
+		{
+			var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+
+		//console.log(JSON.stringify(perms));
+		if((!rOnly) && (!perms.canEdit)) rOnly=true;
+		if((!hideField) && (!perms.canSee))	hideField=true;
+		//end permissions
+
+		//from meta data, set readonly if we don't have the ability...
+		if(jfFieldMeta)	if((!jfFieldMeta.operations) && (inField.dataSource!="session")) rOnly=true;
+
+		var ocf =  ijfUtils.getEvent(inField);
+
+        if(hideField) style.visibility="hidden";
+
 		if(!lAllowBlank) fieldStyle.required = true;
 
-
 		var lValidator = function(v){
-			if((fieldStyle.required) && ((v==null)||(v==""))) return false;
+			if((fieldStyle.required) && ((v==null)||(v=="")))
+			{
+				inContainer.title = "This field is required";
+				return false;
+			}
+			inContainer.removeAttribute("title");
 			return true
 			};
 		var lRegex =  inField.regEx;
@@ -605,9 +628,15 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			{
 				var rgx = new RegExp(lRegex);
 				if (!rgx.exec(v)) {
-					return inField.regExMessage;
+					inContainer.title = inField.regExMessage;
+					return false;
 				}
-				if((fieldStyle.required) && ((v==null)||(v==""))) return false;
+				if((fieldStyle.required) && ((v==null)||(v=="")))
+				{
+					inContainer.title = "This field is required";
+					return false;
+				}
+			    inContainer.removeAttribute("title");
 				return true;
 			}
 		}
@@ -618,7 +647,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				super(props);
 				this.state = {
 				  value: data,
-				  errored: false
+				  errored: !(lValidator(data))
 				};
 			  }
 			  handleChange = (event) => {
@@ -686,7 +715,6 @@ renderTextbox(inFormKey,item, inField, inContainer)
 	 renderButton:function(inFormKey,item, inField, inContainer)
 	{
 		inContainer.title = inField.toolTip;
-
 		var hideField = ijfUtils.renderIfShowField(null,inField);
         var readOnly = false;
 		var lCaption = inField.caption;
@@ -729,9 +757,17 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		{
 			var fieldSettings = {}
 		}
+		try
+		{
+			var labelSettings = JSON.parse(inField.labelStyle);
+		}
+		catch(e)
+		{
+			var labelSettings = {}
+		}
 
 		var disabled = false;
-		if(hideField) style.visibility = "hidden";
+		if(hideField) panelStyle.visibility = "hidden";
 		if(fieldSettings.readonly) disabled = true;
 		if(!fieldSettings.size) fieldSettings.size = "medium";
 
@@ -770,7 +806,22 @@ renderTextbox(inFormKey,item, inField, inContainer)
 						open={Boolean(owningClass.state.anchorEl)}
 						onClose={owningClass.handleClose}
 					  >
-					   {fieldSettings.menu.map(function(r){return owningClass.getMenuRow(r,owningClass)})}
+					   {fieldSettings.menu.reduce(function(inA, r)
+					   {
+						   if(r.renderIf)
+						   {
+							   try
+							   {
+								   if(ijf.snippets[r.renderIf]()) inA.push(owningClass.getMenuRow(r,owningClass));
+							   }
+							   catch(e){}
+						   }
+						   else
+						   {
+							   inA.push(owningClass.getMenuRow(r,owningClass));
+						   }
+						   return inA;
+					   },[])}
 				  </Menu>
 			  );
 		  }
@@ -785,13 +836,32 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			this.setState({ anchorEl: null });
 		  };
 
+          getCaption = () => {
+
+			  if(labelSettings.snippet)
+			  {
+				try
+			    {
+				       return ijf.snippets[labelSettings.snippet](lCaption);
+				}
+				catch(e)
+				{
+					return lCaption;
+				}
+			  }
+			  else
+			  {
+				  return lCaption;
+			  }
+		  };
+
 		  render() {
 			const { anchorEl } = this.state;
 
 			return (
-			  <div>
+			  <div style={style}>
 					  <MuiButton  onClick={this.handleClick} disabled={disabled} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={panelStyle}>
-						{getIcon()}{lCaption}
+						{getIcon()}{this.getCaption()}
 					  </MuiButton>
 				     {this.getMenu(fieldSettings,this)}
 			  </div>
@@ -904,6 +974,8 @@ renderTextbox(inFormKey,item, inField, inContainer)
 	 renderIcon:function(inFormKey,item, inField, inContainer)
 	{
 
+		//rendeIf logic
+		var hideField = ijfUtils.renderIfShowField("",inField);
 
 		try
 		{
@@ -936,7 +1008,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		}
         var getIcon=function()
         {
-
+			if(hideField) return;
 			if(inField.dataSource)
 			{
 				var muiRet = null;
@@ -1971,7 +2043,12 @@ renderSelect(inFormKey,item, inField, inContainer)
 		var ocf =  ijfUtils.getEvent(inField);
 
 		var lValidator = function(v){
-			if((fieldStyle.required) && ((v==null)||(v==""))) return false;
+			if((fieldStyle.required) && ((v==null)||(v=="")))
+			{
+				inContainer.title = "This field is required";
+				return false;
+			}
+			inContainer.removeAttribute("title");
 			return true
 			};
 		var lRegex =  inField.regEx;
@@ -1981,9 +2058,15 @@ renderSelect(inFormKey,item, inField, inContainer)
 			{
 				var rgx = new RegExp(lRegex);
 				if (!rgx.exec(v)) {
-					return inField.regExMessage;
+					inContainer.title = inField.regExMessage;
+					return false;
 				}
-				if((fieldStyle.required) && ((v==null)||(v==""))) return false;
+				if((fieldStyle.required) && ((v==null)||(v=="")))
+				{
+					inContainer.title = "This field is required";
+					return false;
+				}
+		     	inContainer.removeAttribute("title");
 				return true;
 			}
 		}
@@ -2007,6 +2090,12 @@ renderSelect(inFormKey,item, inField, inContainer)
 		  }
 	    }
 
+		//from meta data, set readonly if we don't have the ability...
+		if(jfFieldMeta)	if((!jfFieldMeta.operations) && (inField.dataSource!="session")) rOnly=true;
+
+
+        var tData = data;
+        if(tData=="tbd") tData=null;
 		class LocalMuiSelectField extends React.Component {
 
 		  constructor(props) {
@@ -2016,7 +2105,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 			  lookup: lookup,
 			  rawlookup: rawLookup,
 			  parents: selectParents,
-			  errored: false,
+			  errored: !(lValidator(tData)),
 			  open: false
 			};
 		  }
@@ -2187,6 +2276,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 				var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
 			}
 		}
+        if(!data) data="tbd";
 
 		var lAllowBlank = true;
 		if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
@@ -2339,7 +2429,12 @@ renderSelect(inFormKey,item, inField, inContainer)
 			var ocf =  ijfUtils.getEvent(inField);
 
 			var lValidator = function(v){
-				if((fieldStyle.required) && ((v==null)||(v==""))) return false;
+				if((fieldStyle.required) && ((v==null)||(v=="")))
+				{
+					inContainer.title = "This field is required";
+					return false;
+				}
+			    inContainer.removeAttribute("title");
 				return true
 				};
 			var lRegex =  inField.regEx;
@@ -2349,13 +2444,24 @@ renderSelect(inFormKey,item, inField, inContainer)
 				{
 					var rgx = new RegExp(lRegex);
 					if (!rgx.exec(v)) {
-						return inField.regExMessage;
+						inContainer.title = inField.regExMessage;
+						return false;
 					}
-					if((fieldStyle.required) && ((v==null)||(v==""))) return false;
+					if((fieldStyle.required) && ((v==null)||(v=="")))
+					{
+						inContainer.title = "This field is required";
+						return false;
+					}
+			        inContainer.removeAttribute("title");
 					return true;
 				}
 			}
 
+            var tData = data;
+            if(tData=="tbd") tData=null;
+
+  		    //from meta data, set readonly if we don't have the ability...
+		    if(jfFieldMeta)	if((!jfFieldMeta.operations) && (inField.dataSource!="session")) rOnly=true;
 
 
 			class LocalMuiRadioField extends React.Component {
@@ -2365,7 +2471,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 				this.state = {
 				  value: data,
 				  lookup: lookup,
-				  errored: false
+				  errored: !(lValidator(tData))
 				};
 			  }
 
@@ -2408,7 +2514,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 			  getCaption()
 			  {
 				  //if(lCaption) return (<MuiInputLabel component="legend">{lCaption}</MuiInputLabel>)
-				  if(lCaption) return (<MuiInputLabel disableAnimation={true}>{lCaption}</MuiInputLabel>)
+				  if(lCaption) return (<MuiFormLabel required={this.state.errored} style={fieldStyle.labelStyle}>{lCaption}</MuiFormLabel>)
 				  return
 			  }
 
@@ -2416,7 +2522,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 			  render() {
 				return (
 				  <div style={style}>
-					<MuiFormControl margin={panelStyle.margin} style={panelStyle} component="fieldset" required={fieldStyle.required}>
+					<MuiFormControl margin={panelStyle.margin}  error={this.state.errored} style={panelStyle} component="fieldset" required={fieldStyle.required}  disabled={rOnly}>
 					  {this.getCaption()}
 					  <MuiRadioGroup style={fieldStyle}
 						name={"radioGroup_name_"+inField.formCell}
@@ -2711,7 +2817,8 @@ renderSelect(inFormKey,item, inField, inContainer)
 								headerObj: colHeaders[cIndex],
 								widthObj: colWidths[cIndex],
 								renderer: function(inVal){
-									return Ext.util.Format.dateRenderer(col.format)(new Date(inVal));
+									if(inVal) return Ext.util.Format.dateRenderer(col.format)(new Date(inVal));
+									else return "";
 									//moment(new Date(inVal)).format(col.format);
 								},
 								dataIndex: col.columnName,

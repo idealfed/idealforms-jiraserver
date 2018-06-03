@@ -4030,7 +4030,13 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
+
+    //from meta data, set readonly if we don't have the ability...
+    if(!jfFieldMeta.operations) rOnly=true;
+
 	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
+
+
 
     var simple = new Ext.FormPanel({
         hidden: hideField,
