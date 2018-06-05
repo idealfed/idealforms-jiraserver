@@ -407,7 +407,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		  }
 		  getToolTip(curContent,toolTip)
 		  {
-			if(toolTip)	return (<MuiToolTip title={toolTip}>{curContent}</MuiToolTip>);
+			if(toolTip)	return (<MuiToolTip enterDelay={150} title={toolTip}>{curContent}</MuiToolTip>);
 			return curContent;
 		  }
 		  getInputProps()
@@ -420,6 +420,10 @@ renderTextbox(inFormKey,item, inField, inContainer)
   	  			    var tFunc = function(){};
 					var tThis=this;
    					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.snippet)) tFunc=function(){ijf.snippets[fieldStyle.inputProps.startAdornment.snippet](tThis)};
+
+					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.renderIf))
+						if(ijf.snippets[fieldStyle.inputProps.startAdornment.renderIf]()==false) return;
+
 					if(fieldStyle.inputProps.startAdornment.icon.indexOf("fa-")>-1)
 					{
 						retProps.startAdornment =  (
@@ -444,6 +448,10 @@ renderTextbox(inFormKey,item, inField, inContainer)
 					var tFunc = function(){};
 					var tThis=this;
 					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.snippet))  tFunc=function(){ijf.snippets[fieldStyle.inputProps.endAdornment.snippet](tThis)};
+
+					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.renderIf))
+						if(ijf.snippets[fieldStyle.inputProps.endAdornment.renderIf]()==false) return;
+
 					if(fieldStyle.inputProps.endAdornment.icon.indexOf("fa-")>-1)
 					{
 						retProps.endAdornment =   (
@@ -776,10 +784,22 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 			if(fieldSettings.icon)
 			{
-				if(fieldSettings.icon.indexOf("fa-")>-1)
-					return (<Icon className={fieldSettings.icon} style={fieldSettings.icon.style}/>);
+				var style={};
+				if(fieldSettings.icon.icon)
+				{
+					var icon = fieldSettings.icon.icon;
+					style=fieldSettings.icon.style;
+				}
 				else
-					return (<Icon style={fieldSettings.icon.style}>{fieldSettings.icon}</Icon>);
+				{
+				    var icon = fieldSettings.icon;
+				}
+
+
+				if(icon.indexOf("fa-")>-1)
+					return (<Icon className={icon} style={style}/>);
+				else
+					return (<Icon style={style}>{icon}</Icon>);
 
 			}
 			else return;
@@ -1003,7 +1023,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		}
 		var getToolTip=function(curContent)
 		{
-			if(inField.toolTip)	return (<MuiToolTip title={inField.toolTip}>{curContent}</MuiToolTip>);
+			if(inField.toolTip)	return (<MuiToolTip enterDelay={150} title={inField.toolTip}>{curContent}</MuiToolTip>);
 			return curContent;
 		}
         var getIcon=function()
@@ -1698,7 +1718,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 			getToolTip(curContent,m)
 			{
-				if(m.toolTip)	return (<MuiToolTip title={m.toolTip}>{curContent}</MuiToolTip>);
+				if(m.toolTip)	return (<MuiToolTip enterDelay={150} title={m.toolTip}>{curContent}</MuiToolTip>);
 				return curContent;
 			}
  		    getMenu(menuRows,owningClass)
@@ -2821,22 +2841,8 @@ renderSelect(inFormKey,item, inField, inContainer)
 									else return "";
 									//moment(new Date(inVal)).format(col.format);
 								},
-								dataIndex: col.columnName,
-								editor: {
-									completeOnEnter: true,
-									field: {
-										xtype: col.controlType,
-										allowBlank: (col.required!="Yes"),
-										validator: lValidator,
-										format:col.format,
-										listeners: {
-											change: function(n,o,f)
-											{
-												ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
-											}
-										}
-									}
-								}
+								dataIndex: col.columnName
+
 				};
 				break;
 				case "numberfield":
@@ -2847,22 +2853,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 								dataIndex: col.columnName,
 								ijfColumn: col,
 								headerObj: colHeaders[cIndex],
-								widthObj: colWidths[cIndex],
-								editor: {
-									completeOnEnter: true,
-									field: {
-										xtype: col.controlType,
-										allowBlank: (col.required!="Yes"),
-										validator: lValidator,
-										format:col.format,
-										listeners: {
-											change: function(n,o,f)
-											{
-												ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
-											}
-										}
-									}
-								}
+								widthObj: colWidths[cIndex]
 				};
 				break;
 				case "checkbox":
@@ -2955,21 +2946,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 								headerObj: colHeaders[cIndex],
 								widthObj: colWidths[cIndex],
 								dataIndex: col.columnName,
-								renderer: validRenderer,
-								editor: {
-									completeOnEnter: true,
-									field: {
-										xtype: col.controlType,
-										allowBlank: (col.required!="Yes"),
-										validator: lValidator,
-										forceSelection: true,
-										store: lookups[col.columnName],
-										lookupDef: cLookupDef,
-										displayField: cLookupDef.index,
-									    valueField: cLookupDef.index,
-										listeners: cListener
-									}
-								}
+								renderer: validRenderer
 				};
 				break;
 				default:
@@ -2981,24 +2958,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 							headerObj: colHeaders[cIndex],
 							widthObj: colWidths[cIndex],
 							dataIndex: col.columnName,
-							renderer: validRenderer,
-							editor: {
-								completeOnEnter: true,
-								field: {
-									xtype: col.controlType,
-									allowBlank: (col.required!="Yes"),
-									validator: lValidator,
-									listeners: {
-										change: function(n,o,f)
-										{
-											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
-										},
-										focus: function(){
-											this.validate();
-										}
-									}
-								}
-							}
+							renderer: validRenderer
 				};
 			}
 			listColumns.push(colObj);
@@ -3031,20 +2991,21 @@ renderSelect(inFormKey,item, inField, inContainer)
 
 		  getHeaders(){
 
-			  return listColumns.map(function(h)
+			  return listColumns.reduce(function(inA,h)
 			  {
 				if(h.headerObj)
 				{
-					var test=h.headerObj;
-
-					return (<MuiTableCell style={h.headerObj.cellStyle}>{h["header"]}</MuiTableCell>);
+					if(h.headerObj.cellStyle.visibility=="hidden")
+					   return inA;
+					else
+					   inA.push((<MuiTableCell style={h.headerObj.cellStyle}>{h["header"]}</MuiTableCell>));
 				}
 				else
 				{
-					return (<MuiTableCell>{h["header"]}</MuiTableCell>);
+					inA.push((<MuiTableCell>{h["header"]}</MuiTableCell>));
 				}
-
-			  });
+				return inA;
+			  },[]);
 		  };
 
 
@@ -3054,7 +3015,12 @@ renderSelect(inFormKey,item, inField, inContainer)
 					return (
 					  <MuiTableRow key={n.id}>
 						{
-						  listColumns.map(c => {
+						  listColumns.reduce(function(inA,c){
+
+							if(c.headerObj)
+							{
+								try {if(c.headerObj.cellStyle.visibility=="hidden") return inA;} catch(e){}
+							}
 
 							var lNumeric = false;
 							var lCellStyle = null;
@@ -3066,8 +3032,9 @@ renderSelect(inFormKey,item, inField, inContainer)
 
 							var outVal = n[c["dataIndex"]];
 							if(c.renderer) outVal=c.renderer(outVal);
-							return(<MuiTableCell numeric={lNumeric} style={lCellStyle}>{outVal}</MuiTableCell>);
-							})
+							inA.push((<MuiTableCell numeric={lNumeric} style={lCellStyle}>{outVal}</MuiTableCell>));
+							return inA;
+							},[])
 						}
 					  </MuiTableRow>
 					);
@@ -3080,8 +3047,8 @@ renderSelect(inFormKey,item, inField, inContainer)
 			    return (
 				<MuiPaper>
 				  <MuiTable style={style}>
-					<MuiTableHead style={panelStyle}>
-					  <MuiTableRow>
+					<MuiTableHead>
+					  <MuiTableRow style={panelStyle}>
 						{this.getHeaders()}
 					  </MuiTableRow>
 					</MuiTableHead>

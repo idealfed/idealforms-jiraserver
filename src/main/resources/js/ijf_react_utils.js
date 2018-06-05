@@ -388,7 +388,7 @@ ijf.reactUtils = {
 				value: function getToolTip(curContent, toolTip) {
 					if (toolTip) return React.createElement(
 						MuiToolTip,
-						{ title: toolTip },
+						{ enterDelay: 150, title: toolTip },
 						curContent
 					);
 					return curContent;
@@ -404,6 +404,9 @@ ijf.reactUtils = {
 							if (ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.snippet)) tFunc = function tFunc() {
 								ijf.snippets[fieldStyle.inputProps.startAdornment.snippet](tThis);
 							};
+
+							if (ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.renderIf)) if (ijf.snippets[fieldStyle.inputProps.startAdornment.renderIf]() == false) return;
+
 							if (fieldStyle.inputProps.startAdornment.icon.indexOf("fa-") > -1) {
 								retProps.startAdornment = React.createElement(
 									InputAdornment,
@@ -435,6 +438,9 @@ ijf.reactUtils = {
 							if (ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.snippet)) tFunc = function tFunc() {
 								ijf.snippets[fieldStyle.inputProps.endAdornment.snippet](tThis);
 							};
+
+							if (ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.renderIf)) if (ijf.snippets[fieldStyle.inputProps.endAdornment.renderIf]() == false) return;
+
 							if (fieldStyle.inputProps.endAdornment.icon.indexOf("fa-") > -1) {
 								retProps.endAdornment = React.createElement(
 									InputAdornment,
@@ -741,10 +747,18 @@ ijf.reactUtils = {
 		var getIcon = function getIcon() {
 
 			if (fieldSettings.icon) {
-				if (fieldSettings.icon.indexOf("fa-") > -1) return React.createElement(Icon, { className: fieldSettings.icon, style: fieldSettings.icon.style });else return React.createElement(
+				var style = {};
+				if (fieldSettings.icon.icon) {
+					var icon = fieldSettings.icon.icon;
+					style = fieldSettings.icon.style;
+				} else {
+					var icon = fieldSettings.icon;
+				}
+
+				if (icon.indexOf("fa-") > -1) return React.createElement(Icon, { className: icon, style: style });else return React.createElement(
 					Icon,
-					{ style: fieldSettings.icon.style },
-					fieldSettings.icon
+					{ style: style },
+					icon
 				);
 			} else return;
 		};
@@ -962,7 +976,7 @@ ijf.reactUtils = {
 		var getToolTip = function getToolTip(curContent) {
 			if (inField.toolTip) return React.createElement(
 				MuiToolTip,
-				{ title: inField.toolTip },
+				{ enterDelay: 150, title: inField.toolTip },
 				curContent
 			);
 			return curContent;
@@ -1681,7 +1695,7 @@ ijf.reactUtils = {
 				value: function getToolTip(curContent, m) {
 					if (m.toolTip) return React.createElement(
 						MuiToolTip,
-						{ title: m.toolTip },
+						{ enterDelay: 150, title: m.toolTip },
 						curContent
 					);
 					return curContent;
@@ -2756,20 +2770,7 @@ ijf.reactUtils = {
 					}, _defineProperty(_colObj, 'renderer', function renderer(inVal) {
 						if (inVal) return Ext.util.Format.dateRenderer(col.format)(new Date(inVal));else return "";
 						//moment(new Date(inVal)).format(col.format);
-					}), _defineProperty(_colObj, 'dataIndex', col.columnName), _defineProperty(_colObj, 'editor', {
-						completeOnEnter: true,
-						field: {
-							xtype: col.controlType,
-							allowBlank: col.required != "Yes",
-							validator: lValidator,
-							format: col.format,
-							listeners: {
-								change: function change(n, o, f) {
-									ijf.main.controlChanged(inFormKey + '_fld_' + inField.formCell);
-								}
-							}
-						}
-					}), _colObj);
+					}), _defineProperty(_colObj, 'dataIndex', col.columnName), _colObj);
 					break;
 				case "numberfield":
 					tFields.push({ name: col.columnName, type: 'number' });
@@ -2779,21 +2780,7 @@ ijf.reactUtils = {
 						dataIndex: col.columnName,
 						ijfColumn: col,
 						headerObj: colHeaders[cIndex],
-						widthObj: colWidths[cIndex],
-						editor: {
-							completeOnEnter: true,
-							field: {
-								xtype: col.controlType,
-								allowBlank: col.required != "Yes",
-								validator: lValidator,
-								format: col.format,
-								listeners: {
-									change: function change(n, o, f) {
-										ijf.main.controlChanged(inFormKey + '_fld_' + inField.formCell);
-									}
-								}
-							}
-						}
+						widthObj: colWidths[cIndex]
 					};
 					break;
 				case "checkbox":
@@ -2876,21 +2863,7 @@ ijf.reactUtils = {
 						headerObj: colHeaders[cIndex],
 						widthObj: colWidths[cIndex],
 						dataIndex: col.columnName,
-						renderer: validRenderer,
-						editor: {
-							completeOnEnter: true,
-							field: {
-								xtype: col.controlType,
-								allowBlank: col.required != "Yes",
-								validator: lValidator,
-								forceSelection: true,
-								store: lookups[col.columnName],
-								lookupDef: cLookupDef,
-								displayField: cLookupDef.index,
-								valueField: cLookupDef.index,
-								listeners: cListener
-							}
-						}
+						renderer: validRenderer
 					};
 					break;
 				default:
@@ -2902,23 +2875,7 @@ ijf.reactUtils = {
 						headerObj: colHeaders[cIndex],
 						widthObj: colWidths[cIndex],
 						dataIndex: col.columnName,
-						renderer: validRenderer,
-						editor: {
-							completeOnEnter: true,
-							field: {
-								xtype: col.controlType,
-								allowBlank: col.required != "Yes",
-								validator: lValidator,
-								listeners: {
-									change: function change(n, o, f) {
-										ijf.main.controlChanged(inFormKey + '_fld_' + inField.formCell);
-									},
-									focus: function focus() {
-										this.validate();
-									}
-								}
-							}
-						}
+						renderer: validRenderer
 					};
 			}
 			listColumns.push(colObj);
@@ -2949,23 +2906,22 @@ ijf.reactUtils = {
 				key: 'getHeaders',
 				value: function getHeaders() {
 
-					return listColumns.map(function (h) {
+					return listColumns.reduce(function (inA, h) {
 						if (h.headerObj) {
-							var test = h.headerObj;
-
-							return React.createElement(
+							if (h.headerObj.cellStyle.visibility == "hidden") return inA;else inA.push(React.createElement(
 								MuiTableCell,
 								{ style: h.headerObj.cellStyle },
 								h["header"]
-							);
+							));
 						} else {
-							return React.createElement(
+							inA.push(React.createElement(
 								MuiTableCell,
 								null,
 								h["header"]
-							);
+							));
 						}
-					});
+						return inA;
+					}, []);
 				}
 			}, {
 				key: 'getDataRows',
@@ -2975,7 +2931,13 @@ ijf.reactUtils = {
 						return React.createElement(
 							MuiTableRow,
 							{ key: n.id },
-							listColumns.map(function (c) {
+							listColumns.reduce(function (inA, c) {
+
+								if (c.headerObj) {
+									try {
+										if (c.headerObj.cellStyle.visibility == "hidden") return inA;
+									} catch (e) {}
+								}
 
 								var lNumeric = false;
 								var lCellStyle = null;
@@ -2986,12 +2948,13 @@ ijf.reactUtils = {
 
 								var outVal = n[c["dataIndex"]];
 								if (c.renderer) outVal = c.renderer(outVal);
-								return React.createElement(
+								inA.push(React.createElement(
 									MuiTableCell,
 									{ numeric: lNumeric, style: lCellStyle },
 									outVal
-								);
-							})
+								));
+								return inA;
+							}, [])
 						);
 					});
 				}
@@ -3007,10 +2970,10 @@ ijf.reactUtils = {
 								{ style: style },
 								React.createElement(
 									MuiTableHead,
-									{ style: panelStyle },
+									null,
 									React.createElement(
 										MuiTableRow,
-										null,
+										{ style: panelStyle },
 										this.getHeaders()
 									)
 								),
