@@ -806,7 +806,16 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				break;
 			case 'date':
 				//std text value
-				var tDate = this.control.items.items[0].getValue();
+
+					if(this.field.controlType.substring(0,3)=="mui")
+					{
+						var tDate = this.control.state.value
+					}
+					else
+					{
+						var tDate = this.control.items.items[0].getValue();
+					}
+
 				this.newVal = null;
 
 				if(tDate) this.newVal = moment(tDate).format("YYYY-MM-DD");

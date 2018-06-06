@@ -747,6 +747,10 @@ function isFormValid()
         {
 			if(cnt.control.state)
 			{
+				//if hidden, continue
+				var outerDivId=cnt.id.replace("_fld_","_fldDivId_");
+				if(document.getElementById(outerDivId).style.visibility=="hidden") continue;
+
 				if(cnt.control.state.hasOwnProperty("errored"))
 				{
 					if(cnt.control.state.errored==true)	return false;

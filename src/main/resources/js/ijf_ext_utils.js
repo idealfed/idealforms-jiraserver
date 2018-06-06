@@ -32,6 +32,9 @@ renderField:function(inFormKey, item, inField, inContainer)
     {
         switch(inField.controlType) {
 			//REACT Section
+            case 'muiDatebox':
+                ijf.reactUtils.renderDatebox(inFormKey,item,inField,inContainer);
+                break;
             case 'muiTextbox':
                 ijf.reactUtils.renderTextbox(inFormKey,item,inField,inContainer);
                 break;

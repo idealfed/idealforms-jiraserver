@@ -228,6 +228,317 @@ renderAppBar(inFormKey,item, inField, inContainer)
 
 
 	},
+renderDatebox(inFormKey,item, inField, inContainer)
+{
+
+		//inContainer.title = inField.toolTip;
+		var lAllowBlank = true;
+		//adding concept of session vars.
+		if(inField.dataSource=="session")
+		{
+			var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+			if(!data) data=inField.dataReference2;
+		}
+		else
+		{
+			var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+			var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+			var jf=item.fields[jfFieldDef.id];
+
+			if(inField.dataReference == "html")
+			{
+				var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf,false,true);
+			}
+			else
+			{
+				var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+			}
+
+			if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
+		}
+
+		if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
+
+        if(data) data = ijfUtils.ConvertShort2Db2Date(data);
+
+		var lMaxsize =  Number.MAX_VALUE;
+
+
+		var hideField = ijfUtils.renderIfShowField(data,inField);
+		var hideLabel = false;
+		if (inField.caption=="")
+			var lCaption = inField.dataSource;
+		else if(inField.caption=="none")
+		{
+			var lCaption = "";
+			hideLabel=true;
+		}
+		else
+			var lCaption = inField.caption;
+
+		try
+		{
+			var style = JSON.parse(inField.style);
+		}
+		catch(e)
+		{
+			var style = {}
+		}
+		try
+		{
+			var panelStyle = JSON.parse(inField.panelStyle);
+		}
+		catch(e)
+		{
+			var panelStyle = {}
+		}
+		try
+		{
+			var fieldStyle = JSON.parse(inField.fieldStyle);
+		}
+		catch(e)
+		{
+			var fieldStyle = {}
+		}
+
+		if (style.hidden)
+		{
+			hideLabel=true;
+			hideField=true;
+		}
+		var rOnly = false;
+		if(fieldStyle.readonly) rOnly=true;
+
+		if(fieldStyle.enterOnce) if(!!data) rOnly=true;
+
+		//permissions check....has to exist...
+		if(inField.permissions.enabled)
+		{
+			var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+		else
+		{
+			var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		}
+
+		//console.log(JSON.stringify(perms));
+		if((!rOnly) && (!perms.canEdit)) rOnly=true;
+		if((!hideField) && (!perms.canSee))	hideField=true;
+		//end permissions
+
+		//from meta data, set readonly if we don't have the ability...
+		if(jfFieldMeta)	if((!jfFieldMeta.operations) && (inField.dataSource!="session")) rOnly=true;
+
+
+		var ocf =  ijfUtils.getEvent(inField);
+
+		if(hideField) style.visibility="hidden";
+
+		if(!lAllowBlank) fieldStyle.required = true;
+
+		var lValidator = function(v){
+			if((fieldStyle.required) && ((v==null)||(v=="")))
+			{
+				inContainer.title = "This field is required";
+				return false;
+			}
+			inContainer.removeAttribute("title");
+			return true
+			};
+		var lRegex =  inField.regEx;
+		if((lRegex!=null) && (lRegex!=""))
+		{
+			lValidator = function(v)
+			{
+				var rgx = new RegExp(lRegex);
+				if (!rgx.exec(v)) {
+					inContainer.title = inField.regExMessage;
+					return false;
+				}
+				if((fieldStyle.required) && ((v==null)||(v=="")))
+				{
+					inContainer.title = "This field is required";
+					return false;
+				}
+			    inContainer.removeAttribute("title");
+				return true;
+			}
+		}
+
+		class LocalMuiTextField extends React.Component {
+
+		  constructor(props) {
+			super(props);
+			this.state = {
+			  value: data,
+			  errored: !(lValidator(data))
+			};
+		  }
+		  handleChange = (event) => {
+			//add OCF call here..
+			if(inField.dataSource=="session")
+			{
+				ijf.session[inFormKey+'_fld_'+inField.formCell]=event.target.value;
+			}
+			else
+			{
+				ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+			}
+			if(lValidator(event.target.value))
+			{
+				this.state.errored=false;
+				ocf(event);
+			}
+			else this.state.errored=true;
+			this.setState({
+			  value: event.target.value,
+			});
+		  };
+		  setValue = (inValue) => {
+			this.setState({
+			  value: inValue,
+			});
+		  };
+		  getInputId = () => {
+			  return inFormKey+'_ctr_'+inField.formCell.replace(",","_");
+		  }
+		  getTip()
+		  {
+		     if(inField.toolTip) return (<MuiFormHelperText>{inField.toolTip}</MuiFormHelperText>)
+		     return
+		  }
+		  getToolTip(curContent,toolTip)
+		  {
+			if(toolTip)	return (<MuiToolTip enterDelay={150} title={toolTip}>{curContent}</MuiToolTip>);
+			return curContent;
+		  }
+		  getInputProps()
+		  {
+			var retProps = null;
+			if(fieldStyle.inputProps)
+			{
+				if(fieldStyle.inputProps.startAdornment)
+				{
+					if(!retProps) retProps={};
+  	  			    var tFunc = function(){};
+					var tThis=this;
+   					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.snippet)) tFunc=function(){ijf.snippets[fieldStyle.inputProps.startAdornment.snippet](tThis)};
+
+					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.renderIf))
+						if(ijf.snippets[fieldStyle.inputProps.startAdornment.renderIf]()==false) return;
+
+					if(fieldStyle.inputProps.startAdornment.icon.indexOf("fa-")>-1)
+					{
+						retProps.startAdornment =  (
+							<InputAdornment position={fieldStyle.inputProps.startAdornment.position}>
+							  {this.getToolTip((<IconButton onClick={tFunc}>
+							  	<Icon style={fieldStyle.inputProps.startAdornment.style} className={fieldStyle.inputProps.startAdornment.icon} />
+							  </IconButton>),fieldStyle.inputProps.startAdornment)}
+							</InputAdornment>);
+					}
+					else
+					{
+						retProps.startAdornment =   (
+							<InputAdornment position={fieldStyle.inputProps.startAdornment.position}>
+							 {this.getToolTip((<IconButton onClick={tFunc}>
+							  <Icon style={fieldStyle.inputProps.startAdornment.style}>{fieldStyle.inputProps.startAdornment.icon}</Icon>
+							  </IconButton>),fieldStyle.inputProps.startAdornment)}
+							</InputAdornment>);
+					}
+				}
+				if(fieldStyle.inputProps.endAdornment)
+				{
+					if(!retProps) retProps={};
+					var tFunc = function(){};
+					var tThis=this;
+					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.snippet))  tFunc=function(){ijf.snippets[fieldStyle.inputProps.endAdornment.snippet](tThis)};
+
+					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.renderIf))
+						if(ijf.snippets[fieldStyle.inputProps.endAdornment.renderIf]()==false) return;
+
+					if(fieldStyle.inputProps.endAdornment.icon.indexOf("fa-")>-1)
+					{
+						retProps.endAdornment =   (
+							<InputAdornment position={fieldStyle.inputProps.endAdornment.position}>
+							{this.getToolTip((<IconButton onClick={tFunc}>
+							  <Icon style={fieldStyle.inputProps.endAdornment.style} className={fieldStyle.inputProps.endAdornment.icon} />
+							  </IconButton>),fieldStyle.inputProps.endAdornment.toolTip)}
+							</InputAdornment>);
+					}
+					else
+					{
+						retProps.endAdornment =   (
+							<InputAdornment position={fieldStyle.inputProps.endAdornment.position}>
+							{this.getToolTip((<IconButton onClick={tFunc}>
+							  <Icon style={fieldStyle.inputProps.endAdornment.style}>{fieldStyle.inputProps.endAdornment.icon}</Icon>
+							  </IconButton>),fieldStyle.inputProps.endAdornment.toolTip)}
+							</InputAdornment>);
+					}
+				}
+
+			}
+			return retProps;
+		  }
+
+		  getInputLabelProps()
+		  {
+			var retProps = null;
+			if(fieldStyle.inputLabelProps)
+			{
+				if(fieldStyle.inputLabelProps.shrink)
+				{
+					if(!retProps) retProps={};
+					retProps.shrink = fieldStyle.inputLabelProps.shrink;
+				}
+
+				if(fieldStyle.inputLabelProps.disableAnimation)
+				{
+					if(!retProps) retProps={};
+					retProps.disableAnimation = fieldStyle.inputLabelProps.disableAnimation;
+				}
+			}
+			return retProps;
+		  }
+
+
+		  render() {
+			return (
+			  <div id={inFormKey+'_fldDivId_'+inField.formCell} style={style}>
+			   <MuiThemeProvider style={panelStyle}>
+				<MuiTextField
+				  error={this.state.errored}
+				  style={fieldStyle}
+				  InputProps = {this.getInputProps()}
+				  InputLabelProps = {this.getInputLabelProps()}
+				  fullWidth={true}
+				  label={lCaption}
+				  type="date"
+				  disabled={rOnly}
+				  required={fieldStyle.required}
+				  autoFocus={fieldStyle.autoFocus}
+				  multiline={false}
+				  id={inFormKey+'_ctr_'+inField.formCell.replace(",","_")}
+				  value={this.state.value}
+				  onChange={this.handleChange}
+				/>
+				</MuiThemeProvider>
+				{this.getTip()}
+			  </div>
+			);
+		  }
+		}
+
+		//before render....
+		if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](LocalMuiTextField,inFormKey,item, inField, inContainer);
+
+		var controlReference = ReactDOM.render(<LocalMuiTextField />, inContainer);
+
+		var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, controlReference, inContainer);
+
+		ijf.main.controlSet[thisControl.id]=thisControl;
+		//after render....
+		if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](controlReference, inFormKey,item, inField, inContainer);
+	},
 renderTextbox(inFormKey,item, inField, inContainer)
 {
 
@@ -411,81 +722,110 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			return curContent;
 		  }
 		  getInputProps()
-		  {
-			var retProps = {};
-			if(fieldStyle.inputProps)
-			{
-				if(fieldStyle.inputProps.startAdornment)
+			  {
+				var retProps = null;
+				if(fieldStyle.inputProps)
 				{
-  	  			    var tFunc = function(){};
-					var tThis=this;
-   					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.snippet)) tFunc=function(){ijf.snippets[fieldStyle.inputProps.startAdornment.snippet](tThis)};
-
-					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.renderIf))
-						if(ijf.snippets[fieldStyle.inputProps.startAdornment.renderIf]()==false) return;
-
-					if(fieldStyle.inputProps.startAdornment.icon.indexOf("fa-")>-1)
+					if(fieldStyle.inputProps.startAdornment)
 					{
-						retProps.startAdornment =  (
-							<InputAdornment position={fieldStyle.inputProps.startAdornment.position}>
-							  {this.getToolTip((<IconButton onClick={tFunc}>
-							  	<Icon style={fieldStyle.inputProps.startAdornment.style} className={fieldStyle.inputProps.startAdornment.icon} />
-							  </IconButton>),fieldStyle.inputProps.startAdornment)}
-							</InputAdornment>);
-					}
-					else
-					{
-						retProps.startAdornment =   (
-							<InputAdornment position={fieldStyle.inputProps.startAdornment.position}>
-							 {this.getToolTip((<IconButton onClick={tFunc}>
-							  <Icon style={fieldStyle.inputProps.startAdornment.style}>{fieldStyle.inputProps.startAdornment.icon}</Icon>
-							  </IconButton>),fieldStyle.inputProps.startAdornment)}
-							</InputAdornment>);
-					}
-				}
-				else if(fieldStyle.inputProps.endAdornment)
-				{
-					var tFunc = function(){};
-					var tThis=this;
-					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.snippet))  tFunc=function(){ijf.snippets[fieldStyle.inputProps.endAdornment.snippet](tThis)};
+						if(!retProps) retProps={};
+	  	  			    var tFunc = function(){};
+						var tThis=this;
+	   					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.snippet)) tFunc=function(){ijf.snippets[fieldStyle.inputProps.startAdornment.snippet](tThis)};
 
-					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.renderIf))
-						if(ijf.snippets[fieldStyle.inputProps.endAdornment.renderIf]()==false) return;
+						if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.renderIf))
+							if(ijf.snippets[fieldStyle.inputProps.startAdornment.renderIf]()==false) return;
 
-					if(fieldStyle.inputProps.endAdornment.icon.indexOf("fa-")>-1)
-					{
-						retProps.endAdornment =   (
-							<InputAdornment position={fieldStyle.inputProps.endAdornment.position}>
-							{this.getToolTip((<IconButton onClick={tFunc}>
-							  <Icon style={fieldStyle.inputProps.endAdornment.style} className={fieldStyle.inputProps.endAdornment.icon} />
-							  </IconButton>),fieldStyle.inputProps.endAdornment.toolTip)}
-							</InputAdornment>);
+						if(fieldStyle.inputProps.startAdornment.icon.indexOf("fa-")>-1)
+						{
+							retProps.startAdornment =  (
+								<InputAdornment position={fieldStyle.inputProps.startAdornment.position}>
+								  {this.getToolTip((<IconButton onClick={tFunc}>
+								  	<Icon style={fieldStyle.inputProps.startAdornment.style} className={fieldStyle.inputProps.startAdornment.icon} />
+								  </IconButton>),fieldStyle.inputProps.startAdornment)}
+								</InputAdornment>);
+						}
+						else
+						{
+							retProps.startAdornment =   (
+								<InputAdornment position={fieldStyle.inputProps.startAdornment.position}>
+								 {this.getToolTip((<IconButton onClick={tFunc}>
+								  <Icon style={fieldStyle.inputProps.startAdornment.style}>{fieldStyle.inputProps.startAdornment.icon}</Icon>
+								  </IconButton>),fieldStyle.inputProps.startAdornment)}
+								</InputAdornment>);
+						}
 					}
-					else
+					if(fieldStyle.inputProps.endAdornment)
 					{
-						retProps.endAdornment =   (
-							<InputAdornment position={fieldStyle.inputProps.endAdornment.position}>
-							{this.getToolTip((<IconButton onClick={tFunc}>
-							  <Icon style={fieldStyle.inputProps.endAdornment.style}>{fieldStyle.inputProps.endAdornment.icon}</Icon>
-							  </IconButton>),fieldStyle.inputProps.endAdornment.toolTip)}
-							</InputAdornment>);
-					}
-				}
-				else
-				return;
+						if(!retProps) retProps={};
+						var tFunc = function(){};
+						var tThis=this;
+						if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.snippet))  tFunc=function(){ijf.snippets[fieldStyle.inputProps.endAdornment.snippet](tThis)};
 
+						if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.renderIf))
+							if(ijf.snippets[fieldStyle.inputProps.endAdornment.renderIf]()==false) return;
+
+						if(fieldStyle.inputProps.endAdornment.icon.indexOf("fa-")>-1)
+						{
+							retProps.endAdornment =   (
+								<InputAdornment position={fieldStyle.inputProps.endAdornment.position}>
+								{this.getToolTip((<IconButton onClick={tFunc}>
+								  <Icon style={fieldStyle.inputProps.endAdornment.style} className={fieldStyle.inputProps.endAdornment.icon} />
+								  </IconButton>),fieldStyle.inputProps.endAdornment.toolTip)}
+								</InputAdornment>);
+						}
+						else
+						{
+							retProps.endAdornment =   (
+								<InputAdornment position={fieldStyle.inputProps.endAdornment.position}>
+								{this.getToolTip((<IconButton onClick={tFunc}>
+								  <Icon style={fieldStyle.inputProps.endAdornment.style}>{fieldStyle.inputProps.endAdornment.icon}</Icon>
+								  </IconButton>),fieldStyle.inputProps.endAdornment.toolTip)}
+								</InputAdornment>);
+						}
+					}
 			}
 			return retProps;
 		  }
 
+		  getInputLabelProps()
+		  {
+			var retProps = null;
+			if(fieldStyle.inputLabelProps)
+			{
+				if(fieldStyle.inputLabelProps.shrink)
+				{
+					if(!retProps) retProps={};
+					retProps.shrink = fieldStyle.inputLabelProps.shrink;
+				}
+
+				if(fieldStyle.inputLabelProps.disableAnimation)
+				{
+					if(!retProps) retProps={};
+					retProps.disableAnimation = fieldStyle.inputLabelProps.disableAnimation;
+				}
+			}
+			return retProps;
+		  }
+
+
 		  render() {
 			return (
-			  <div style={style}>
+			  <div id={inFormKey+'_fldDivId_'+inField.formCell} style={style}>
 			   <MuiThemeProvider style={panelStyle}>
 				<MuiTextField
 				  error={this.state.errored}
 				  style={fieldStyle}
+				  onFocus = {function(a){
+						 //IE bug on the auto focus
+						 if(ijfUtils.detectIE())
+						 {
+					       if(a.target.value.length>0)
+						     a.currentTarget.setSelectionRange(a.target.value.length,a.target.value.length);
+						 }
+					  }}
 				  InputProps = {this.getInputProps()}
+				  InputLabelProps = {this.getInputLabelProps()}
 				  fullWidth={true}
 				  label={lCaption}
 				  disabled={rOnly}
@@ -685,16 +1025,105 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				  return
 			  }
 
+	      getInputProps()
+		  {
+			var retProps = null;
+			if(fieldStyle.inputProps)
+			{
+				if(fieldStyle.inputProps.startAdornment)
+				{
+					if(!retProps) retProps={};
+  	  			    var tFunc = function(){};
+					var tThis=this;
+   					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.snippet)) tFunc=function(){ijf.snippets[fieldStyle.inputProps.startAdornment.snippet](tThis)};
+
+					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.startAdornment.renderIf))
+						if(ijf.snippets[fieldStyle.inputProps.startAdornment.renderIf]()==false) return;
+
+					if(fieldStyle.inputProps.startAdornment.icon.indexOf("fa-")>-1)
+					{
+						retProps.startAdornment =  (
+							<InputAdornment position={fieldStyle.inputProps.startAdornment.position}>
+							  {this.getToolTip((<IconButton onClick={tFunc}>
+							  	<Icon style={fieldStyle.inputProps.startAdornment.style} className={fieldStyle.inputProps.startAdornment.icon} />
+							  </IconButton>),fieldStyle.inputProps.startAdornment)}
+							</InputAdornment>);
+					}
+					else
+					{
+						retProps.startAdornment =   (
+							<InputAdornment position={fieldStyle.inputProps.startAdornment.position}>
+							 {this.getToolTip((<IconButton onClick={tFunc}>
+							  <Icon style={fieldStyle.inputProps.startAdornment.style}>{fieldStyle.inputProps.startAdornment.icon}</Icon>
+							  </IconButton>),fieldStyle.inputProps.startAdornment)}
+							</InputAdornment>);
+					}
+				}
+				if(fieldStyle.inputProps.endAdornment)
+				{
+					if(!retProps) retProps={};
+					var tFunc = function(){};
+					var tThis=this;
+					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.snippet))  tFunc=function(){ijf.snippets[fieldStyle.inputProps.endAdornment.snippet](tThis)};
+
+					if(ijf.snippets.hasOwnProperty(fieldStyle.inputProps.endAdornment.renderIf))
+						if(ijf.snippets[fieldStyle.inputProps.endAdornment.renderIf]()==false) return;
+
+					if(fieldStyle.inputProps.endAdornment.icon.indexOf("fa-")>-1)
+					{
+						retProps.endAdornment =   (
+							<InputAdornment position={fieldStyle.inputProps.endAdornment.position}>
+							{this.getToolTip((<IconButton onClick={tFunc}>
+							  <Icon style={fieldStyle.inputProps.endAdornment.style} className={fieldStyle.inputProps.endAdornment.icon} />
+							  </IconButton>),fieldStyle.inputProps.endAdornment.toolTip)}
+							</InputAdornment>);
+					}
+					else
+					{
+						retProps.endAdornment =   (
+							<InputAdornment position={fieldStyle.inputProps.endAdornment.position}>
+							{this.getToolTip((<IconButton onClick={tFunc}>
+							  <Icon style={fieldStyle.inputProps.endAdornment.style}>{fieldStyle.inputProps.endAdornment.icon}</Icon>
+							  </IconButton>),fieldStyle.inputProps.endAdornment.toolTip)}
+							</InputAdornment>);
+					}
+				}
+			}
+			return retProps;
+		  }
+
+		  getInputLabelProps()
+		  {
+			var retProps = null;
+			if(fieldStyle.inputLabelProps)
+			{
+				if(fieldStyle.inputLabelProps.shrink)
+				{
+					if(!retProps) retProps={};
+					retProps.shrink = fieldStyle.inputLabelProps.shrink;
+				}
+
+				if(fieldStyle.inputLabelProps.disableAnimation)
+				{
+					if(!retProps) retProps={};
+					retProps.disableAnimation = fieldStyle.inputLabelProps.disableAnimation;
+				}
+			}
+			return retProps;
+		  }
+
 
 
 			  render() {
 				return (
-				  <div style={style}>
+				  <div id={inFormKey+'_fldDivId_'+inField.formCell} style={style}>
 					<MuiTextField style={fieldStyle}
 					  error={this.state.errored}
 					  fullWidth={true}
 					  label={lCaption}
-					  disabled={rOnly}
+					  InputProps = {this.getInputProps()}
+				      InputLabelProps = {this.getInputLabelProps()}
+				      disabled={rOnly}
 					  required={fieldStyle.required}
 					  autoFocus={fieldStyle.autoFocus}
 					  multiline={true}
@@ -2231,7 +2660,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 			  }
 		  render() {
 			return (
-			  <div style={style}>
+			  <div id={inFormKey+'_fldDivId_'+inField.formCell} style={style}>
 					<MuiFormControl style={panelStyle} error={this.state.errored} required={fieldStyle.required} disabled={rOnly}>
 					  {this.getCaption()}
 					  <MuiSelect
@@ -2541,7 +2970,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 
 			  render() {
 				return (
-				  <div style={style}>
+				  <div id={inFormKey+'_fldDivId_'+inField.formCell} style={style}>
 					<MuiFormControl margin={panelStyle.margin}  error={this.state.errored} style={panelStyle} component="fieldset" required={fieldStyle.required}  disabled={rOnly}>
 					  {this.getCaption()}
 					  <MuiRadioGroup style={fieldStyle}
