@@ -56,6 +56,8 @@
     <resource type="download" name="ijf_admin.js" location="/js/ijf_admin.js"/>
     <resource type="download" name="ijf_ext_utils.js" location="/js/ijf_ext_utils.js"/>
     <resource type="download" name="ijf_react_utils.js" location="/js/ijf_react_utils.js"/>
+    
+    <resource type="download" name="jquery.ba-postmessage.js" location="/js/jquery.ba-postmessage.js"/>
 
     <context>craft</context>
   </web-resource>

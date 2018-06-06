@@ -2531,6 +2531,25 @@ addEditFormSet:function (inFrmId)
 						thisF.settings["decorator"] = f.getDisplayValue();
 									}}
 			},
+			{
+				xtype: 'textfield',
+				labelAlign: 'left',
+				fieldLabel: 'Admin email',
+				labelWidth: 100,
+				labelStyle: "color:darkblue",
+				margin: '4 0 0 10',
+				width: 400,
+				value: thisF.settings["adminEmail"],
+				listeners: {
+				afterrender: function(f)
+				{
+					this.validate();
+				},
+				change: function(f,n,o){
+						thisF.settings["adminEmail"] = n;
+					}
+				}
+            }
         ],
         buttons:[{
             text:'OK',

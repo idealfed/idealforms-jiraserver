@@ -45,7 +45,10 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "5.0.15";
+    window.g_version = "5.0.17";
+
+    //initiallize message handling
+    jQuery.receiveMessage(ijfUtils.messageHandler);
 
     console.log("Initializing IJF version: " + window.g_version);
     //prevent double initializing....
@@ -883,7 +886,21 @@ function saveBatch(onSuccess,inFields,inForm, item)
 					jData = JSON.stringify(putObj);
 					var addTarget = inForm.settings["additionalSave"];
 					var onAddSuccess = function(d){ijfUtils.footLog("Additional Save Success");};
-					var onAddError = function(e){ijfUtils.footLog("Additional Save Failed: " + JSON.stringify(e));};
+					var onAddError = function(e){
+						ijfUtils.footLog("Additional Save Failed: " + JSON.stringify(e));
+						//send email to admin if exists.
+						if(inForm.formSet.settings["adminEmail"])
+						{
+							var onEmailSuccess = function(a) {
+								ijfUtils.footLog("Fatal additional save, email sent");
+							}
+							var onEmailError = function(e) {
+								ijfUtils.footLog("Fatal additional save, email FAILED");
+								ijfUtils.modalDialogMessage("Fatal","Please stop and contact support.  Save to additional target failed");
+							}
+							ijfUtils.sendEmail(inForm.formSet.settings["adminEmail"], "JIRA Forms - Fatal Error in Group: " + inForm.formSet.name, "Save to additional target failed: " + item.key, true, onEmailSuccess, onEmailError);
+						}
+					};
 					ijfUtils.getProxyCall(addTarget,"POST",jData,'application/json',onAddSuccess,onAddError);
 				}
 			}
