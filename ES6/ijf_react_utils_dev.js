@@ -120,7 +120,7 @@ renderAppBar(inFormKey,item, inField, inContainer)
 				var dFieldId=inFormKey+'_ctr_d_'+keyVal.replace(/,/g,"_");
 				//var dFieldTblId = inFormKey+'_tbl_d_'+keyVal.replace(/,/g,"_");
 				//var dFieldTbl = "<table  role='presentation' id='"+dFieldTblId+"' cellspacing=0 cellpadding=3><tr><td>";
-				retText = retText.replace(m[0],"<div style='display:inline-block' id='"+dFieldId+"'></div>");
+				retText = retText.replace(m[0],"<div id='"+dFieldId+"'></div>");
 				dynamicFields.push({"containerId":dFieldId,"fieldId":keyVal});
 				return setDynamicControls(retText);
 			}
@@ -165,7 +165,7 @@ renderAppBar(inFormKey,item, inField, inContainer)
 			  render()
 			  {
 				return (
-					<div dangerouslySetInnerHTML={this.state.template} />
+					<div style={{"width":"100%"}} dangerouslySetInnerHTML={this.state.template} />
 		  		);
 		      }
 	     }
@@ -1237,7 +1237,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 		class LocalMuiButton extends React.Component {
 		  state = {
-			anchorEl: null,
+			anchorEl: null
 		  };
 
 		  getMenuRow(r,owningClass)
@@ -1308,8 +1308,10 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			const { anchorEl } = this.state;
 
 			return (
-			  <div style={style}>
-					  <MuiButton  onClick={this.handleClick} disabled={disabled} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={panelStyle}>
+			  <div id={inFormKey+'_fldDivId_'+inField.formCell} style={style}>
+					  <MuiButton  onClick={this.handleClick} disabled={disabled} size={fieldSettings.size}
+					   color={fieldSettings.color} variant={fieldSettings.variant} style={panelStyle}
+					   id={inFormKey+'_fldCtlId_'+inField.formCell} >
 						{getIcon()}{this.getCaption()}
 					  </MuiButton>
 				     {this.getMenu(fieldSettings,this)}
@@ -1452,7 +1454,11 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		}
 		var getToolTip=function(curContent)
 		{
-			if(inField.toolTip)	return (<MuiToolTip enterDelay={150} title={inField.toolTip}>{curContent}</MuiToolTip>);
+			if(inField.toolTip)
+			{
+				var ttip = ijfUtils.replaceKeyValues(inField.toolTip,item);
+				return (<MuiToolTip enterDelay={150} title={ttip}>{curContent}</MuiToolTip>);
+			}
 			return curContent;
 		}
         var getIcon=function()
@@ -2327,6 +2333,45 @@ renderSelect(inFormKey,item, inField, inContainer)
 	    var myRefIndex=null;
 		switch (inField.dataReference)
 		{
+			case "jiraGroup":
+			   var groupName = inField.referenceFilter;
+			   if(groupName)
+			   {
+				   try
+				   {
+					   var groupNames = groupName.split(",");
+					   for(var i=0;i<groupNames.length;i++)
+					   {
+						   if(groupNames[i])
+						   {
+							   var rawGroups = ijfUtils.getGroupMembersSync(groupNames[i].trim());
+							   var parsedGroups = JSON.parse(rawGroups);
+							   parsedGroups.results.forEach(function(r){lookup.push([r.name,r.displayName])});
+					       }
+				       };
+				       //make unique
+				       var uVals = [];
+							lookup = lookup.reduce(function(inA,v){
+								if(uVals.indexOf(v[0])>-1) return inA;
+								uVals.push(v[0]);
+								inA.push(v);
+								return inA;
+						},[]);
+
+					   //now we need to sort it on display name....because of multiple lists
+						lookup = lookup.sort(function(a, b)
+						{
+							var as = b[1];
+							var bs = a[1];
+							return as>bs ? -1 : as<bs ? 1 : 0;
+						});
+			   	   }
+			   	   catch(e)
+			   	   {
+					   ijfUtils.footLog("Error parsing group members");
+				   }
+		       }
+			   break;
 			case "ijfReference":
 
 			   //The lookup may be simple 1D array or part of a complex cascade.  The syntax of co.reference tells
@@ -2342,6 +2387,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 					var uVals = [];
 					lookup = lookup.reduce(function(inA,v){
 						if(uVals.indexOf(v[0])>-1) return inA;
+						uVals.push(v[0]);
 						inA.push(v);
 						return inA;
 					},[]);

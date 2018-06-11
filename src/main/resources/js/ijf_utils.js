@@ -214,6 +214,42 @@ var ijfUtils = {
 			});
 			return retVal;
 		},
+     getGroupMembers:function(inGroupName,inSuccess,inError){
+		jQuery.ajax({
+				async: true,
+				type: 'GET',
+				url: g_root + '/plugins/servlet/iforms',
+				data: {
+					groupName: inGroupName,
+					ijfAction: 'getGroupMembers'
+				},
+				timeout: 60000,
+				success: inSuccess,
+				error: inError
+			});
+		},
+
+     getGroupMembersSync:function(inGroupName){
+		var retVal = "";
+		jQuery.ajax({
+				async: false,
+				type: 'GET',
+				url: g_root + '/plugins/servlet/iforms',
+				data: {
+					groupName: inGroupName,
+					ijfAction: 'getGroupMembers'
+				},
+				timeout: 60000,
+				success: function(data) {
+						retVal=data;
+				},
+				error: function(e) {
+					ijfUtils.footLog("Failed group member get: " + e.message);
+					retVal = "Failed get get group members " + e.message;
+				}
+			});
+			return retVal;
+		},
      sendEmail:function(inTargets,inSubject,inBody,inHtml,inSuccess,inError){
 		jQuery.ajax({
 				async: true,
@@ -1967,8 +2003,8 @@ replaceWordChars:function(text) {
 		retText = retText.replace(/\#\{summary\}/g,item.fields.summary);
 		retText = retText.replace(/\#\{status\}/g,item.fields.status.name);
 	    retText = this.switchSessionAtts(retText,item,noSanitize);
+	    retText = this.switchSnippetAtts(retText,item,noSanitize);
 	    retText = this.switchAtts(retText,item,noSanitize);
-
 		return retText;
 	},
 	switchSessionAtts:function(inText,item,noSanitize)
@@ -1998,6 +2034,44 @@ replaceWordChars:function(text) {
 				retText = inText.replace(m[0], "");
 			}
 			retText = this.switchSessionAtts(retText,item,noSanitize);
+		}
+		return retText;
+	},
+	switchSnippetAtts:function(inText,item,noSanitize)
+	{
+		var retText = inText;
+		var pat = "\#\{snippet:.*?\}";
+		var rgx = new RegExp(pat);
+		var m = rgx.exec(inText);
+
+		if(m==null)
+		{
+			return retText;
+		}
+		else
+		{
+			var keyVal = m[0].replace("#{snippet:","");
+			keyVal = keyVal.replace("}","");
+
+			if(ijf.snippets.hasOwnProperty(keyVal))
+			{
+				try
+				{
+				  var tVal = ijf.snippets[keyVal]();
+				  retText = inText.replace(m[0],tVal);
+				}
+				catch(e)
+				{
+					retText = inText.replace(m[0],"Error with key value snippet " + keyVal);
+				}
+			}
+			else
+			{
+				//retText = inText.replace(m[0], " ("+keyVal+" not found) ");
+				ijfUtils.footLog(keyVal + " snippet val not found");
+				retText = inText.replace(m[0], "");
+			}
+			retText = this.switchSnippetAtts(retText,item,noSanitize);
 		}
 		return retText;
 	},

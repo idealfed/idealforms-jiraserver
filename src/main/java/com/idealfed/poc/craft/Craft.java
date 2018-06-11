@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Collections;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.ArrayList;
 import java.io.InputStream;
@@ -48,6 +49,10 @@ import com.atlassian.jira.util.json.JSONEscaper;
 import com.atlassian.sal.api.auth.LoginUriProvider;
 import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
 import com.atlassian.sal.api.user.UserManager;
+
+import com.atlassian.jira.security.groups.GroupManager;
+import com.atlassian.jira.user.ApplicationUser;
+
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.upm.api.license.PluginLicenseManager;
 import com.atlassian.upm.api.license.entity.PluginLicense;
@@ -63,15 +68,17 @@ public class Craft extends HttpServlet
     private final PluginLicenseManager pluginLicenseManager;
 
 	private final UserManager userManager;
+	private final GroupManager groupManager;
 	private final LoginUriProvider loginUriProvider;
 	private final TemplateRenderer templateRenderer;
 	private final PluginSettingsFactory pluginSettingsFactory;
     private static final Logger plog = LogManager.getLogger("atlassian.plugin");
     private final ActiveObjects ao;
 
-	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory) {
+	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory) {
         this.pluginLicenseManager = pluginLicenseManager;
 		this.userManager = userManager;
+		this.groupManager = groupManager;
 		this.loginUriProvider = loginUriProvider;
 		this.templateRenderer = templateRenderer;
 		this.pluginSettingsFactory = pluginSettingsFactory;
@@ -167,6 +174,9 @@ public class Craft extends HttpServlet
     	if(gVersionNum==null) gVersionNum="0";
     	String themeFlag = request.getParameter("theme");
     	if(themeFlag==null) themeFlag="";
+    	String groupName = request.getParameter("groupName");
+    	if(groupName==null) groupName="";
+
 
 		//XSS cleans
     	remote=sanitize(remote);
@@ -425,6 +435,49 @@ public class Craft extends HttpServlet
 			}
 		}
 
+    	if(iwfAction.equals("getGroupMembers"))
+    	{
+			try
+			{
+				StringBuilder retS = new StringBuilder();
+				if(this.groupManager.groupExists(groupName)==true)
+				{
+					//		retS.append("{\"status\":\"" + ct.getID() + "\",");
+					Collection<ApplicationUser>  groupUsers = this.groupManager.getUsersInGroup(groupName, false);
+					retS.append("{\"status\":\"OK\",\"message\":\"\",\"results\":[");
+					boolean isFirst = true;
+					for (ApplicationUser usr : groupUsers)
+					{
+						if(isFirst==true)
+						{
+							retS.append("{\"name\":\""+usr.getName()+"\",\"displayName\":\""+usr.getDisplayName()+"\"}");
+							isFirst=false;
+						}
+						else
+						{
+							retS.append(",{\"name\":\""+usr.getName()+"\",\"displayName\":\""+usr.getDisplayName()+"\"}");
+						}
+					}
+					retS.append("]}");
+				}
+				else
+				{
+					retS.append("{\"status\":\"error\",\"message\":\"Group does not exist: "+groupName+"\"}");
+				}
+				final PrintWriter w = response.getWriter();
+				w.print(retS.toString());
+				w.close();
+				return;
+			}
+			catch(Exception e)
+			{
+				plog.error("Failed to get api group members: " + e.getMessage());
+				final PrintWriter w = response.getWriter();
+				w.print("Failed to get api group members: " + e.getMessage());
+				w.close();
+				return;
+			}
+		}
 
 
     	if(iwfAction.equals("getConfig"))
