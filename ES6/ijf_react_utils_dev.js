@@ -1679,6 +1679,8 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			dataItems.forEach(function(r)
 			{
 				r.visibility = "hidden";
+
+				//this is a boolean OR
 				ijf.session["cardFilter_" + inField.formCell].forEach(function(f)
 				{
 					if(f.value==r[f.name]) r.visibility="visible";
@@ -1694,6 +1696,27 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				r.visibility = "visible";
 			});
 		}
+
+		//filter section...you have data, and style...bind visibility to style for filter
+		//syntax for filter:  cardFilter_[formcell]
+		//   [array of:
+		//       {name:value}
+		if(ijf.session["cardFilterAnd_" + inField.formCell])
+		{
+			dataItems.forEach(function(r)
+			{
+				r.visibility = "hidden";
+
+				//this is a boolean AND
+				var showIt = true;
+				ijf.session["cardFilterAnd_" + inField.formCell].forEach(function(f)
+				{
+					if(f.value!=r[f.name]) showIt=false;
+				});
+				if(showIt) r.visibility="visible";
+			});
+			dataItems = dataItems.reduce(function(inA,r){if(r.visibility=="visible")inA.push(r);return inA;},[]);
+  		}
 
         //card search section...
 		//syntax for filter:  cardSearch_[formcell]
@@ -1732,23 +1755,33 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		{
 			ijf.session["cardSort_" + inField.formCell].forEach(function(s)
 			{
-				var sDir = "desc";
+				var sDir = "asc";
 				var sField = s;
+				var sType = "string";
 				if(s.direction) sDir = s.direction;
 				if(s.field) sField = s.field;
+				if(s.type) sType = s.type;
 				if(dataItems.length<1) return;
 				if(!dataItems[0].hasOwnProperty(sField)) return;
 				dataItems = dataItems.sort(function(a, b)
 				{
-					if(sDir=="desc")
+					if(sDir=="asc")
+					{
+						var tb = b;
+						var b = a[sField];
+						var a = tb[sField];
+					}
+					else
 					{
 						var a = a[sField];
 						var b = b[sField];
 					}
-					else
+					if(a) a=a.toLowerCase(); else a="";
+					if(b) b=b.toLowerCase(); else b="";
+					if(sType=="date")
 					{
-						var b = a[sField];
-						var a = b[sField];
+						a=new Date(a);
+						b=new Date(b);
 					}
 					return a>b ? -1 : a<b ? 1 : 0;
 				});
@@ -2327,6 +2360,12 @@ renderSelect(inFormKey,item, inField, inContainer)
     if(!data)
     {
 		data ="tbd";
+	}
+
+	if(data.indexOf("displayName")>-1)
+	{
+		data=JSON.parse(data);
+		data=data.name;
 	}
 
     var lAllowBlank = true;

@@ -726,7 +726,17 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				{
 					if(this.field.controlType.substring(0,3)=="mui")
 					{
-						this.newVal = this.control.state.value
+						if(this.field.dataReference=="jiraGroup")
+						{
+							//store the value as object with name and value...
+							var tVal = this.control.state.value;
+							var tDn = this.control.state.lookup.reduce(function(inS,v){if(v[0]==tVal) inS=v[1];return inS;},"");
+						    this.newVal = JSON.stringify({"name": this.control.state.value,"displayName":tDn});
+						}
+						else
+						{
+							this.newVal = this.control.state.value;
+						}
 					}
 					else
 					{
