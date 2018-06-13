@@ -109,6 +109,9 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'html':
                 ijf.extUtils.renderHtml (inFormKey,item,inField,inContainer);
                 break;
+            case 'htmldata':
+                ijf.extUtils.renderRaw (inFormKey,item,inField,inContainer);
+                break;
             case 'navigatetoform':
                 ijf.extUtils.renderNavigateToForm (inFormKey,item,inField,inContainer);
                 break;
@@ -2289,6 +2292,93 @@ renderHtml:function(inFormKey,item, inField, inContainer)
         }
 	});
 
+}
+,
+renderRaw:function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+    if(!l_fieldStyle) l_fieldStyle="background:transparent";
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+
+   var data = ijfDataServices.getData(inField.dataSource,inFormKey,item, inField, inContainer, true);
+
+       var outHtml;
+       if(data=="loading")
+       {
+           outHtml = "";
+       }
+       else
+       {
+           try{
+               if (data instanceof Object)
+               {
+                   outHtml = JSON.stringify(data);
+               }
+               else
+               {
+                   outHtml = data;
+               }
+           }
+           catch(e){
+               outHtml = data;
+           }
+    }
+
+	if(ijf.snippets.hasOwnProperty(inField.event))
+	{
+		var ocf =  ijfUtils.getEvent(inField);
+   	    outHtml = ocf(outHtml);
+    }
+
+    //outHtml = ijfUtils.sanitize(outHtml);
+    if(!l_Style) l_Style = l_panelStyle;
+    //rendeIf logic
+    var hideField = ijfUtils.renderIfShowField("",inField);
+
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
+    var pnl = new Ext.FormPanel({
+        labelAlign: 'left',
+        border:false,
+        hidden: hideField,
+        bodyStyle: l_Style,
+        style: l_fieldStyle,
+        items: {
+            html: outHtml,
+            frame: false,
+            border: false,
+            bodyStyle:  l_panelStyle,
+            xtype: "panel"}
+    });
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](pnl,inFormKey,item, inField, inContainer);
+    pnl.render(inContainer);
+
+    //now if data==loading, do a mask...
+    if(data=="loading") pnl.mask("Loading...");
+
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
 }
 ,
  renderFormButtons:function(inFormKey,item, inField, inContainer)

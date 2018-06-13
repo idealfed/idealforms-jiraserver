@@ -282,6 +282,43 @@ public class Craft extends HttpServlet
 	    		return;
 			}
     	}
+ 		//proxy http request call
+		if(iwfAction.equals("proxyHttpRequest"))
+		{
+			try
+			{
+				String targetUrl = java.net.URLDecoder.decode(request.getParameter("url"));
+
+				URL url = new URL(targetUrl);
+				HttpURLConnection con = (HttpURLConnection) url.openConnection();
+				con.setRequestMethod("GET");
+
+				int status = con.getResponseCode();
+				//plog.error("Api call response code: " + status);
+
+				BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+				String inputLine;
+				StringBuffer content = new StringBuffer();
+				while ((inputLine = in.readLine()) != null) {
+					content.append(inputLine);
+				}
+				in.close();
+				con.disconnect();
+
+				final PrintWriter w = response.getWriter();
+				w.print(content.toString());
+				w.close();
+				return;
+			}
+			catch(Exception e)
+			{
+				plog.error("Failed to get api proxy call: " + e.getMessage());
+				final PrintWriter w = response.getWriter();
+				w.print("Failed call: " + e.getMessage());
+				w.close();
+				return;
+			}
+		}
 
  		//proxyApi call
 		if(iwfAction.equals("proxyApiCall"))

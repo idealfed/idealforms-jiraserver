@@ -1648,14 +1648,23 @@ ijf.reactUtils = {
 
 		//sort section...if a sort param is here, sort the data on it
 		//syntax for filter:  cardSort_[formcell]
-		//       array of fields to sort by.
+		//       array of fields to sort by or object  with "field" and "direction"
 		if (ijf.session["cardSort_" + inField.formCell]) {
 			ijf.session["cardSort_" + inField.formCell].forEach(function (s) {
+				var sDir = "desc";
+				var sField = s;
+				if (s.direction) sDir = s.direction;
+				if (s.field) sField = s.field;
 				if (dataItems.length < 1) return;
-				if (!dataItems[0].hasOwnProperty(s)) return;
+				if (!dataItems[0].hasOwnProperty(sField)) return;
 				dataItems = dataItems.sort(function (a, b) {
-					a = a[s];
-					b = b[s];
+					if (sDir == "desc") {
+						var a = a[sField];
+						var b = b[sField];
+					} else {
+						var b = a[sField];
+						var a = b[sField];
+					}
 					return a > b ? -1 : a < b ? 1 : 0;
 				});
 			});

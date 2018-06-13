@@ -1414,7 +1414,7 @@ addEditForm:function (sRow)
 		});
 
 
-		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentlisttree","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","GRIDHTML","grouppicker","grouppickermulti","html","htmleditor","historylist","iframe","itemlist","itemlistHTML","itemtree","muiAppBar","muiButton","muiCardList","muiCommentList","muiDatebox","muiDrawer","muiFormButtons","muiGrid","muiHtml","muiHistoryList","muiIcon","muiRadio","muiSelect","muiTextarea","muiTextbox","multiselect","navigatetoform","Reference Editor","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
+		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentlisttree","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","GRIDHTML","grouppicker","grouppickermulti","html","htmldata","htmleditor","historylist","iframe","itemlist","itemlistHTML","itemtree","muiAppBar","muiButton","muiCardList","muiCommentList","muiDatebox","muiDrawer","muiFormButtons","muiGrid","muiHtml","muiHistoryList","muiIcon","muiRadio","muiSelect","muiTextarea","muiTextbox","multiselect","navigatetoform","Reference Editor","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
 
 	    var  sectionLookup = [];
 
