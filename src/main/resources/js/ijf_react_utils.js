@@ -305,7 +305,8 @@ ijf.reactUtils = {
 
 		var ocf = ijfUtils.getEvent(inField);
 
-		if (hideField) style.visibility = "hidden";
+		//if(hideField) style.visibility="hidden";
+		if (hideField) style.display = "none";
 
 		if (!lAllowBlank) fieldStyle.required = true;
 
@@ -1682,6 +1683,9 @@ ijf.reactUtils = {
 				if (dataItems.length < 1) return;
 				if (!dataItems[0].hasOwnProperty(sField)) return;
 				dataItems = dataItems.sort(function (a, b) {
+					//if(a.indexOf("displayName")>-1) a=JSON.parse(a).displayName;
+					//if(b.indexOf("displayName")>-1) b=JSON.parse(b).displayName;
+
 					if (sDir == "asc") {
 						var tb = b;
 						var b = a[sField];
@@ -1690,12 +1694,12 @@ ijf.reactUtils = {
 						var a = a[sField];
 						var b = b[sField];
 					}
-					if (a) a = a.toLowerCase();else a = "";
-					if (b) b = b.toLowerCase();else b = "";
 					if (sType == "date") {
 						a = new Date(a);
 						b = new Date(b);
 					}
+					if (a) a = a.toLowerCase();else a = "";
+					if (b) b = b.toLowerCase();else b = "";
 					return a > b ? -1 : a < b ? 1 : 0;
 				});
 			});
@@ -1880,10 +1884,24 @@ ijf.reactUtils = {
 					return panelStyle;
 				}
 			}, {
+				key: 'getAvatarStyleSnippet',
+				value: function getAvatarStyleSnippet(inContextData, inSnippet) {
+					if (ijf.snippets.hasOwnProperty(inSnippet)) {
+						return ijf.snippets[inSnippet](inContextData);
+					}
+					return null;
+				}
+			}, {
 				key: 'getAvatar',
-				value: function getAvatar() {
+				value: function getAvatar(inDataRow) {
 					if (fieldStyle.avatar) {
-						if (fieldStyle.avatar.icon.indexOf("fa-") > -1) return React.createElement(Icon, { className: fieldStyle.avatar.icon, style: fieldStyle.avatar.style });else return React.createElement(
+						if (fieldStyle.avatar.icon.indexOf("fa-") > -1) {
+							if (fieldStyle.avatar.styleSnippet) return React.createElement(Icon, { className: fieldStyle.avatar.icon, style: this.getAvatarStyleSnippet(inDataRow, fieldStyle.avatar.styleSnippet) });else return React.createElement(Icon, { className: fieldStyle.avatar.icon, style: fieldStyle.avatar.style });
+						} else if (fieldStyle.avatar.styleSnippet) return React.createElement(
+							Icon,
+							{ style: this.getAvatarStyleSnippet(inDataRow, fieldStyle.avatar.styleSnippet) },
+							fieldStyle.avatar.icon
+						);else return React.createElement(
 							Icon,
 							{ style: fieldStyle.avatar.style },
 							fieldStyle.avatar.icon
@@ -1922,7 +1940,7 @@ ijf.reactUtils = {
 							Card,
 							{ style: this.setStyleFilter(), raised: raised, onClick: this.handleDblClick },
 							React.createElement(CardHeader, { style: fieldStyle.headStyle,
-								avatar: this.getAvatar(),
+								avatar: this.getAvatar(this.state.row),
 								action: this.getActionIcon(),
 								title: React.createElement(DynamicHtml, { htmlContent: this.state.title, dataRow: this.state.row }),
 								subheader: React.createElement(DynamicHtml, { htmlContent: this.state.subHeader, dataRow: this.state.row })

@@ -731,7 +731,7 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 							//store the value as object with name and value...
 							var tVal = this.control.state.value;
 							var tDn = this.control.state.lookup.reduce(function(inS,v){if(v[0]==tVal) inS=v[1];return inS;},"");
-						    this.newVal = JSON.stringify({"name": this.control.state.value,"displayName":tDn});
+						    this.newVal = JSON.stringify({"displayName":tDn, "name": this.control.state.value});
 						}
 						else
 						{

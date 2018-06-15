@@ -332,7 +332,8 @@ renderDatebox(inFormKey,item, inField, inContainer)
 
 		var ocf =  ijfUtils.getEvent(inField);
 
-		if(hideField) style.visibility="hidden";
+		//if(hideField) style.visibility="hidden";
+		if(hideField) style.display="none";
 
 		if(!lAllowBlank) fieldStyle.required = true;
 
@@ -1765,6 +1766,9 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				if(!dataItems[0].hasOwnProperty(sField)) return;
 				dataItems = dataItems.sort(function(a, b)
 				{
+					//if(a.indexOf("displayName")>-1) a=JSON.parse(a).displayName;
+					//if(b.indexOf("displayName")>-1) b=JSON.parse(b).displayName;
+
 					if(sDir=="asc")
 					{
 						var tb = b;
@@ -1776,13 +1780,13 @@ renderTextbox(inFormKey,item, inField, inContainer)
 						var a = a[sField];
 						var b = b[sField];
 					}
-					if(a) a=a.toLowerCase(); else a="";
-					if(b) b=b.toLowerCase(); else b="";
 					if(sType=="date")
 					{
 						a=new Date(a);
 						b=new Date(b);
 					}
+					if(a) a=a.toLowerCase(); else a="";
+					if(b) b=b.toLowerCase(); else b="";
 					return a>b ? -1 : a<b ? 1 : 0;
 				});
 			});
@@ -1922,14 +1926,28 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				 panelStyle.visibility = this.state.row.visibility;
 				 return panelStyle;
 			  }
-			  getAvatar()
+			  getAvatarStyleSnippet(inContextData,inSnippet)
+			  {
+				  if(ijf.snippets.hasOwnProperty(inSnippet))
+				  {
+					  return ijf.snippets[inSnippet](inContextData);
+				  }
+				  return null;
+			  }
+			  getAvatar(inDataRow)
 			  {
 				if(fieldStyle.avatar)
 				{
 					if(fieldStyle.avatar.icon.indexOf("fa-")>-1)
-						return (<Icon className={fieldStyle.avatar.icon} style={fieldStyle.avatar.style} />);
+					    if(fieldStyle.avatar.styleSnippet)
+					    	return (<Icon className={fieldStyle.avatar.icon} style={this.getAvatarStyleSnippet(inDataRow,fieldStyle.avatar.styleSnippet)} />);
+					    else
+							return (<Icon className={fieldStyle.avatar.icon} style={fieldStyle.avatar.style} />);
 					else
-						return (<Icon style={fieldStyle.avatar.style}>{fieldStyle.avatar.icon}</Icon>);
+					    if(fieldStyle.avatar.styleSnippet)
+					    	return (<Icon style={this.getAvatarStyleSnippet(inDataRow,fieldStyle.avatar.styleSnippet)}>{fieldStyle.avatar.icon}</Icon>);
+					    else
+							return (<Icon style={fieldStyle.avatar.style}>{fieldStyle.avatar.icon}</Icon>);
 				}
 				else return;
 			  }
@@ -1962,7 +1980,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				return (<div style={style}>
 						  <Card style={this.setStyleFilter()} raised={raised} onClick={this.handleDblClick}>
 							<CardHeader style={fieldStyle.headStyle}
-									  avatar = {this.getAvatar()}
+									  avatar = {this.getAvatar(this.state.row)}
 									  action={this.getActionIcon()}
 										title={
 											<DynamicHtml htmlContent={this.state.title} dataRow={this.state.row} />
