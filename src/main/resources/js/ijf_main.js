@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "5.0.22";
+    window.g_version = "5.0.23";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);
@@ -781,7 +781,8 @@ function saveForm(onSuccess, inFields, inForm, item)
     if(!ijf.main.isFormValid())
     {
 		ijfUtils.hideProgress();
-		if(ijf.main.gPopupFormHandle) ijf.main.gPopupFormHandle.unmask();
+		try {if(ijf.main.gPopupFormHandle) ijf.main.gPopupFormHandle.unmask();} catch(e) {}
+
         ijfUtils.modalDialogMessage("Information", "The form has invalid fields and cannot be saved.  <br><br>Please provide values for all errored fields and save again.");
         return;
     }
