@@ -712,10 +712,21 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				{
 					//this managed attachment is backed by a field to store name...
 					//datasource is the field, newValue is
-
 					var fNameHtml = this.control.items.items[0].getHeader().items.items[0].body.dom.innerHTML;
-					var fNameParts = fNameHtml.split('<span style="color:yellow">');
-					var fNameParts2 = fNameParts[1].split('</span');
+
+					//managing IE issue...
+                    if(ijfUtils.detectIE())
+                    {
+						//var fNameParts = fNameHtml.split('<span style="color:yellow">');
+						var fNameParts = fNameHtml.split(/<span style\=\"color\: yellow;\">/);
+						//var fNameParts2 = fNameParts[1].split('</span');
+						var fNameParts2 = fNameParts[1].split(/<\/span>/);
+					}
+					else
+					{
+						var fNameParts = fNameHtml.split('<span style="color:yellow">');
+						var fNameParts2 = fNameParts[1].split('</span');
+					}
 					this.newVal=fNameParts2[0];
 
 					//set a flag to have save routine also save this value...

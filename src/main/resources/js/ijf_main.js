@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "5.0.23";
+    window.g_version = "5.0.24";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);
@@ -750,6 +750,7 @@ function isFormValid()
 				//if hidden, continue
 				var outerDivId=cnt.id.replace("_fld_","_fldDivId_");
 				if(document.getElementById(outerDivId).style.visibility=="hidden") continue;
+				if(document.getElementById(outerDivId).style.display=="none") continue;
 
 				if(cnt.control.state.hasOwnProperty("errored"))
 				{

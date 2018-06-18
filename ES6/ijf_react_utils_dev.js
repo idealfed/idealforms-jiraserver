@@ -1754,43 +1754,62 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		//       array of fields to sort by or object  with "field" and "direction"
 		if(ijf.session["cardSort_" + inField.formCell])
 		{
-			ijf.session["cardSort_" + inField.formCell].forEach(function(s)
+			var sorts = ijf.session["cardSort_" + inField.formCell];
+			if(sorts.length>1)
 			{
-				var sDir = "asc";
-				var sField = s;
-				var sType = "string";
-				if(s.direction) sDir = s.direction;
-				if(s.field) sField = s.field;
-				if(s.type) sType = s.type;
-				if(dataItems.length<1) return;
-				if(!dataItems[0].hasOwnProperty(sField)) return;
-				dataItems = dataItems.sort(function(a, b)
-				{
-					//if(a.indexOf("displayName")>-1) a=JSON.parse(a).displayName;
-					//if(b.indexOf("displayName")>-1) b=JSON.parse(b).displayName;
-
-					if(sDir=="asc")
+					dataItems = dataItems.sort(function(a, b)
 					{
 						var tb = b;
-						var b = a[sField];
-						var a = tb[sField];
-					}
-					else
+
+						var b = sorts.reduce(function(inV,s){ inV += a[s]; return inV;},"");
+						var a = sorts.reduce(function(inV,s){ inV += tb[s]; return inV;},"");
+
+						if(a) a=a.toLowerCase(); else a="";
+						if(b) b=b.toLowerCase(); else b="";
+						return a>b ? -1 : a<b ? 1 : 0;
+					});
+			}
+			else
+			{
+				//the below does one after the other
+				ijf.session["cardSort_" + inField.formCell].forEach(function(s)
+				{
+					var sDir = "asc";
+					var sField = s;
+					var sType = "string";
+					if(s.direction) sDir = s.direction;
+					if(s.field) sField = s.field;
+					if(s.type) sType = s.type;
+					if(dataItems.length<1) return;
+					if(!dataItems[0].hasOwnProperty(sField)) return;
+					dataItems = dataItems.sort(function(a, b)
 					{
-						var a = a[sField];
-						var b = b[sField];
-					}
-					if(sType=="date")
-					{
-						a=new Date(a);
-						b=new Date(b);
-					}
-					if(a) a=a.toLowerCase(); else a="";
-					if(b) b=b.toLowerCase(); else b="";
-					return a>b ? -1 : a<b ? 1 : 0;
+						//if(a.indexOf("displayName")>-1) a=JSON.parse(a).displayName;
+						//if(b.indexOf("displayName")>-1) b=JSON.parse(b).displayName;
+
+						if(sDir=="asc")
+						{
+							var tb = b;
+							var b = a[sField];
+							var a = tb[sField];
+						}
+						else
+						{
+							var a = a[sField];
+							var b = b[sField];
+						}
+						if(sType=="date")
+						{
+							a=new Date(a);
+							b=new Date(b);
+						}
+						if(a) a=a.toLowerCase(); else a="";
+						if(b) b=b.toLowerCase(); else b="";
+						return a>b ? -1 : a<b ? 1 : 0;
+					});
 				});
-			});
-  		}
+			}
+		}
 
 
 
