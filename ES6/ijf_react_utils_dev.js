@@ -1238,7 +1238,8 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 		class LocalMuiButton extends React.Component {
 		  state = {
-			anchorEl: null
+			anchorEl: null,
+			disabled: disabled
 		  };
 
 		  getMenuRow(r,owningClass)
@@ -1286,6 +1287,10 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			this.setState({ anchorEl: null });
 		  };
 
+		  setDisabled(inDisabled){
+			this.setState({ "disabled": inDisabled });
+		  };
+
           getCaption = () => {
 
 			  if(labelSettings.snippet)
@@ -1310,7 +1315,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 			return (
 			  <div id={inFormKey+'_fldDivId_'+inField.formCell} style={style}>
-					  <MuiButton  onClick={this.handleClick} disabled={disabled} size={fieldSettings.size}
+					  <MuiButton  onClick={this.handleClick} disabled={this.state.disabled} size={fieldSettings.size}
 					   color={fieldSettings.color} variant={fieldSettings.variant} style={panelStyle}
 					   id={inFormKey+'_fldCtlId_'+inField.formCell} >
 						{getIcon()}{this.getCaption()}
@@ -1798,13 +1803,15 @@ renderTextbox(inFormKey,item, inField, inContainer)
 							var a = a[sField];
 							var b = b[sField];
 						}
+						if(a) a=a.toLowerCase(); else a="";
+						if(b) b=b.toLowerCase(); else b="";
+
 						if(sType=="date")
 						{
 							a=new Date(a);
 							b=new Date(b);
 						}
-						if(a) a=a.toLowerCase(); else a="";
-						if(b) b=b.toLowerCase(); else b="";
+
 						return a>b ? -1 : a<b ? 1 : 0;
 					});
 				});

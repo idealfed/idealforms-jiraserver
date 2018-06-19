@@ -1216,7 +1216,8 @@ ijf.reactUtils = {
 				}
 
 				return _ret = (_temp = (_this6 = _possibleConstructorReturn(this, (_ref = LocalMuiButton.__proto__ || Object.getPrototypeOf(LocalMuiButton)).call.apply(_ref, [this].concat(args))), _this6), _this6.state = {
-					anchorEl: null
+					anchorEl: null,
+					disabled: disabled
 				}, _this6.handleClick = function (event) {
 					_this6.setState({ anchorEl: event.currentTarget });
 					ocf(event.currentTarget);
@@ -1272,6 +1273,11 @@ ijf.reactUtils = {
 					);
 				}
 			}, {
+				key: 'setDisabled',
+				value: function setDisabled(inDisabled) {
+					this.setState({ "disabled": inDisabled });
+				}
+			}, {
 				key: 'render',
 				value: function render() {
 					var anchorEl = this.state.anchorEl;
@@ -1282,7 +1288,7 @@ ijf.reactUtils = {
 						{ id: inFormKey + '_fldDivId_' + inField.formCell, style: style },
 						React.createElement(
 							MuiButton,
-							{ onClick: this.handleClick, disabled: disabled, size: fieldSettings.size,
+							{ onClick: this.handleClick, disabled: this.state.disabled, size: fieldSettings.size,
 								color: fieldSettings.color, variant: fieldSettings.variant, style: panelStyle,
 								id: inFormKey + '_fldCtlId_' + inField.formCell },
 							getIcon(),
@@ -1712,12 +1718,14 @@ ijf.reactUtils = {
 							var a = a[sField];
 							var b = b[sField];
 						}
+						if (a) a = a.toLowerCase();else a = "";
+						if (b) b = b.toLowerCase();else b = "";
+
 						if (sType == "date") {
 							a = new Date(a);
 							b = new Date(b);
 						}
-						if (a) a = a.toLowerCase();else a = "";
-						if (b) b = b.toLowerCase();else b = "";
+
 						return a > b ? -1 : a < b ? 1 : 0;
 					});
 				});
