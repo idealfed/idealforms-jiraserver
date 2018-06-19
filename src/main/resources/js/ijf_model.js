@@ -11,21 +11,50 @@ function IjfUserPool()
 IjfUserPool.prototype.getUser = function(inId)
 {
     if(this.users.hasOwnProperty(inId)) return this.users[inId];
-    var uData = jQuery.ajax({
-        type: "GET",
-        url: g_root + '/rest/api/2/myself?expand=groups,applicationRoles',
-        async: false
-    }).responseText;
+    var u = null;
+    try
+    {
+		if(inId==ijf.main.currentUser.id)
+		{
+			var uData = jQuery.ajax({
+				type: "GET",
+				url: g_root + '/rest/api/2/myself?expand=groups,applicationRoles',
+				async: false
+			}).responseText;
+		}
+		else
+		{
+			var uData = jQuery.ajax({
+				type: "GET",
+				url: g_root + '/rest/api/2/user?username='+inId+'&expand=groups,applicationRoles',
+				async: false
+			}).responseText;
+		}
 
+		if(uData.indexOf("errorMessage")>-1)
+		{
+			ijfUtils.footLog("Unable to get user: " + inId + " " + uData);
+			u=null;
+		}
+		else
+		{
+			var u = new IjfUser(inId,uData);
+			this.users[inId] = u;
+		}
 
-    var u = new IjfUser(inId,uData);
-    this.users[inId] = u;
+    }
+    catch(e)
+    {
+		ijfUtils.footLog("Unable to get user: " + inId + " " + e.message);
+		u=null;
+	}
     return u;
 }
 IjfUserPool.prototype.getUserEmail=function(inId)
 {
     var user = this.getUser(inId);
-    return user.email;
+    if(user) return user.email;
+    return null;
 }
 IjfUserPool.prototype.getUserLastFirst=function(inId)
 {
