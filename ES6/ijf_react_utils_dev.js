@@ -2975,6 +2975,14 @@ renderSelect(inFormKey,item, inField, inContainer)
 			{
 				var fieldStyle = {}
 			}
+			try
+			{
+				var labelStyle = JSON.parse(inField.labelStyle);
+			}
+			catch(e)
+			{
+				var labelStyle = {}
+			}
 
 
 			var hideField = ijfUtils.renderIfShowField(data,inField);
@@ -3093,7 +3101,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 			  getMenu()
 			  {
 				  if(!this.state.lookup) return;
-				  return this.state.lookup.map(function(r){return (<MuiFormControlLabel value={r[0]} control={<MuiRadio color="primary"/>} label={r[1]} />)});
+				  return this.state.lookup.map(function(r){return (<MuiFormControlLabel value={r[0]} control={<MuiRadio style={panelStyle} color="primary"/>} label={r[1]} />)});
 			  }
 
 			  getTip()
@@ -3104,7 +3112,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 			  getCaption()
 			  {
 				  //if(lCaption) return (<MuiInputLabel component="legend">{lCaption}</MuiInputLabel>)
-				  if(lCaption) return (<MuiFormLabel required={this.state.errored} style={fieldStyle.labelStyle}>{lCaption}</MuiFormLabel>)
+				  if(lCaption) return (<MuiFormLabel required={this.state.errored} style={labelStyle}>{lCaption}</MuiFormLabel>)
 				  return
 			  }
 
@@ -3233,7 +3241,14 @@ renderSelect(inFormKey,item, inField, inContainer)
 			{
 				var fieldStyle = {}
 			}
-
+			try
+			{
+				var labelStyle = JSON.parse(inField.labelStyle);
+			}
+			catch(e)
+			{
+				var labelStyle = {}
+			}
 
 	    var ocf =  ijfUtils.getEvent(inField);
 

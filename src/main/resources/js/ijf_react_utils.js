@@ -2937,6 +2937,11 @@ ijf.reactUtils = {
 		} catch (e) {
 			var fieldStyle = {};
 		}
+		try {
+			var labelStyle = JSON.parse(inField.labelStyle);
+		} catch (e) {
+			var labelStyle = {};
+		}
 
 		var hideField = ijfUtils.renderIfShowField(data, inField);
 		var hideLabel = false;
@@ -3040,7 +3045,7 @@ ijf.reactUtils = {
 				value: function getMenu() {
 					if (!this.state.lookup) return;
 					return this.state.lookup.map(function (r) {
-						return React.createElement(MuiFormControlLabel, { value: r[0], control: React.createElement(MuiRadio, { color: 'primary' }), label: r[1] });
+						return React.createElement(MuiFormControlLabel, { value: r[0], control: React.createElement(MuiRadio, { style: panelStyle, color: 'primary' }), label: r[1] });
 					});
 				}
 			}, {
@@ -3059,7 +3064,7 @@ ijf.reactUtils = {
 					//if(lCaption) return (<MuiInputLabel component="legend">{lCaption}</MuiInputLabel>)
 					if (lCaption) return React.createElement(
 						MuiFormLabel,
-						{ required: this.state.errored, style: fieldStyle.labelStyle },
+						{ required: this.state.errored, style: labelStyle },
 						lCaption
 					);
 					return;
@@ -3181,6 +3186,11 @@ ijf.reactUtils = {
 			var fieldStyle = JSON.parse(inField.fieldStyle);
 		} catch (e) {
 			var fieldStyle = {};
+		}
+		try {
+			var labelStyle = JSON.parse(inField.labelStyle);
+		} catch (e) {
+			var labelStyle = {};
 		}
 
 		var ocf = ijfUtils.getEvent(inField);
