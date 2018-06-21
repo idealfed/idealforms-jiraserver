@@ -3507,7 +3507,7 @@ ijf.reactUtils = {
 
 						return React.createElement(
 							MuiTableRow,
-							{ key: n.id },
+							{ style: panelStyle, key: n.id },
 							listColumns.reduce(function (inA, c) {
 
 								if (c.headerObj) {
@@ -3550,7 +3550,7 @@ ijf.reactUtils = {
 									null,
 									React.createElement(
 										MuiTableRow,
-										{ style: panelStyle },
+										{ style: labelStyle },
 										this.getHeaders()
 									)
 								),
@@ -3567,10 +3567,10 @@ ijf.reactUtils = {
 							{ style: style },
 							React.createElement(
 								MuiTableHead,
-								{ style: panelStyle },
+								null,
 								React.createElement(
 									MuiTableRow,
-									null,
+									{ style: labelStyle },
 									this.getHeaders()
 								)
 							),

@@ -3598,7 +3598,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 				 return data.map(n => {
 
 					return (
-					  <MuiTableRow key={n.id}>
+					  <MuiTableRow  style={panelStyle} key={n.id}>
 						{
 						  listColumns.reduce(function(inA,c){
 
@@ -3633,7 +3633,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 				<MuiPaper>
 				  <MuiTable style={style}>
 					<MuiTableHead>
-					  <MuiTableRow style={panelStyle}>
+					  <MuiTableRow style={labelStyle}>
 						{this.getHeaders()}
 					  </MuiTableRow>
 					</MuiTableHead>
@@ -3647,8 +3647,8 @@ renderSelect(inFormKey,item, inField, inContainer)
 			{
 				return (
 				  <MuiTable style={style}>
-					<MuiTableHead style={panelStyle}>
-					  <MuiTableRow>
+					<MuiTableHead>
+					  <MuiTableRow style={labelStyle}>
 						{this.getHeaders()}
 					  </MuiTableRow>
 					</MuiTableHead>
