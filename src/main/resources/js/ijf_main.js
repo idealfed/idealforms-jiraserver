@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "5.0.25";
+    window.g_version = "5.0.26";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);
@@ -1004,7 +1004,7 @@ function saveBatch(onSuccess,inFields,inForm, item)
 
 				for(var i=0;i<files.length;i++)
 				{
-					fd.append('file', files[i]);
+					fd.append('file', files[i], files[i].name);
 				};
 
 				//fd.append("CustomField", "This is some extra data");

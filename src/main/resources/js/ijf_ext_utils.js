@@ -164,7 +164,7 @@ renderField:function(inFormKey, item, inField, inContainer)
                 ijf.extUtils.renderAttchmentListGrid (inFormKey,item,inField,inContainer);
                 break;
             case 'attachmentlisttree':
-                ijf.extUtils.renderAttchmentListTree (inFormKey,item,inField,inContainer);
+                ijf.extUtils.renderAttachmentListTree (inFormKey,item,inField,inContainer);
                 break;
             case 'attachmentmanaged':
                 ijf.extUtils.renderAttchmentManaged (inFormKey,item,inField,inContainer);
@@ -1046,7 +1046,7 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](gridPanel, inFormKey,item, inField, inContainer);
 
 },
-renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
+renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 {
     inContainer.title = inField.toolTip;
 
@@ -1104,7 +1104,7 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 	var lastObj = {};
 
     var fArray = sortedAttachments.map(function(a){
-			    var retObj =  {"fileid":a.id,"created":a.created,"filename":a.filename + " <a href='"+a.content+"' target='_blank'>open</a>","fUser":a.author.displayName};
+			    var retObj =  {"fileid":a.id,"created":a.created,"rawFileName":a.filename,"filename":"<a href='"+a.content+"' target='_blank'>"+a.filename +"</a>","fUser":a.author.displayName};
 
 			    //add data if exists
 			    if(indexedData)
@@ -1119,7 +1119,6 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 						});
 					}
 				}
-
 
 			    //is it leaf?  is it parent....
 			    retObj.leaf=false;
@@ -1248,6 +1247,11 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 			dataIndex: "filename",
 			filter: {
 				type: 'string'
+			},
+			sorter: function(a,b){
+				var a = a.data.rawFileName;
+				var b = b.data.rawFileName;
+				return a>b ? -1 : a<b ? 1 : 0;
 			}
 	};
 	ijfUtils.setColWidth(colObj,cIndex,colWidths,"70%");
@@ -1640,6 +1644,15 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 	  	});
     }
 
+
+    //adding concept of post filter to transform the data...
+    if(inField.referenceFilter)
+    {
+        //filter the items...
+        if(ijf.snippets.hasOwnProperty(inField.referenceFilter))
+	        fArray = ijf.snippets[inField.referenceFilter](fArray);
+    }
+
     if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")))
     {
         Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_"), {
@@ -1647,6 +1660,7 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
             fields: tFields
         });
     }
+
     var gridStore = new Ext.data.TreeStore({
         model: inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_"),
         root: {
@@ -1703,6 +1717,32 @@ renderAttchmentListTree:function(inFormKey,item, inField, inContainer)
 
     });
 	//gridStore.parentGridPanel = gridPanel;
+
+
+/*
+
+		//this is pretty much a repeat of render cell, check required and regex for every value....
+		gridPanel.items.items[0].isValid = function(){
+	        var retVal = true;
+			var gridData = gridStore.getData();
+			//look for bad data and return false...
+			gridData.items.forEach(function(r){
+				//r = object of a row of data, keys are the columnNames
+				gCols.forEach(function(col){
+					var rowVal = r.data[col.columnName];
+					//validate...
+						if((col.required=="Yes") && (!rowVal)) retVal= false;
+						if((col.regEx!=null) && (col.regEx!=""))
+						{
+							var rgxRenderCheck = new RegExp(col.regEx);
+							if (!rgxRenderCheck.exec(rowVal)) retVal= false;
+						}
+				});
+			});
+			return retVal;
+	};
+*/
+
 
 	//before render....
 	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](gridPanel, inFormKey,item, inField, inContainer);
@@ -6287,9 +6327,17 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 	   //syntax:    {"replace":[{"status":"Open"}],"remove":["status","maxResults"]]}
 	   //roject=DJP and reporter = currentUser() order by key desc
 	   var lds = inField.dataSource;
-	   var qSet = function(inStr,key,value)
+	   var qSet = function(inJqlStr,key,value)
 	   {
-		   var retStr = inStr;
+		   var retStr = inJqlStr;
+		   var orderBy = "";
+		   var orderByIndex = retStr.search(/ order by/i);
+		   if(orderByIndex > -1)
+		   {
+			   orderBy = retStr.substring(orderByIndex,retStr.length);
+			   retStr=retStr.substring(0,orderByIndex);
+		   }
+           var inStr = retStr;
 		   if(inStr.indexOf(key)>-1){
 			  var startKey = inStr.indexOf(key);
 			  var vStart = 0;
@@ -6417,11 +6465,21 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 			 retStr = retStr.replace(/and *order/i,"order");
 
 		   }
-		   return retStr;
+		   return retStr + orderBy;
 	   };
-	   var qRemove = function(inStr,key)
+
+	   var qRemove = function(inJqlStr,key)
 	   {
-		   var retStr = inStr;
+		   var retStr = inJqlStr;
+
+		   var orderBy = "";
+		   var orderByIndex = retStr.search(/ order by/i);
+		   if(orderByIndex > -1)
+		   {
+			   orderBy = retStr.substring(orderByIndex,retStr.length);
+			   retStr=retStr.substring(0,orderByIndex);
+		   }
+           var inStr = retStr;
 		   if(inStr.indexOf(key)>-1){
 			  var startKey = inStr.indexOf(key);
 			  var vStart = 0;
@@ -6521,7 +6579,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				  	retStr = retStr.substr(0,retStr.length-4);
 			  }
 		   }
-		   return retStr;
+		   return retStr + orderBy;;
 	   };
 
 	   if(ijf.session.hasOwnProperty(inFormKey+'_fld_'+inField.formCell))
