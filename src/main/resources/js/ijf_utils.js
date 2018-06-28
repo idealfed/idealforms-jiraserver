@@ -755,7 +755,13 @@ gridUploadCsvFile: function(event, inGridId, inControlId)
 	  var text = reader.result;
 	  var rows = ijfUtils.CSVtoArray(text);
 	  //for each row, load the data in the grid...
+	  //skip first row assuming header....
+	  var firstRow=true;
 	  rows.forEach(function(r){
+		   if(firstRow){
+			   firstRow=false;
+			   return;
+		   }
 		   if((r.length==1) & (r[0]=="")) return;
 		   var newRecord = {id:Ext.id()};
 		   var i = 0;

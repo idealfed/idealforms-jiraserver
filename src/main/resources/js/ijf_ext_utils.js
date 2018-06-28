@@ -167,7 +167,7 @@ renderField:function(inFormKey, item, inField, inContainer)
                 ijf.extUtils.renderAttachmentListTree (inFormKey,item,inField,inContainer);
                 break;
             case 'attachmentmanaged':
-                ijf.extUtils.renderAttchmentManaged (inFormKey,item,inField,inContainer);
+                ijf.extUtils.renderAttachmentManaged (inFormKey,item,inField,inContainer);
                 break;
             case 'attachmentupload':
                 ijf.extUtils.renderAttachmentUpload(inFormKey,item,inField,inContainer);
@@ -1753,7 +1753,7 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](gridPanel, inFormKey,item, inField, inContainer);
 
 },
-renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
+renderAttachmentManaged:function(inFormKey,item, inField, inContainer)
 {
 
     inContainer.title = inField.toolTip;
@@ -1997,12 +1997,12 @@ renderAttchmentManaged:function(inFormKey,item, inField, inContainer)
 	if(managedFileName)
 	{
 	    var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>File: " + managedFileName + "<br> uploaded by " + currentAttachment.author.displayName + " on " + moment(currentAttachment.created).format('lll') + "</div>";
-	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.replace('C:\\\\fakepath\\\\','')+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
     }
     else
     {
         var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>Managed File has not been Initialized<br>&nbsp;</div>";
-	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.replace('C:\\\\fakepath\\\\','')+'</span>'); \"></form>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>'); \"></form>";
 	}
 
 
@@ -9329,6 +9329,10 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 					handler: function(){
 						var outStr = "";
 						gridStore.ijfCols
+						gridStore.ijfCols.forEach(function(c){
+							outStr+= c.columnName + ","
+						});
+						outStr+="\n";
 						gridStore.getData().each(function(r){
 							gridStore.ijfCols.forEach(function(c){
 								if(r.data.hasOwnProperty(c.columnName))
