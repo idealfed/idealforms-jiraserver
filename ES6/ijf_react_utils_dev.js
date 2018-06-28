@@ -2321,6 +2321,14 @@ renderTextbox(inFormKey,item, inField, inContainer)
 					  return (<span>&nbsp;{style.headerCaption}</span>);
 				  }
 			  }
+			  getDrawerTitleHtml()
+			  {
+				  if(!style.headerHtml) return;
+				  else
+				  {
+					  return (<div dangerouslySetInnerHTML={{ __html: style.headerHtml }} />);
+				  }
+			  }
 
 			  render() {
 				return (
@@ -2329,6 +2337,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 					<Drawer
 					    variant={variant} anchor={fieldSettings.direction} open={this.state.open} onClose={this.toggleDrawer(fieldSettings.direction, false)}>
 						<div style={style} >
+						  {this.getDrawerTitleHtml()}
 						  {this.getHeaderIcon()}
 						  {this.getDrawerTitle()}
 						  {this.getIcon()}

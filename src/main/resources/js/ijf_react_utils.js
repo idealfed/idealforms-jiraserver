@@ -2308,6 +2308,13 @@ ijf.reactUtils = {
 					}
 				}
 			}, {
+				key: 'getDrawerTitleHtml',
+				value: function getDrawerTitleHtml() {
+					if (!style.headerHtml) return;else {
+						return React.createElement('div', { dangerouslySetInnerHTML: { __html: style.headerHtml } });
+					}
+				}
+			}, {
 				key: 'render',
 				value: function render() {
 					return React.createElement(
@@ -2325,6 +2332,7 @@ ijf.reactUtils = {
 							React.createElement(
 								'div',
 								{ style: style },
+								this.getDrawerTitleHtml(),
 								this.getHeaderIcon(),
 								this.getDrawerTitle(),
 								this.getIcon()
