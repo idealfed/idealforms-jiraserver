@@ -8,7 +8,12 @@ getData:function(dataSource, inFormKey, item, inField, inContainer, noCache)
     //attempt to pull data....
     try
     {
-        if(ijfDataServices.cache[dataSource]!=null) return ijfDataServices.cache[dataSource];
+        if(ijfDataServices.cache[dataSource]!=null)
+        {
+		    var tempRetVal = ijfDataServices.cache[dataSource];
+		    ijfDataServices.cache[dataSource]=null;
+			return tempRetVal;
+		}
 
         switch(dataSource) {
             case 'genericdatasource':

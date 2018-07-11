@@ -52,7 +52,6 @@ var MuiToolBar = window['material-ui']['Toolbar'];
 var MuiToolTip = window['material-ui']['Tooltip'];
 
 
-
 var ijf = ijf || {};
 ijf.reactUtils ={
 

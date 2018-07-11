@@ -1671,6 +1671,8 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 	//gridStore.loadData(fArray);
 
 	var headerButtons =[];
+	if(thisT)
+	{
 		headerButtons.push({
 						xtype:'button',
 						text: 'Save',
@@ -1689,6 +1691,7 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 							window.setTimeout(saveIt,50);
 						}
 					});
+    }
 
     var gridPanel = new Ext.tree.Panel({
 		 header:{
@@ -3555,6 +3558,11 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
     {
         rOnly=true;
     }
+    var noSort = false;
+    if (inField.fieldStyle.indexOf('nosort:true')>-1)
+    {
+	        noSort=true;
+    }
     if (inField.style.indexOf('enteronce:true')>-1)
     {
         if (!!data) rOnly=true;
@@ -3627,7 +3635,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 
 			if(refCheck)
 			{
-				lookup = ijfUtils.getReferenceDataByName(inField.referenceFilter,"0");
+				lookup = ijfUtils.getReferenceDataByName(inField.referenceFilter,"0", false, noSort);
 			}
 			else
 			{
@@ -3635,7 +3643,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 				try
 				{
 					cLookupDef = JSON.parse(inField.referenceFilter);
-					lookup = ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index);
+					lookup = ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index, false, noSort);
 
 					//establish a listener for this combo if necessary
 					if(cLookupDef.parents)
@@ -8080,22 +8088,6 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 	});
 	var treeMenu = new Ext.menu.Menu({ items:
 		[
-			{ text: 'Edit Task', handler: function()  {
-					var rId = tree.selection.data.iid
-					ijf.main.gItemSectionGridIndex = rId;
-					var tEvent = tree.ijfForm.tableDblClick;
-					tEvent=tEvent.replace("popform:","");
-					if(ijf.fw.forms.hasOwnProperty(tEvent))
-					{
-						var action = {};
-						action.form = tEvent;
-						action.type = "open item";
-						action.itemId = rId;
-						action.inField = inField;
-						ijf.extUtils.renderPopupForm(inFormKey, item, action)
-						return;
-					}
-				} },
 			{ text: 'Add Child Task', handler: function()  {
 					var rId = tree.selection.data.iid
 					//add the issue with "new item" summary and insert into grid no refresh...
@@ -8311,6 +8303,29 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 				    ijfUtils.modalDialog("Warning","You are about to permanently remove this item and it's children, continue?",delFunc);
 				} }
 		]});
+
+   //alter if edit exists
+	if(inField.tableDblClick)
+	{
+		treeMenu.add(
+   			{ text: 'Edit Task', handler: function()  {
+   					var rId = tree.selection.data.iid
+   					ijf.main.gItemSectionGridIndex = rId;
+   					var tEvent = tree.ijfForm.tableDblClick;
+   					tEvent=tEvent.replace("popform:","");
+   					if(ijf.fw.forms.hasOwnProperty(tEvent))
+   					{
+   						var action = {};
+   						action.form = tEvent;
+   						action.type = "open item";
+   						action.itemId = rId;
+   						action.inField = inField;
+   						ijf.extUtils.renderPopupForm(inFormKey, item, action)
+   						return;
+   					}
+				} });
+     }
+
 
 	//alter tree menue to only show order options if "taskOrder" exists in query
 
@@ -9258,9 +9273,18 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 		headerButtons.push({
 						xtype:'button',
 						text: 'Save',
-						scope: this,
+						//scope: this,
 						handler: function(){
 							 //create record...
+
+							var u1=this.up(); //header
+							var u2=u1.up(); //grid
+							try
+							{
+								u2.editingPlugin.completeEdit();
+							}
+							catch(e){}
+
 							var onSuccessSave = function()
 							{
 								ijfUtils.hideProgress();

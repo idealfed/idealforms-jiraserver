@@ -2737,7 +2737,7 @@ CSVtoArray:function (strData, strDelimiter ){
 	/*********************
 	Data Reference
 	**********************/
-	getReferenceDataByName:function(refName, keyIndex, asArray){
+	getReferenceDataByName:function(refName, keyIndex, asArray, noSort){
 		var retRef = [];
 
 		var thisT = {};
@@ -2802,7 +2802,7 @@ CSVtoArray:function (strData, strDelimiter ){
 							  data: lookup
 							});
 							//sort by the keyIndex
-							retRef.sort(keyIndex);
+							if(!noSort) retRef.sort(keyIndex);
 						}
 					}
 					else if(retRef[0].indexOf(",")>-1)
@@ -2831,7 +2831,7 @@ CSVtoArray:function (strData, strDelimiter ){
 							  data: lookup
 							});
 							//sort by the keyIndex
-							retRef.sort(keyIndex);
+							if(!noSort) retRef.sort(keyIndex);
 						}
 
 					}
@@ -2851,7 +2851,7 @@ CSVtoArray:function (strData, strDelimiter ){
 							  data: lookup
 							});
 							//sort by the keyIndex
-							retRef.sort("0");
+							if(!noSort) retRef.sort("0");
 					    }
 					};
 				}
