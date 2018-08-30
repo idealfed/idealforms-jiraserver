@@ -318,7 +318,7 @@ var ijfUtils = {
 				error: inError
 			});
 		},
-     getProxyCallSync:function(inUrl,inMethod,inData,inContentType){
+     getProxyCallSync:function(inUrl,inMethod,inData,inContentType,inSessionKey){
 			var retVal = "";
 			jQuery.ajax({
 				async: false,
@@ -329,6 +329,7 @@ var ijfUtils = {
 					method: inMethod,
 					data: inData,
 					contenttype: inContentType,
+					sessionKey: inSessionKey,
 					action: 'proxyCall'
 				},
 				timeout: 60000,
@@ -339,8 +340,8 @@ var ijfUtils = {
 					retVal=data;
 				},
 				error: function(e) {
-					ijfUtils.footLog("Failed email sendt! " + e.message);
-					retVal = "Failed to send " + e.message;
+					ijfUtils.footLog("Failed proxy call " + e.message);
+					retVal = "Failed proxy call " + e.message;
 				}
 			});
 			return retVal;
@@ -619,7 +620,19 @@ messageHandler:function(event)
                 ijfUtils.footLog("no message action for: " + event.data.action);
         }
 },
-
+simpleSave:function()
+{
+	var onSuccessSave = function()
+	{
+		ijfUtils.hideProgress();
+		if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
+		ijf.main.setAllClean();
+		ijf.main.resetForm();
+	};
+	Ext.getBody().mask("Saving...");
+	var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,ijf.main.outerForm,ijf.currentItem)};
+	window.setTimeout(saveIt,50);
+},
 getPermissionObj:function(inPerms,inItem,inUser)
 {
 	var retObj = {"canEdit":true,"canSee":true};
@@ -691,6 +704,8 @@ footLog:function(inMsg)
         var tNow = Math.floor(Date.now() / 1000);
 
         jQuery('#ijfDebug').prepend("<br>"+tNow+"&nbsp;&nbsp"+inMsg);
+
+        console.log(inMsg);
     }
 },
 applyVersionHistory:function(inId)
@@ -745,7 +760,7 @@ renderAdminButtons:function(inContainerId)
         pnl.render(document.getElementById("ijfManage"));
     }
 },
-gridUploadCsvFile: function(event, inGridId, inControlId)
+gridUploadCsvFile: function(event, inGridId, inControlId, dontSetDirty)
 {
 	var grid = Ext.getCmp(inGridId);
 	if(!grid){ijfUtils.footLog("failed to get to grid with " + inGridId); return;}
@@ -786,7 +801,7 @@ gridUploadCsvFile: function(event, inGridId, inControlId)
 			 var position = grid.store.getCount();
 			 grid.store.insert(position, newRecord);
 	  });
-	  ijf.main.controlChanged(inControlId);
+	  if(!dontSetDirty) ijf.main.controlChanged(inControlId);
 	};
 	reader.readAsText(input.files[0]);
 
@@ -1431,7 +1446,16 @@ replaceWordChars:function(text) {
 
     //worry on amp when combined with chars
     //if(s.match(/\S\&\s|\S\&\S|\s\&\S/)) s=s.replace("&", " & ");
-    s = s.replace("&","&amp;");
+    //s = s.replace("&","&amp;");
+
+    s = s.replace(/&/g,"&amp;");
+    s = s.replace(/</g,"&lt;");
+    s = s.replace(/>/g,"&gt;");
+    //s = s.replace(/"/g,"&quot;");
+    //s = s.replace(/'/g,"&apos;");
+
+
+
     //sledge hammer
     s = unescape(encodeURIComponent(s));
 
@@ -2167,7 +2191,7 @@ replaceWordChars:function(text) {
 	},
 	handleJiraFieldType:function(inType, inField, forDisplay,noSanitize)
 	{
-		if(!inField) return null;
+		if(inField == null) return null;
 
 		switch(inType.schema.type)
 		{
@@ -2745,6 +2769,25 @@ CSVtoArray:function (strData, strDelimiter ){
 
 		if(thisT)
 		{
+
+			//thisT may or may not have  settings constructed, lazyloading them...
+			if(!thisT.settings)
+			{
+			   var typeIndex = ijf.fw.CustomTypes.indexOf(thisT);
+
+				//load the settings...
+               var fullTypeRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisT.id, null);
+			   var cleanDoubleDouble = fullTypeRaw.replace(/\"\"/g,"\"");
+			   cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
+			   cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
+			   thisT = JSON.parse(cleanDoubleDouble);
+
+			   //update local memory
+			   ijf.fw.CustomTypes.splice(typeIndex, 1);
+			   ijf.fw.CustomTypes.push(thisT);
+			}
+
+
 			//data may be crlf list, crlf list of tab delimited, JSON
 			//try json first...
 			try
@@ -2872,6 +2915,25 @@ CSVtoArray:function (strData, strDelimiter ){
 
 		if(thisT)
 		{
+
+
+			//thisT may or may not have  settings constructed, lazyloading them...
+			if(!thisT.settings)
+			{
+			   var typeIndex = ijf.fw.CustomTypes.indexOf(thisT);
+
+				//load the settings...
+               var fullTypeRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisT.id, null);
+			   var cleanDoubleDouble = fullTypeRaw.replace(/\"\"/g,"\"");
+			   cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
+			   cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
+			   thisT = JSON.parse(cleanDoubleDouble);
+
+			   //update local memory
+			   ijf.fw.CustomTypes.splice(typeIndex, 1);
+			   ijf.fw.CustomTypes.push(thisT);
+			}
+
 			//data may be crlf list, crlf list of tab delimited, JSON
 			//try json first...
 			try

@@ -1728,19 +1728,36 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		//   simple string....
 		if(ijf.session["cardSearch_" + inField.formCell])
 		{
+			var searchStr = ijf.session["cardSearch_" + inField.formCell].toLowerCase();
+			searchStr=searchStr.trim();
+			var searchKeys = searchStr.split(" ");
+			var keyCount = searchKeys.length;
 			dataItems.forEach(function(r)
 			{
 				r.visibility = "hidden";
-
-				Object.keys(r).forEach(function(k)
+				var runningCount=0;
+				var keyCheck = {};
+				searchKeys.forEach(function(sk)
 				{
-					try
+					if((!sk) || (sk=="")) return;
+					Object.keys(r).forEach(function(k)
 					{
-						if(r[k].toLowerCase().indexOf(ijf.session["cardSearch_" + inField.formCell].toLowerCase())>-1) r.visibility="visible";
-					}
-					catch(e)
-					{}
+						try
+						{
+							if(keyCheck.hasOwnProperty(sk)) return;
+							if(r[k].toLowerCase().indexOf(sk)>-1)
+							{
+								keyCheck[sk] = "found";
+								runningCount++;
+							}
+						}
+						catch(e)
+						{
+							var testE=e;
+						}
+					});
 				});
+				if(runningCount==keyCount) r.visibility="visible";
 				//if filters enabled
 			});
 			dataItems = dataItems.reduce(function(inA,r){if(r.visibility=="visible")inA.push(r);return inA;},[]);
@@ -2174,8 +2191,14 @@ renderTextbox(inFormKey,item, inField, inContainer)
 	  		{
 	  			var fieldSettings = {}
 	  		}
-
-	  		var buttonStyle = {}
+	  		try
+	  		{
+	  			var buttonStyle = JSON.parse(inField.labelStyle);
+	  		}
+	  		catch(e)
+	  		{
+	  			var buttonStyle = {}
+	  		}
 	  		if(hideField) buttonStyle.visibility = "hidden";
 
 		    var variant = "persistent";
@@ -2336,8 +2359,8 @@ renderTextbox(inFormKey,item, inField, inContainer)
 					<Drawer
 					    variant={variant} anchor={fieldSettings.direction} open={this.state.open} onClose={this.toggleDrawer(fieldSettings.direction, false)}>
 						<div style={style} >
-						  {this.getDrawerTitleHtml()}
 						  {this.getHeaderIcon()}
+						  {this.getDrawerTitleHtml()}
 						  {this.getDrawerTitle()}
 						  {this.getIcon()}
 						</div>
@@ -3085,7 +3108,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 				//add OCF call here..
 				if(inField.dataSource=="session")
 				{
-					ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+					ijf.session[inFormKey+'_fld_'+inField.formCell]=event.target.value;
 				}
 				else
 				{

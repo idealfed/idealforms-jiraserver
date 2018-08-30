@@ -189,6 +189,86 @@ helpLink:function(inLabel, inCaller)
 	}
 
 },
+editJson:function (fieldId)
+{
+	if(!fieldId) return;
+try
+{
+    var inField = Ext.getCmp(fieldId);
+
+    var fValue = inField.getValue();
+    var jsonText = "";
+    if(fValue)
+    {
+          var jsonVal = JSON.parse(fValue);
+          jsonText = JSON.stringify(jsonVal,null,4);
+	  }
+}
+catch(e)
+{
+	var runError = function()
+	{
+	  ijfUtils.modalDialogMessage("Error","Field is not valid JSON or unable to get field");
+  	  return;
+    }
+    window.setTimeout(runError,200);
+    return;
+}
+    ijf.admin.dWin = new Ext.Window({
+        layout: 'vbox',
+        title: "JSON editor",
+        width: 900,
+        height:850,
+        closable: true,
+        items: [
+            {
+				xtype: 'textarea',
+				labelAlign: 'left',
+				labelWidth: 100,
+				margin: '0 5 0 5',
+				allowBlank:true,
+				hideLabel: true,
+				width: '100%',
+				height: '100%',
+				value: jsonText,
+				listeners: {
+					change: function(f, n, o){
+						jsonText = n;
+					}}
+			}
+        ],
+        buttons:[{
+            text:'OK',
+            handler: function(f,i,n){
+
+				try
+				{
+					var newJson = JSON.parse(jsonText);
+					inField.setValue(JSON.stringify(newJson));
+					ijf.admin.dWin.close();
+				}
+				catch(e)
+				{
+					ijfUtils.modalDialogMessage("Error","Cannot parse JSON");
+					return;
+				}
+            }},
+            {
+                text:'Cancel',
+                handler: function(){
+                    ijf.admin.dWin.close();
+                }}
+        ],
+        modal: true
+    });
+    var showIt = function()
+    {
+      ijf.admin.dWin.show();
+      ijf.admin.dWin.setY(window.pageYOffset+25);
+    }
+    window.setTimeout(showIt,200);
+
+},
 
 addEditForm:function (sRow)
 {
@@ -1816,7 +1896,8 @@ addEditForm:function (sRow)
 					labelAlign: 'left',
 					labelWidth: 120,
 					fieldLabel: "Outer Style",
-					labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"outerstyle\",\"adminFormFields_styleId\")>",
+					//labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"outerstyle\",\"adminFormFields_styleId\")>",
+					labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"fieldstyle\",\"adminFormFields_fieldStyleId\")>&nbsp;<img style='height:12px' src='" + g_imagesRoot + "magnify.png' onclick=ijf.admin.editJson(\"adminFormFields_styleId\")>",
 					width: 500,
 					value: ijf.admin.cwfAdmin_thisField["style"],
 					id: "adminFormFields_styleId",
@@ -1830,7 +1911,8 @@ addEditForm:function (sRow)
 					labelAlign: 'left',
 					labelWidth: 120,
 					fieldLabel: "Inner Style",
-					labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"innerstyle\",\"adminFormFields_panelStyleId\")>",
+					//labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"innerstyle\",\"adminFormFields_panelStyleId\")>",
+					labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"fieldstyle\",\"adminFormFields_fieldStyleId\")>&nbsp;<img style='height:12px' src='" + g_imagesRoot + "magnify.png' onclick=ijf.admin.editJson(\"adminFormFields_panelStyleId\")>",
 					width: 500,
 					value: ijf.admin.cwfAdmin_thisField["panelStyle"],
 					id: "adminFormFields_panelStyleId",
@@ -1844,7 +1926,8 @@ addEditForm:function (sRow)
 					labelAlign: 'left',
 					labelWidth: 120,
 					fieldLabel: "Field Style",
-					labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"fieldstyle\",\"adminFormFields_fieldStyleId\")>",
+					//labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"fieldstyle\",\"adminFormFields_fieldStyleId\")>",
+					labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"fieldstyle\",\"adminFormFields_fieldStyleId\")>&nbsp;<img style='height:12px' src='" + g_imagesRoot + "magnify.png' onclick=ijf.admin.editJson(\"adminFormFields_fieldStyleId\")>",
 					width: 500,
 					value: ijf.admin.cwfAdmin_thisField["fieldStyle"],
 					id: "adminFormFields_fieldStyleId",
@@ -1858,7 +1941,8 @@ addEditForm:function (sRow)
 					labelAlign: 'left',
 					labelWidth: 120,
 					fieldLabel: "Label Style",
-					labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"labelstyle\",\"adminFormFields_labelStyleId\")>",
+					//labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"labelstyle\",\"adminFormFields_labelStyleId\")>",
+					labelSeparator: "&nbsp;&nbsp;<img src='" + g_imagesRoot + "blueQuestion14.png' onclick=ijf.admin.helpLink(\"fieldstyle\",\"adminFormFields_fieldStyleId\")>&nbsp;<img style='height:12px' src='" + g_imagesRoot + "magnify.png' onclick=ijf.admin.editJson(\"adminFormFields_labelStyleId\")>",
 					width: 500,
 					value: ijf.admin.cwfAdmin_thisField["labelStyle"],
 					id: "adminFormFields_labelStyleId",

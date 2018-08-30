@@ -229,6 +229,12 @@ renderField:function(inFormKey, item, inField, inContainer)
     {
         collapsed=true;
     }
+    var rOnly=false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+
     var seamless = ""; // Whether or not to add the seamless HTML5 attribute and onload event to grab inner document height.
     var onload = ""
     if (inField.style.indexOf('seamless:true')>-1)
@@ -267,7 +273,10 @@ renderField:function(inFormKey, item, inField, inContainer)
 		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	//end permissions
+
+	if(rOnly) l_fieldStyle += ";pointer-events: none;";
 
     var iframeHTML = "<iframe src=\"" + iframeSrc + "\" " + seamless + onload + "style=\"" + l_fieldStyle + "\"></iframe>";
     var pHeight =ijfUtils.getNameValueFromStyleString(inField.fieldStyle,"height");
@@ -545,7 +554,7 @@ renderPopupForm:function(inFormKey,inItem, inAction)
         }
     });
     dWin.show();
-    dWin.setY(window.pageYOffset+250);
+    dWin.setY(window.pageYOffset+150);
 
     ijf.main.gPopupFormHandle = dWin;
     //need to force the render to get metadata for the new thing, null out the meta...
@@ -1274,21 +1283,40 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
     listColumns.push(colObj);
 	cIndex++;
 
+    if(ijfUtils.detectIE())
+    {
+		thisColHeader = "Date";
+		if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+		tFields.push({name: "created", type: 'string'});
+		colObj={
+				header: thisColHeader,
+				sortable: true,
+				hidden: false,
+				renderer: function(inVal){return moment(inVal).format('lll');},
+				dataIndex: "created",
+				filter: {
+					type: 'string'
+					}
+		};
+	}
+	else
+	{
+		thisColHeader = "Date";
+		if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+		tFields.push({name: "created", type: 'date'});
+		colObj={
+				header: thisColHeader,
+				sortable: true,
+				hidden: false,
+				xtype: 'datecolumn',
+				formatter:'date("m/d/y h:i:s A")',
+				dataIndex: "created",
+				filter: {
+					type: 'date'
+					}
+		};
+	}
 
-	thisColHeader = "Date";
-	if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
-	tFields.push({name: "created", type: 'date'});
-	colObj={
-			header: thisColHeader,
-			sortable: true,
-			hidden: false,
-			xtype: 'datecolumn',
-			formatter:'date("m/d/y h:i:s A")',
-			dataIndex: "created",
-			filter: {
-				type: 'date'
-				}
-	};
 	ijfUtils.setColWidth(colObj,cIndex,colWidths,150);
     listColumns.push(colObj);
 	cIndex++;
@@ -1298,6 +1326,24 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 	var gCols=null;
 	if(thisT)
 	{
+		//lazy load handling for custom types
+			if(!thisT.settings)
+			{
+			   var typeIndex = ijf.fw.CustomTypes.indexOf(thisT);
+
+				//load the settings...
+               var fullTypeRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisT.id, null);
+			   var cleanDoubleDouble = fullTypeRaw.replace(/\"\"/g,"\"");
+			   cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
+			   cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
+			   thisT = JSON.parse(cleanDoubleDouble);
+
+			   //update local memory
+			   ijf.fw.CustomTypes.splice(typeIndex, 1);
+			   ijf.fw.CustomTypes.push(thisT);
+			}
+
+
 	    gCols = JSON.parse(thisT.settings);
 	    //order by order
 	    gCols = gCols.sort(function(a,b){return (a.order-b.order);});
@@ -1676,9 +1722,16 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 		headerButtons.push({
 						xtype:'button',
 						text: 'Save',
-						scope: this,
 						handler: function(){
 							 //create record...
+							var u1=this.up(); //header
+							var u2=u1.up(); //grid
+							try
+							{
+								u2.editingPlugin.completeEdit();
+							}
+							catch(e){}
+
 							var onSuccessSave = function()
 							{
 								ijfUtils.hideProgress();
@@ -1912,19 +1965,38 @@ renderAttachmentManaged:function(inFormKey,item, inField, inContainer)
 			}
 	});
 
-	tFields.push({name: "created", type: 'date'});
-	listColumns.push({
-			header: "Date",
-			sortable: true,
-			hidden: false,
-			xtype: 'datecolumn',
-			formatter:'date("m/d/y h:i:s A")',
-			width: 150,
-			dataIndex: "created",
-			filter: {
-				type: 'date'
-				}
-	});
+    if(ijfUtils.detectIE())
+    {
+		tFields.push({name: "created", type: 'string'});
+		listColumns.push({
+				header: "Date",
+				sortable: true,
+				hidden: false,
+				renderer: function(inVal){return moment(inVal).format('lll');},
+				width: 150,
+				dataIndex: "created",
+				filter: {
+					type: 'string'
+					}
+		});
+	}
+	else
+	{
+		tFields.push({name: "created", type: 'date'});
+		listColumns.push({
+				header: "Date",
+				sortable: true,
+				hidden: false,
+				xtype: 'datecolumn',
+				formatter:'date("m/d/y h:i:s A")',
+				width: 150,
+				dataIndex: "created",
+				filter: {
+					type: 'date'
+					}
+		});
+	}
+
 	if(canDelete)
 	{
 		listColumns.push({xtype: 'actioncolumn',
@@ -2000,12 +2072,17 @@ renderAttachmentManaged:function(inFormKey,item, inField, inContainer)
 	if(managedFileName)
 	{
 	    var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>File: " + managedFileName + "<br> uploaded by " + currentAttachment.author.displayName + " on " + moment(currentAttachment.created).format('lll') + "</div>";
-	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSave();} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
+	    //var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');ijfUtils.simpleSave();} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
+
+	    //ijfUtils.simpleSave();
+
     }
     else
     {
         var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>Managed File has not been Initialized<br>&nbsp;</div>";
-	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>'); \"></form>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSave(); \"></form>";
+	    //var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"'); ijfUtils.simpleSave();\"></form>";
 	}
 
 
@@ -2991,11 +3068,15 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
     var l_Style = inField.style;
     var l_fieldStyle = inField.fieldStyle;
 
+    if(!l_Style) l_Style="background:transparent";
+
+
     if(!l_fieldStyle) l_fieldStyle="width:100px;background:transparent";
 	if(rOnly) l_fieldStyle="background:lightgray";
 
     var ocf =  ijfUtils.getEvent(inField);
-	var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('attachmentFileDisplayId').update(ijfUtils.getFileInputName(this,'attachmentFileDisplayId')); multiple></form>";
+	//var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('attachmentFileDisplayId').update(ijfUtils.getFileInputName(this,'attachmentFileDisplayId')); multiple></form>";
+var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');ijfUtils.simpleSave(); multiple></form>";
     var simple = new Ext.FormPanel({
         border:false,
         hidden: hideField,
@@ -3022,6 +3103,7 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
             id: "attachmentFileDisplayId",
             frame: false,
             border: false,
+            hidden: true,
             bodyStyle:  l_fieldStyle,
             xtype: "panel"},
            {
@@ -3333,9 +3415,9 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 		var jf=item.fields[jfFieldDef.id];
 		var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
 	    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
-        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
-	}
 
+	}
+        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
 	    var lValidator = function(v){return true};
 	    var lRegex =  inField.regEx;
@@ -3708,6 +3790,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 					fieldStyle: l_fieldStyle,
 					fieldLabel: lCaption,
 					hideLabel: hideLabel,
+					typeAhead: true,
 					allowBlank: lAllowBlank,
 					readOnly: rOnly,
 					value: data,
@@ -3760,6 +3843,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 			fieldLabel: lCaption,
 			hideLabel: hideLabel,
 			allowBlank: lAllowBlank,
+			typeAhead: true,
 			readOnly: rOnly,
 			value: data,
 			forceSelection: limitList,
@@ -5161,6 +5245,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
         hidden: hideField,
         border:false,
         bodyStyle: l_Style,
+        style: l_Style,
         items:[{xtype: 'radiogroup',
 			labelAlign: 'left',
 			labelStyle: l_fieldStyle, //was panel style
@@ -5588,6 +5673,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
                 style: l_panelStyle,
                 handler: function(){
 					ijf.main.gEventControl=this.up().jField;
+					ijf.main.gExtEventControl=this;
                     ocf();
                 }
             }
@@ -5816,21 +5902,33 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 
     inContainer.title = inField.toolTip;
 
-	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
-    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=item.fields[jfFieldDef.id];
 
-	if(inField.dataReference == "html")
-	{
-	    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf,false,true);
+
+	    var lAllowBlank = true;
+    if(inField.dataSource=="session")
+    {
+		var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+		if((!data) && (inField.style.indexOf('query:true')<0)) data=inField.dataReference2;
 	}
 	else
 	{
-	    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+		var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+		var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+		var jf=item.fields[jfFieldDef.id];
+
+		if(inField.dataReference == "html")
+		{
+			var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf,false,true);
+		}
+		else
+		{
+			var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+		}
+	    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
 	}
 
-	    var lAllowBlank = true;
-	    if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
+
+
         if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
 	    var lMaxsize =  Number.MAX_VALUE;
@@ -5959,11 +6057,18 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 	                    if(!inField.toolTip) inContainer.title = f.getErrors().join();
 	                },
 	                change: function(f,n,o){
-	                    ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
-	                    if(f.isValid())
-	                    {
-	                        ocf(f,n,o);
-	                    }
+						if(inField.dataSource=="session")
+						{
+							ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+						}
+						else
+						{
+							ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+						}
+						if(f.isValid())
+						{
+							ocf(f,n,o);
+						}
 	                }
 	            }
 	        }]
@@ -6373,6 +6478,29 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 					  }
 					  if((vStart==0) && (i<inStr.length-7))
 					  {
+						//where >=
+						if(inStr.substr(i,3).toUpperCase()==" >=")
+						{
+							vStart=i-1;
+							vStartFound=true;
+						}
+						else if(inStr.substr(i,2).toUpperCase()==" >")
+						{
+							vStart=i-1;
+							vStartFound=true;
+						}
+						if(inStr.substr(i,3).toUpperCase()==" <=")
+						{
+							vStart=i-1;
+							vStartFound=true;
+						}
+						else if(inStr.substr(i,2).toUpperCase()==" <")
+						{
+							vStart=i-1;
+							vStartFound=true;
+						}
+
+
 						//where IN
 						if(inStr.substr(i,3).toUpperCase()==" IN")
 						{
@@ -6451,6 +6579,14 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 			{
 				retStr = key + " " + value + " and " + inStr;
 			}
+			else if(value.indexOf("<")>-1)
+			{
+				retStr = key + " " + value + " and " + inStr;
+			}
+			else if(value.indexOf(">")>-1)
+			{
+				retStr = key + " " + value + " and " + inStr;
+			}
 			else if(value.toUpperCase().indexOf("~")>-1)
 			{
 				//~needs to be outside quote...
@@ -6515,6 +6651,29 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 					  }
 					  if((vStart==0) && (i<inStr.length-7))
 					  {
+						//where >=
+						if(inStr.substr(i,3).toUpperCase()==" >=")
+						{
+							vStart=i-1;
+							vStartFound=true;
+						}
+						else if(inStr.substr(i,2).toUpperCase()==" >")
+						{
+							vStart=i-1;
+							vStartFound=true;
+						}
+						if(inStr.substr(i,3).toUpperCase()==" <=")
+						{
+							vStart=i-1;
+							vStartFound=true;
+						}
+						else if(inStr.substr(i,2).toUpperCase()==" <")
+						{
+							vStart=i-1;
+							vStartFound=true;
+						}
+
+
 						//where IN
 						if(inStr.substr(i,3).toUpperCase()==" IN")
 						{
@@ -6624,6 +6783,8 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 	    {
 		    var rawList = ijfUtils.jiraApiSync('GET',aUrl, null);
 		}
+
+       var totalResultRows = rawList.total;
 
        rawList.issues.forEach(function(i){
 			translateFields.split(",").forEach(function(f){
@@ -7190,80 +7351,157 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         var l_PageSize=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"paging");
 		if(l_PageSize) itemsPerPage = l_PageSize/1;
 
-	    var tSearch = "jql="+lds+"&fields="+translateFields;
-		tSearch = ijfUtils.replaceKeyValues(tSearch,item);
-		//var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
 
-  	    var aUrl = '/rest/api/2/search?'+tSearch;
-  	    var xtraParams = {};
-        if(inField.form.formProxy=="true")
+        //if itemsPerPage > 10000, then pull all the data and disable paging and just load all the data.
+
+        if(itemsPerPage > 99999)
         {
-			//aUrl = aUrl.replace(/ /g,"%20");
-		    xtraParams = {
-				"ijfAction":"proxyApiCall",
-				"url": encodeURI(aUrl.replace(/ /g,"%20")),
-				"formSetId":inField.form.formSet.id
-			}
-		    aUrl=g_root + "/plugins/servlet/iforms";
-		    //?ijfAction=proxyApiCall&formSetId="+inField.form.formSet.id+"&url="+encodeURI(aUrl);
-	    }
+            //call it a few times...
+            var tSearch = "jql="+lds+"&startAt=SEARCHSTART&maxResults=300&fields="+translateFields;
+			tSearch = ijfUtils.replaceKeyValues(tSearch,item);
+			var aUrl = '/rest/api/2/search?'+tSearch;
 
-        var store = Ext.create('Ext.data.Store', {
-            model: inField.dataSource + inField.formCell.replace(/,/g,""),
-	        pageSize: itemsPerPage,
-        	proxy: {
-			        type: 'ajax',
-			        url: aUrl,
-			        extraParams: xtraParams,
-			        reader: {
-			            type: 'json',
-			            rootProperty: 'issues',
-			            totalProperty: 'total',
-						transform: function(data) {
-								// do some manipulation of the raw data object
-								var dataItems = data.issues.map(function(i){
-											var retObj ={};
-											translateFields.split(",").forEach(function(f){
-												var thisField = f.trim();
-												var dVal = "unknown";
-												var jField = ijfUtils.getJiraFieldById(thisField);
-												if(i.fields.hasOwnProperty(jField.id))
-												{
-													dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
-													//perhaps build the types here...
-													colMeta[jField.id]=jField;
-												}
-												retObj[thisField]= dVal;
-											});
-											//retObj.iid=i.id;
-											retObj.iid=i.key;
-											retObj.key = i.key
-											if(urlkey) retObj.key="<a href='/browse/"+i.key+"' target='_blank'>"+i.key+"</a>";
+            var allDataArray = [];
+            var startAt = 0;
+            var loadData = function(inArray)
+            {
+                var tempUrl = aUrl.replace("SEARCHSTART",startAt);
+				if(inField.form.formProxy=="true")
+				{
+					aUrl=aUrl.replace(/ /g,"%20");
+					var rawList = ijfUtils.getProxyApiCallSync(tempUrl, inField.form.formSet.id);
+				}
+				else
+				{
+					var rawList = ijfUtils.jiraApiSync('GET',tempUrl, null);
+				}
 
-											return retObj;
-										});
-								if(ijf.snippets.hasOwnProperty(inField.referenceFilter)) dataItems = ijf.snippets[inField.referenceFilter](dataItems);
-								data.issues=dataItems;
-								return data;
-			            }
-					}
-        	},
-        	listeners: {"beforeload":function (store, operation, eOpts ) {
-				var test = "here";
-				operation._proxy.extraParams["maxResults"]= operation._limit;
-				operation._proxy.extraParams["startAt"]= operation._start;
-			}}
-        });
-        store.load({
-					params: {
-						limit: itemsPerPage,
-						start: 0,
-						// specify params for the first page load if using paging
-						startAt: 0,
-						maxResults: itemsPerPage,
-					}
+		        var totalResultRows = rawList.total;
+				rawList.issues.forEach(function(i)
+				{
+					inArray.push(i);
 				});
-	  }
+				startAt+=300;
+				if(rawList.issues.length<300) return true;
+				return false;
+
+			}
+			var dataLoaded = false;
+			while(!dataLoaded) dataLoaded = loadData(allDataArray);
+
+			var dataItems = allDataArray.map(function(i){
+							var retObj ={};
+							translateFields.split(",").forEach(function(f){
+								var thisField = f.trim();
+								var dVal = "unknown";
+								var jField = ijfUtils.getJiraFieldById(thisField);
+								if(i.fields.hasOwnProperty(jField.id))
+								{
+									dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
+									//perhaps build the types here...
+									colMeta[jField.id]=jField;
+								}
+								retObj[thisField]= dVal;
+							});
+							//retObj.iid=i.id;
+							retObj.iid=i.key;
+							retObj.key = i.key
+							if(urlkey) retObj.key="<a href='/browse/"+i.key+"' target='_blank'>"+i.key+"</a>";
+
+							return retObj;
+						});
+				if(ijf.snippets.hasOwnProperty(inField.referenceFilter)) dataItems = ijf.snippets[inField.referenceFilter](dataItems);
+
+			var store = Ext.create('Ext.data.Store', {
+				model: inField.dataSource + inField.formCell.replace(/,/g,""),
+				proxy: {
+					type: 'memory',
+					reader: {
+						type: 'json'
+					}},
+				autoLoad: false});
+			store.proxy.data=dataItems;
+			store.load();
+
+
+		}
+		else
+		{
+			var tSearch = "jql="+lds+"&fields="+translateFields;
+			tSearch = ijfUtils.replaceKeyValues(tSearch,item);
+			//var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
+
+			var aUrl = '/rest/api/2/search?'+tSearch;
+			var xtraParams = {};
+			if(inField.form.formProxy=="true")
+			{
+				//aUrl = aUrl.replace(/ /g,"%20");
+				xtraParams = {
+					"ijfAction":"proxyApiCall",
+					"url": encodeURI(aUrl.replace(/ /g,"%20")),
+					"formSetId":inField.form.formSet.id
+				}
+				aUrl=g_root + "/plugins/servlet/iforms";
+				//?ijfAction=proxyApiCall&formSetId="+inField.form.formSet.id+"&url="+encodeURI(aUrl);
+			}
+
+			var store = Ext.create('Ext.data.Store', {
+				model: inField.dataSource + inField.formCell.replace(/,/g,""),
+				pageSize: itemsPerPage,
+				proxy: {
+						type: 'ajax',
+						url: aUrl,
+						extraParams: xtraParams,
+						reader: {
+							type: 'json',
+							rootProperty: 'issues',
+							totalProperty: 'total',
+							transform: function(data) {
+									// do some manipulation of the raw data object
+									var dataItems = data.issues.map(function(i){
+												var retObj ={};
+												translateFields.split(",").forEach(function(f){
+													var thisField = f.trim();
+													var dVal = "unknown";
+													var jField = ijfUtils.getJiraFieldById(thisField);
+													if(i.fields.hasOwnProperty(jField.id))
+													{
+														dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
+														//perhaps build the types here...
+														colMeta[jField.id]=jField;
+													}
+													retObj[thisField]= dVal;
+												});
+												//retObj.iid=i.id;
+												retObj.iid=i.key;
+												retObj.key = i.key
+												if(urlkey) retObj.key="<a href='/browse/"+i.key+"' target='_blank'>"+i.key+"</a>";
+
+												return retObj;
+											});
+									if(ijf.snippets.hasOwnProperty(inField.referenceFilter)) dataItems = ijf.snippets[inField.referenceFilter](dataItems);
+									data.issues=dataItems;
+									return data;
+							}
+						}
+				},
+				listeners: {"beforeload":function (store, operation, eOpts ) {
+					var test = "here";
+					operation._proxy.extraParams["maxResults"]= operation._limit;
+					operation._proxy.extraParams["startAt"]= operation._start;
+				}}
+			});
+			store.load({
+						params: {
+							limit: itemsPerPage,
+							start: 0,
+							// specify params for the first page load if using paging
+							startAt: 0,
+							maxResults: itemsPerPage,
+						}
+					});
+	    }
+	}
 
 
     var myBbar = null;
@@ -7466,7 +7704,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				//look for snippet...
 				if(ijf.snippets.hasOwnProperty(tEvent))
 				{
-					ijf.snippets[tEvent](record.data.iid,this);
+					ijf.snippets[tEvent](record.data.iid,this, record);
 					return;
 				}
 				//look for popform: xxx and pop the form
@@ -8719,6 +8957,24 @@ renderGridHtml:function(inFormKey,item, inField, inContainer)
 	if(inField.tableWidths) colWidths=inField.tableWidths.split(",");
 	if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
 
+
+		//lazy load handling for custom types
+			if(!thisT.settings)
+			{
+			   var typeIndex = ijf.fw.CustomTypes.indexOf(thisT);
+
+				//load the settings...
+               var fullTypeRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisT.id, null);
+			   var cleanDoubleDouble = fullTypeRaw.replace(/\"\"/g,"\"");
+			   cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
+			   cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
+			   thisT = JSON.parse(cleanDoubleDouble);
+
+			   //update local memory
+			   ijf.fw.CustomTypes.splice(typeIndex, 1);
+			   ijf.fw.CustomTypes.push(thisT);
+			}
+
 	//create Table from Json
     var gCols = JSON.parse(thisT.settings);
     //order by order
@@ -8910,6 +9166,17 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
     {
         collapsed=true;
     }
+    var noSort = false;
+    if (l_fieldStyle.indexOf('nosort:true')>-1)
+    {
+	        noSort=true;
+    }
+    var renderHeaders = true;
+    if (l_fieldStyle.indexOf('headers:false')>-1)
+    {
+	        renderHeaders=false;
+    }
+
 
 	var features = null;
     if (l_fieldStyle.indexOf('sums:true')>-1)
@@ -8918,6 +9185,24 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 		        ftype: 'summary'
 		        }];
     }
+    if(inField.dataReference2)
+    {
+		//features handler...
+		if(!features) features=[];
+
+		try
+		{
+			var rawFeatures = JSON.parse(inField.dataReference2);
+			rawFeatures.forEach(function(f){
+				features.push(f);
+			});
+
+		}
+		catch(e)
+		{
+			ijfUtils.footLog("failed to set features for GRID");
+		}
+	}
 
 
 	var l_Height = 300;
@@ -8951,6 +9236,23 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
     var listColumns = [];
     var tFields = [];
     var lookups = [];
+
+		//lazy load handling for custom types
+			if(!thisT.settings)
+			{
+			   var typeIndex = ijf.fw.CustomTypes.indexOf(thisT);
+
+				//load the settings...
+               var fullTypeRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisT.id, null);
+			   var cleanDoubleDouble = fullTypeRaw.replace(/\"\"/g,"\"");
+			   cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
+			   cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
+			   thisT = JSON.parse(cleanDoubleDouble);
+
+			   //update local memory
+			   ijf.fw.CustomTypes.splice(typeIndex, 1);
+			   ijf.fw.CustomTypes.push(thisT);
+			}
 
     var gCols = JSON.parse(thisT.settings);
     //order by order
@@ -9123,7 +9425,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 									};
 					if(ijf.fw.CustomTypes.reduce(function(inObj,t){if(t.name==col.reference) inObj=t; return inObj;},null))
 					{
-						lookups[col.columnName] = ijfUtils.getReferenceDataByName(col.reference,"0");
+						lookups[col.columnName] = ijfUtils.getReferenceDataByName(col.reference,"0",false,noSort);
 					}
 					else
 					{
@@ -9131,7 +9433,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 						try
 						{
 							cLookupDef = JSON.parse(col.reference);
-							lookups[col.columnName] = ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index);
+							lookups[col.columnName] = ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index,false,noSort);
 
 							//establish a listener for this combo if necessary
 							if(cLookupDef.parents)
@@ -9293,6 +9595,19 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 								ijf.main.resetForm();
 							};
 							Ext.getBody().mask("Saving...");
+
+							if(inField.dataReference)
+							{
+								ijf.main.saveResultMessage = ijfUtils.replaceKeyValues(inField.dataReference,item);
+							}
+							else
+							{
+								ijf.main.saveResultMessage = null;
+							}
+
+
+
+
 							var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,inField.form,item)};
 							window.setTimeout(saveIt,50);
 						}
@@ -9403,7 +9718,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 				}
 			});
 
-
+    if(!renderHeaders) headerButtons=null;
     var gridPanel = new Ext.grid.GridPanel({
 		 title: lCaption,
 		 style: l_Style,
@@ -9767,7 +10082,7 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
 					}
 				});
 			headerButtons.push({
-				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upGrdFrm_'+inField.formCell.replace(/,/g,"_")+"'><input id='"+inFormKey+'_upGrd_'+inField.formCell.replace(/,/g,"_")+"' type='file' name='file' onchange='ijfUtils.gridUploadCsvFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\");'></form>",
+				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upGrdFrm_'+inField.formCell.replace(/,/g,"_")+"'><input id='"+inFormKey+'_upGrd_'+inField.formCell.replace(/,/g,"_")+"' type='file' name='file' onchange='ijfUtils.gridUploadCsvFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\",true);'></form>",
 				frame: false,
 				hidden: true,
 				border: false,

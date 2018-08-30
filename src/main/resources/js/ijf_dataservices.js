@@ -70,7 +70,16 @@ getNamedSource:function(dataSource,inFormKey,item,inField,inContainer)
     else
         turl = turl + '&itemId=' + item.key;
 
-    $.ajax(g_root + '/plugins/servlet/iforms?ijfAction=proxyHttpRequest&url=' + encodeURIComponent(turl), {
+    var seqStr = "";
+    if(inField.fieldStyle)
+    {
+	    if(inField.fieldStyle.indexOf("sequence:true")>-1)
+	    {
+			seqStr = "&seq=" + moment().valueOf();
+		}
+	}
+
+    $.ajax(g_root + '/plugins/servlet/iforms?ijfAction=proxyHttpRequest' + seqStr + '&url=' + encodeURIComponent(turl), {
         success: function(data) {
             //$('#main').html($(data).find('#main *'));
             ijfUtils.footLog("Successful data acquisition");

@@ -160,7 +160,7 @@ renderReport_noforms:function(inContainerId)
     var lJql = getUrlPart(cUrlQuery,"jql");
     var lFields = getUrlPart(cUrlQuery,"fields");
     var lIssue = getUrlPart(cUrlQuery,"issue");
-    var lReport = getUrlPart(cUrlQuery,"report");
+    var lReport = getUrlPart(cUrlQuery,"reportName");
 
     var thisType = ijf.fw.CustomTypes.reduce(function(inTp,ct){
 			if(ct.customType!="FILE") return inTp;

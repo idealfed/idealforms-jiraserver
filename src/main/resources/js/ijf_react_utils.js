@@ -1656,14 +1656,29 @@ ijf.reactUtils = {
 		//syntax for filter:  cardSearch_[formcell]
 		//   simple string....
 		if (ijf.session["cardSearch_" + inField.formCell]) {
+			var searchStr = ijf.session["cardSearch_" + inField.formCell].toLowerCase();
+			searchStr = searchStr.trim();
+			var searchKeys = searchStr.split(" ");
+			var keyCount = searchKeys.length;
 			dataItems.forEach(function (r) {
 				r.visibility = "hidden";
-
-				Object.keys(r).forEach(function (k) {
-					try {
-						if (r[k].toLowerCase().indexOf(ijf.session["cardSearch_" + inField.formCell].toLowerCase()) > -1) r.visibility = "visible";
-					} catch (e) {}
+				var runningCount = 0;
+				var keyCheck = {};
+				searchKeys.forEach(function (sk) {
+					if (!sk || sk == "") return;
+					Object.keys(r).forEach(function (k) {
+						try {
+							if (keyCheck.hasOwnProperty(sk)) return;
+							if (r[k].toLowerCase().indexOf(sk) > -1) {
+								keyCheck[sk] = "found";
+								runningCount++;
+							}
+						} catch (e) {
+							var testE = e;
+						}
+					});
 				});
+				if (runningCount == keyCount) r.visibility = "visible";
 				//if filters enabled
 			});
 			dataItems = dataItems.reduce(function (inA, r) {
@@ -2143,8 +2158,11 @@ ijf.reactUtils = {
 		} catch (e) {
 			var fieldSettings = {};
 		}
-
-		var buttonStyle = {};
+		try {
+			var buttonStyle = JSON.parse(inField.labelStyle);
+		} catch (e) {
+			var buttonStyle = {};
+		}
 		if (hideField) buttonStyle.visibility = "hidden";
 
 		var variant = "persistent";
@@ -2332,8 +2350,8 @@ ijf.reactUtils = {
 							React.createElement(
 								'div',
 								{ style: style },
-								this.getDrawerTitleHtml(),
 								this.getHeaderIcon(),
+								this.getDrawerTitleHtml(),
 								this.getDrawerTitle(),
 								this.getIcon()
 							),
@@ -3024,7 +3042,7 @@ ijf.reactUtils = {
 				_this16.handleChange = function (event) {
 					//add OCF call here..
 					if (inField.dataSource == "session") {
-						ijf.session[inFormKey + '_fld_' + inField.formCell] = n;
+						ijf.session[inFormKey + '_fld_' + inField.formCell] = event.target.value;
 					} else {
 						ijf.main.controlChanged(inFormKey + '_fld_' + inField.formCell);
 					}

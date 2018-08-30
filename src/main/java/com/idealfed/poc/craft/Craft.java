@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import javax.servlet.http.Cookie;
 
-
 import com.atlassian.activeobjects.external.ActiveObjects;
 import com.atlassian.jira.mail.Email;
 import com.atlassian.mail.MailFactory;
@@ -289,12 +288,17 @@ public class Craft extends HttpServlet
 			{
 				String targetUrl = java.net.URLDecoder.decode(request.getParameter("url"));
 
+				plog.error("Calling URL: " + targetUrl);
+
 				URL url = new URL(targetUrl);
+				HttpURLConnection.setFollowRedirects(false);
 				HttpURLConnection con = (HttpURLConnection) url.openConnection();
 				con.setRequestMethod("GET");
 
 				int status = con.getResponseCode();
-				//plog.error("Api call response code: " + status);
+
+				plog.error("Api call response code: " + status);
+
 
 				BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
 				String inputLine;
@@ -304,6 +308,15 @@ public class Craft extends HttpServlet
 				}
 				in.close();
 				con.disconnect();
+
+				String sessionKey = request.getParameter("sessionKey");
+                if(sessionKey!=null)
+                {
+					String cookies = con.getHeaderField("Set-Cookie");
+					plog.error("cookie is : " + cookies);
+					request.getSession().setAttribute(sessionKey,cookies);
+				}
+
 
 				final PrintWriter w = response.getWriter();
 				w.print(content.toString());
@@ -514,6 +527,33 @@ public class Craft extends HttpServlet
 				w.close();
 				return;
 			}
+		}
+
+    	if(iwfAction.equals("getFormConfig"))
+    	{
+
+        		//we need to get the form -> formSet
+        		FormSet fs = null;
+        		for (Form f : ao.find(Form.class))
+                {
+                    if(f.getName().equals(formId)) fs = f.getFormSet();
+                }
+
+	    		final PrintWriter w = response.getWriter();
+	    		w.printf("{\"status\":\"OK\",\"resultSet\":[");
+	    		if(fs!=null)   w.printf(getAoFormSetJson(fs));
+	    		w.printf("{}],\"customTypes\":[");
+
+	    		for (CustomType ct : ao.find(CustomType.class))
+	            {
+	                w.printf(getCustomTypeConfig(ct));
+	            }
+
+	    		w.printf("{}]}");
+
+	    		w.close();
+	    		return;
+
 		}
 
 
@@ -730,6 +770,28 @@ public class Craft extends HttpServlet
 		return sb.toString();
 	}
 
+	private String getCustomTypeConfig(CustomType ct)
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append("{\"id\":\"" + ct.getID() + "\",");
+		sb.append("\"name\":\"" + ct.getName() + "\",");
+		sb.append("\"description\":\"" + ct.getDescription() + "\",");
+		sb.append("\"customType\":\"" + ct.getCustomType() + "\",");
+		sb.append("\"fieldName\":\"" + ct.getFieldName() + "\"");
+
+		String cType = ct.getCustomType();
+		if(cType.equals("FILE"))
+		{
+					sb.append(",\"settings\":\"\"[]\"\"},");
+		}
+		else
+		{
+					sb.append("},");
+		}
+
+		return sb.toString();
+	}
+
 	private String getAoFormSetJson(FormSet fs)
 	{
 		StringBuilder sb = new StringBuilder();
@@ -848,25 +910,48 @@ public class Craft extends HttpServlet
 				//plog.error("Calling proxy");
 
 				String targetUrl = java.net.URLDecoder.decode(req.getParameter("url"));
+				plog.error("URL for proxy call: " + targetUrl);
 				String targetMethod = req.getParameter("method");
 				String targetData = req.getParameter("data");
 				String contentType = req.getParameter("contenttype");
+				String sessionKey = req.getParameter("sessionKey");
+
 
 				//plog.error("Have params");
-
+plog.error("Creating URL");
 				URL url = new URL(targetUrl);
 				HttpURLConnection con = (HttpURLConnection) url.openConnection();
+plog.error("Connection open");
+
+				//handle cookie from session
+				if(sessionKey!=null)
+				{
+					Object sCookie = req.getSession().getAttribute(sessionKey);
+					if(sCookie==null)
+					{
+						//this requires a session to call, return error with no session
+						plog.error("Required session key not set");
+						final PrintWriter w = res.getWriter();
+						w.print("No session established for session key");
+						w.close();
+						return;
+					}
+					String jSessionId=sCookie.toString();
+plog.error("Cookie set to: " + jSessionId);
+
+					con.setRequestProperty("Cookie", jSessionId);
+				}
 
 				if(contentType!=null)
 				{
 					con.setRequestProperty("Content-Type", contentType);
 				}
-
 				con.setRequestMethod(targetMethod);
+				plog.error("method set");
 
 				if((targetMethod.equals("POST")) || (targetMethod.equals("PUT")))
 				{
-					targetData=targetData;
+					//targetData=targetData;
 					con.setDoOutput(true);
 					DataOutputStream out = new DataOutputStream(con.getOutputStream());
 					out.writeBytes(targetData);
@@ -875,6 +960,7 @@ public class Craft extends HttpServlet
 				}
 
 				int status = con.getResponseCode();
+plog.error("status is: " + status);
 
 				BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
 				String inputLine;
@@ -884,6 +970,7 @@ public class Craft extends HttpServlet
 				}
 				in.close();
 				con.disconnect();
+plog.error("writing output");
 				//plog.error("Have response");
 				final PrintWriter w = res.getWriter();
 				w.print(content.toString());

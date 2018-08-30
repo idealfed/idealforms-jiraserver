@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "5.0.29";
+    window.g_version = "5.0.38";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);
@@ -79,9 +79,13 @@ function init(inConfigVersion)
     //var jdata='[{"id":"40","name":"first form set","projectName":"Test Project One","projectId":"TPO","settings":"[]","snippets":[],"forms":[{"id":"38","testIssue":"TPO-1","formType":"Add","name":"first Form","fields":"[]","formSettings":"[]"}]}]';
     //ijfUtils.writeFullConfig(jdata,false);
 
+    var configUrl = '/plugins/servlet/iforms?ijfAction=getFormConfig&formId='+g_formId;
+    if(g_formId=="") configUrl = '/plugins/servlet/iforms?ijfAction=getConfig&version='+inConfigVersion;
 
     ijfUtils.footLog("Calling load configuration...");
-    jQuery.ajax(g_root + '/plugins/servlet/iforms?ijfAction=getConfig&version='+inConfigVersion, {
+//    jQuery.ajax(g_root + '/plugins/servlet/iforms?ijfAction=getConfig&version='+inConfigVersion, {
+//	  jQuery.ajax(g_root + '/plugins/servlet/iforms?ijfAction=getFormConfig&formId='+g_formId, {
+	  jQuery.ajax(g_root + configUrl, {
         success: function(data) {
             //jQuery('#main').html(jQuery(data).find('#main *'));
             ijfUtils.footLog("Successful load");
@@ -219,6 +223,10 @@ function processSetup(inContainerId)
 		{
 			ijf.lists.renderReportList_Borderlayout(inContainerId);
 		}
+		//else if(window.location.search.indexOf("mode=report")>-1)
+	    //{
+		//	ijf.lists.renderReport_noforms(inContainerId);
+		//}
 		else if(window.location.search.indexOf("mode=admin")>-1)
 		{
 			ijf.lists.renderGroupList_Borderlayout(inContainerId);
@@ -229,6 +237,19 @@ function processSetup(inContainerId)
 		}
 		return;
 	}
+    if (ijf.main.itemId=='')
+    {
+		ijfUtils.renderAdminButtons(inContainerId);
+		//look for report mode...else forms
+
+		if(window.location.search.indexOf("mode=report")>-1)
+	    {
+			ijf.lists.renderReport_noforms(inContainerId);
+			return;
+		}
+	}
+
+
 
 
     if (ijf.main.itemId=='')
@@ -309,15 +330,15 @@ function loadItem(inContainerId)
 	    {
 		    if(tItem.indexOf("not have the permission")>-1)
 		    {
-				 ijfUtils.modalDialogMessage("Error","Unable to load the item because you doe not have the correct permissions.");
+				 ijfUtils.modalDialogMessage("Error","Unable to load the item because you do not have the correct permissions.");
 			}
 		    else if(tItem.indexOf("401 for URL")>-1)
 		    {
-				 ijfUtils.modalDialogMessage("Error","Unable to load the item because you doe not have the correct permissions. (401)");
+				 ijfUtils.modalDialogMessage("Error","Unable to load the item because you do not have the correct permissions. (401)");
 			}
 		    else if(tItem.indexOf("403 for URL")>-1)
 		    {
-				 ijfUtils.modalDialogMessage("Error","Unable to load the item because you doe not have the correct permissions.<br>And it appears the account is locked.  Please contact support.  (403)");
+				 ijfUtils.modalDialogMessage("Error","Unable to load the item because you do not have the correct permissions.<br>And it appears the account is locked.  Please contact support.  (403)");
 			}
 		    else if(tItem.indexOf("Failed")>-1)
 		    {
