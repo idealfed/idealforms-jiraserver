@@ -1454,11 +1454,12 @@ replaceWordChars:function(text) {
     //s = s.replace(/"/g,"&quot;");
     //s = s.replace(/'/g,"&apos;");
 
-
-
     //sledge hammer
     s = unescape(encodeURIComponent(s));
 
+    //special coding to inject OO coding back in
+    //s=s.replace(/>/g,"!\\GT").replace(/</g,"!\\LT");
+    s-s.replace(/!\\LT/g,"<").replace(/!\\GT/g,">");
     return s;
 },
 
