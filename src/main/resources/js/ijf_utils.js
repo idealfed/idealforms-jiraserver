@@ -833,7 +833,15 @@ readBinaryFile:function(event, onLoadHandler)
 },
 readJiraGroupsConfigFile:function(event)
 {
+	   //this must be a txt file, if not...bail....
+	   if(event.target.files[0].name.indexOf(".txt")<0)
+	   {
+	   		ijfUtils.modalDialogMessage("Error","Sorry, only txt files can be imported, with a single column of group names.");
+		   return;
+	   }
+
 	    var input = event.target;
+
 	    var reader = new FileReader();
 	    reader.onload = function(){
 	      var text = reader.result;
@@ -1459,7 +1467,9 @@ replaceWordChars:function(text) {
 
     //special coding to inject OO coding back in
     //s=s.replace(/>/g,"!\\GT").replace(/</g,"!\\LT");
-    s-s.replace(/!\\LT/g,"<").replace(/!\\GT/g,">");
+    //s-s.replace(/!\\LT/g,"<").replace(/!\\GT/g,">");
+    //s=s.replace(/>/g,"!{GT}").replace(/</g,"!{LT}");
+    s=s.replace(/!{LT}/g,"<").replace(/!{GT}/g,">");
     return s;
 },
 

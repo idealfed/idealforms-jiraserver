@@ -30,6 +30,51 @@ helpLink:function(inLabel, inCaller)
 	switch(cType)
 	{
 		//field styles
+		case "muiAppBar":
+				    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiAppBar");
+		break;
+		case "muiButton":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiButton");
+		break;
+		case "muiCardList":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiCardList");
+		break;
+		case "muiCommentList":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiCommentList");
+		break;
+		case "muiCommentSuperList":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiCommentSuperList");
+		break;
+		case "muiDatebox":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiDatebox");
+		break;
+		case "muiDrawer":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiDrawer");
+		break;
+		case "muiGrid":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiGrid");
+		break;
+		case "muiHistoryList":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiHistoryList");
+		break;
+		case "muiHtml":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiHtml");
+		break;
+		case "muiIcon":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiIcon");
+		break;
+		case "muiRadio":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiRadio");
+		break;
+		case "muiSelect":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiSelect");
+		break;
+		case "muiTextbox":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiTextbox");
+		break;
+		case "muiTextarea":
+						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiTextarea");
+		break;
 		case "Reference Editor":
 				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-37#" + inLabel);
 		break;
@@ -1494,7 +1539,7 @@ addEditForm:function (sRow)
 		});
 
 
-		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentlisttree","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","GRIDHTML","grouppicker","grouppickermulti","html","htmldata","htmleditor","historylist","iframe","itemlist","itemlistHTML","itemtree","muiAppBar","muiButton","muiCardList","muiCommentList","muiDatebox","muiDrawer","muiFormButtons","muiGrid","muiHtml","muiHistoryList","muiIcon","muiRadio","muiSelect","muiTextarea","muiTextbox","multiselect","navigatetoform","Reference Editor","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
+		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentlisttree","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","GRIDHTML","grouppicker","grouppickermulti","html","htmldata","htmleditor","historylist","iframe","itemlist","itemlistHTML","itemtree","muiAppBar","muiButton","muiCardList","muiCommentList","muiCommentSuperList","muiDatebox","muiDrawer","muiFormButtons","muiGrid","muiHtml","muiHistoryList","muiIcon","muiRadio","muiSelect","muiTextarea","muiTextbox","multiselect","navigatetoform","Reference Editor","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
 
 	    var  sectionLookup = [];
 

@@ -1575,6 +1575,77 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		}
 		this.renderCardList(inFormKey,item, inField, inContainer, sortedLogs, false)
 	},
+	renderSuperCommentList:function(inFormKey,item, inField, inContainer)
+	{
+		inField.dataReference = "author,body,date,time";
+
+      //IF I have a parent, construct the parent Item...
+       var workingIssue = ijf.currentItem;
+       if(workingIssue.fields.parent)
+       {
+         workingIssue=ijfUtils.getJiraIssueSync(workingIssue.fields.parent.key);
+       }
+       var keyList = [];
+       keyList.push(workingIssue.key);
+       if(workingIssue.fields.subtasks)
+       {
+       	  workingIssue.fields.subtasks.forEach(function(t){keyList.push(t.key);});
+       }
+
+		var jql = "key in ("+keyList.join(",")+")";
+		var flds = "comment";
+		var contextField = null;
+		if(inField.referenceFilter)
+		{
+				contextField = inField.referenceFilter;
+				flds += "," + contextField;
+		}
+		var suffix = "";
+		if(flds) suffix = "&fields=" + flds + "&maxResults=999";
+			var aUrl = '/rest/api/2/search?jql='+jql + suffix;
+		var sortedLogs = [];
+		var allLogs = [];
+		var rawList = ijfUtils.jiraApiSync('GET',aUrl, null);
+		if(rawList.issues)
+		{
+			rawList.issues.forEach(function(i)
+			{
+				if(i.fields.comment.comments)
+				{
+					i.fields.comment.comments.forEach(function(l)
+					{
+						if(contextField) l.contextField = i.fields[contextField];
+						allLogs.push(l)
+					});
+				}
+			});
+		}
+		//sort desc
+		var sortedLogs = allLogs.sort(function(a, b)
+		{
+			a = new Date(a.created);
+			b = new Date(b.created);
+			return a>b ? -1 : a<b ? 1 : 0;
+		});
+
+		sortedLogs = sortedLogs.map(function(a){
+			a.body = a.body.replace(/\n/g,"<br>");
+			if(a.author) a.author = a.author.displayName;
+			if(a.updateAuthor) a.author = a.updateAuthor.displayName;
+			if(a.contextField)
+			{
+				if(a.contextField.name)
+					a.author = a.contextField.name + " - " + a.author
+				else
+					a.author = a.contextField + " - " + a.author
+			}
+			a.date = moment(a.created).format('ll');
+			a.time = moment(a.created).format('LT');
+			return a;
+		});
+
+		this.renderCardList(inFormKey,item, inField, inContainer, sortedLogs, false)
+	},
 	renderCardList:function(inFormKey,item, inField, inContainer, inData, withExpander)
 	{
 		inContainer.title = inField.toolTip;

@@ -65,6 +65,9 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'muiCommentList':
                 ijf.reactUtils.renderCommentList(inFormKey,item,inField,inContainer);
                 break;
+            case 'muiCommentSuperList':
+                ijf.reactUtils.renderSuperCommentList(inFormKey,item,inField,inContainer);
+                break;
             case 'muiHistoryList':
                 ijf.reactUtils.renderHistoryList(inFormKey,item,inField,inContainer);
                 break;
