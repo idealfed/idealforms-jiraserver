@@ -3794,6 +3794,8 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 					fieldLabel: lCaption,
 					hideLabel: hideLabel,
 					typeAhead: true,
+					typeAheadDelay: 200,
+					selectOnTab: false,
 					allowBlank: lAllowBlank,
 					readOnly: rOnly,
 					value: data,

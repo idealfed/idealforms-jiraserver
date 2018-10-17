@@ -721,6 +721,18 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 					 var b = this.control.items.items[0].getEditorBody();
 					 this.newVal =  b.outerHTML;
 				}
+				else if(this.field.controlType=="userpicker")
+				{
+					if(!this.control.items.items[0].selection)
+					{
+						this.newVal = null;
+					}
+					else
+					{
+						var userObject ={"email":this.control.items.items[0].selection.data.email,"displayName":this.control.items.items[0].selection.data.displayName};
+                    	this.newVal = JSON.stringify(userObject);
+					}
+				}
 				else if(this.field.controlType=="multiselect")
 				{
 					//value is array.  get the array, switch to actual array values from ijfReference, save a json
