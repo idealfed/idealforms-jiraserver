@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.ArrayList;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.concurrent.*;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -73,6 +74,8 @@ public class Craft extends HttpServlet
 	private final PluginSettingsFactory pluginSettingsFactory;
     private static final Logger plog = LogManager.getLogger("atlassian.plugin");
     private final ActiveObjects ao;
+    //private final String reportCacheKey = "test";
+    //private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory) {
         this.pluginLicenseManager = pluginLicenseManager;
@@ -113,6 +116,9 @@ public class Craft extends HttpServlet
 		return wString;
 	}
 
+    //public void destroy() {
+    //    scheduler.shutdown();
+    //}
 
 	@Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -123,7 +129,7 @@ public class Craft extends HttpServlet
 
 //section to comment or uncomment license
 
-/*
+
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -145,7 +151,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-*/
+
 
 //end comment section
 
@@ -191,7 +197,7 @@ public class Craft extends HttpServlet
 //comment for unlicensed running
 //determine if Admin call or a Craft call, either way, require Administrator....
 
-/*
+
         if(iwfAction.equals("noAction"))
         {
 			if ((craftFlag.equals("true")) || (formId.equals("")))
@@ -212,7 +218,7 @@ public class Craft extends HttpServlet
 				}
 			}
 	    }
-*/
+
 
 //end comment section
 
@@ -290,6 +296,23 @@ public class Craft extends HttpServlet
 
 				plog.error("Calling URL: " + targetUrl);
 
+				//establish cache if there
+				/*
+				String cacheKey = request.getParameter("cacheKey");
+                if(cacheKey!=null)
+                {
+					request.getSession().setAttribute(cacheKey,"tbd");
+
+					//schedule the removal of the cacheKey data for now + 5 minutes....
+					ScheduledFuture<?> countdown = scheduler.schedule(new Runnable() {
+					            @Override
+					            public void run() {
+					                request.getSession().setAttribute("test","deleted");
+		            }}, 5, TimeUnit.MINUTES);
+				}
+				*/
+
+
 				URL url = new URL(targetUrl);
 				HttpURLConnection.setFollowRedirects(false);
 				HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -316,6 +339,15 @@ public class Craft extends HttpServlet
 					plog.error("cookie is : " + cookies);
 					request.getSession().setAttribute(sessionKey,cookies);
 				}
+
+
+				//set cache results if needed
+				/*
+                if(cacheKey!=null)
+                {
+		            request.getSession().setAttribute(cacheKey,content.toString());
+				}
+				*/
 
 
 				final PrintWriter w = response.getWriter();
@@ -500,12 +532,12 @@ public class Craft extends HttpServlet
 					{
 						if(isFirst==true)
 						{
-							retS.append("{\"name\":\""+usr.getName()+"\",\"displayName\":\""+usr.getDisplayName()+"\"}");
+							retS.append("{\"name\":\""+usr.getName()+"\",\"displayName\":\""+usr.getDisplayName()+"\",\"email\":\""+usr.getEmailAddress()+"\"}");
 							isFirst=false;
 						}
 						else
 						{
-							retS.append(",{\"name\":\""+usr.getName()+"\",\"displayName\":\""+usr.getDisplayName()+"\"}");
+							retS.append(",{\"name\":\""+usr.getName()+"\",\"displayName\":\""+usr.getDisplayName()+"\",\"email\":\""+usr.getEmailAddress()+"\"}");
 						}
 					}
 					retS.append("]}");
@@ -926,20 +958,23 @@ plog.error("Connection open");
 				//handle cookie from session
 				if(sessionKey!=null)
 				{
-					Object sCookie = req.getSession().getAttribute(sessionKey);
-					if(sCookie==null)
+					if(!sessionKey.equals(""))
 					{
-						//this requires a session to call, return error with no session
-						plog.error("Required session key not set");
-						final PrintWriter w = res.getWriter();
-						w.print("No session established for session key");
-						w.close();
-						return;
-					}
-					String jSessionId=sCookie.toString();
-plog.error("Cookie set to: " + jSessionId);
+						Object sCookie = req.getSession().getAttribute(sessionKey);
+						if(sCookie==null)
+						{
+							//this requires a session to call, return error with no session
+							plog.error("Required session key not set");
+							final PrintWriter w = res.getWriter();
+							w.print("No session established for session key");
+							w.close();
+							return;
+						}
+						String jSessionId=sCookie.toString();
+	plog.error("Cookie set to: " + jSessionId);
 
-					con.setRequestProperty("Cookie", jSessionId);
+						con.setRequestProperty("Cookie", jSessionId);
+					}
 				}
 
 				if(contentType!=null)

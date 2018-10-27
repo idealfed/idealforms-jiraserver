@@ -2826,7 +2826,7 @@ addEditCustomTypeDetails:function (inTypeId)
 	//lookups
 
     var requiredLookup = ["Yes","No"];
-    var controlLookup = ["checkbox","combobox","datefield","numberfield","textarea","textfield"];
+    var controlLookup = ["checkbox","combobox","datefield","multiselect","numberfield","textarea","textfield"];
 
     listColumns.push({
             header: 'Col Name',

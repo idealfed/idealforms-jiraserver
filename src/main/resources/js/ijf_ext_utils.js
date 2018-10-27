@@ -9512,6 +9512,81 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 							}
 			};
 			break;
+            case "multiselect":
+					tFields.push({name: col.columnName, type: 'string'});
+					//The lookup may be simple 1D array or part of a complex cascade.  The syntax of co.reference tells
+					var cLookupDef = {"index":"0"};
+					var msLookup=[];
+					var lId = 0;
+					var cListener = {
+										change: function(n,o,f)
+										{
+											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+										},
+										focus: function(){
+											this.validate();
+										}
+									};
+
+					cLookupDef = JSON.parse(col.reference);
+					//lookups[col.columnName] = ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index,false,noSort);
+					lookups[col.columnName] = ijfUtils.getReferenceDataRaw(cLookupDef.name);
+					if(lookups[col.columnName])
+					{
+						//this must uniquify
+						var uCheck = [];
+						msLookup = lookups[col.columnName].reduce(function(inA,e)
+						{
+							if(uCheck.hasOwnProperty(e[cLookupDef.index])) return inA;
+							inA.push({id: e[cLookupDef.index], show: e[cLookupDef.index]});
+							uCheck.push(e[cLookupDef.index]);
+							return  inA;
+						},[]);
+					}
+					//need to sortMsLookup
+						msLookup = msLookup.sort(function(inA, inB)
+						{
+							a = inB.id;
+							b = inA.id;
+							return a>b ? -1 : a<b ? 1 : 0;
+						});
+
+					var shows = Ext.create('Ext.data.Store', {
+					  fields: ['id','show'],
+					  data: msLookup
+				    });
+					colObj={
+							header: thisColHeader,
+							sortable: true,
+							hidden: false,
+							width: thisColWidth,
+							dataIndex: col.columnName,
+							renderer: validRenderer,
+							filter: {
+								type: 'list'
+							},
+							editor: {
+								completeOnEnter: true,
+								field: {
+									xtype: 'tagfield',
+									filterPickList: true,
+									allowBlank: (col.required!="Yes"),
+									validator: lValidator,
+									forceSelection: true,
+									store: shows,
+									lookupDef: cLookupDef,
+            valueField: 'id',
+			displayField: 'show',
+			value: [],
+			queryMode: 'local',
+			triggerAction: 'all',
+			emptyText:'Please select...',
+			selectOnFocus:true,
+									listeners: cListener
+								}
+							}
+			};
+			break;
 			default:
 					tFields.push({name: col.columnName, type: 'string'});
 
@@ -9723,6 +9798,30 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 				}
 			});
 
+    var pluginSettings = ['gridfilters',{
+				ptype: 'cellediting',
+				clicksToEdit: 1
+        }];
+    var selModelSettings = 'cellmodel';
+
+    var listenerSettings = null;
+    var tblDblClick = inField.tableDblClick;
+    if(rOnly)
+    {
+	    pluginSettings = ['gridfilters'];
+	    selModelSettings = {selType: 'rowmodel', mode: 'SINGLE'};
+	    listenerSettings = {
+			'beforeitemdblclick': function(selMod, record, something ){
+				//look for snippet...
+				if(ijf.snippets.hasOwnProperty(tblDblClick))
+				{
+					ijf.snippets[tblDblClick](record.data.iid,this, record);
+					return;
+				}
+			}
+		};
+	}
+
     if(!renderHeaders) headerButtons=null;
     var gridPanel = new Ext.grid.GridPanel({
 		 title: lCaption,
@@ -9742,13 +9841,11 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
         frame: true,
         collapsible: collapsible,
         collapsed: collapsed,
-        selModel: 'cellmodel',
-        disabled: rOnly,
+        selModel: selModelSettings,
+        //disabled: rOnly,
         features: features,
-		plugins: ['gridfilters',{
-			ptype: 'cellediting',
-			clicksToEdit: 1
-        }]
+		plugins: pluginSettings,
+		listeners: listenerSettings
     });
 
 	gridStore.parentGridPanel = gridPanel;
