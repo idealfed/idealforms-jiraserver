@@ -4321,11 +4321,23 @@ renderUserMultiselect:function(inFormKey,item, inField, inContainer)
 
     inContainer.title = inField.toolTip;
 
-	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
-    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=item.fields[jfFieldDef.id];
-    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
-
+	if(inField.dataSource=="session")
+	{
+		  var jfFieldMeta = {};
+		  jfFieldMeta.allowedValues = [];
+		  var jfFieldDef = {};
+		  jfFieldDef.id=inField.formCell;
+		  jfFieldDef.schema={};
+		  jfFieldDef.schema.type="option";
+		  var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+    }
+	else
+	{
+		var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+		var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+		var jf=item.fields[jfFieldDef.id];
+		var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+    }
     var lAllowBlank = true;
     if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
         if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
@@ -4371,10 +4383,26 @@ renderUserMultiselect:function(inFormKey,item, inField, inContainer)
 				}
 		    });
 			var cValue = [];
-			if(data)
+			try
 			{
-				cValue = data.map(function(cv){return cv.name;});
-				lookup.loadData(data.map(function(cv){return {name:cv.name, displayName:cv.displayName};}));
+				if(data)
+				{
+					cValue = data.map(function(cv){return cv.name;});
+					lookup.loadData(data.map(function(cv){return {name:cv.name, displayName:cv.displayName};}));
+				}
+			}
+			catch(e)
+			{
+					try
+					{
+						var jData = JSON.parse(data);
+						cValue = jData.map(function(cv){return cv.email;});
+						lookup.initialStoreData = jData.map(function(cv){return {email:cv.email, displayName:cv.displayName};});
+					}
+					catch(e)
+					{
+						cValue = [];
+					}
 			}
      		break;
     }
@@ -4462,6 +4490,7 @@ renderUserMultiselect:function(inFormKey,item, inField, inContainer)
 			forceSelection: true,
 			queryMode: 'remote',
 			queryParam: fParam,
+			delimiter: ';',
 			minChars: 2,
 			emptyText:'Start typing...',
 			id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
@@ -4471,7 +4500,28 @@ renderUserMultiselect:function(inFormKey,item, inField, inContainer)
 					this.validate();
 				},
 				change: function(f,n,o){
-					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					if(inField.dataSource=="session")
+					{
+
+						var vArr = f.valueCollection;
+						if((vArr.items) && (vArr.items.length>0))
+						{
+
+							var usersObject = vArr.items.map(function(av){
+								return {"email":av.data.email,"displayName":av.data.displayName};
+							});
+							ijf.session[inFormKey+'_fld_'+inField.formCell] = JSON.stringify(usersObject);
+						}
+						else
+						{
+							ijf.session[inFormKey+'_fld_'+inField.formCell] = null;
+						}
+
+					}
+					else
+					{
+						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+				    }
 					ocf(f,n,o);
 				}
 			}}]

@@ -3351,6 +3351,21 @@ ijf.reactUtils = {
 		var tFields = [];
 		var lookups = [];
 
+		if (!thisT.settings) {
+			var typeIndex = ijf.fw.CustomTypes.indexOf(thisT);
+
+			//load the settings...
+			var fullTypeRaw = ijfUtils.jiraApiSync('GET', g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId=' + thisT.id, null);
+			var cleanDoubleDouble = fullTypeRaw.replace(/\"\"/g, "\"");
+			cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g, "%");
+			cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"", "\"\"");
+			thisT = JSON.parse(cleanDoubleDouble);
+
+			//update local memory
+			ijf.fw.CustomTypes.splice(typeIndex, 1);
+			ijf.fw.CustomTypes.push(thisT);
+		}
+
 		var gCols = JSON.parse(thisT.settings);
 		//order by order
 		gCols = gCols.sort(function (a, b) {

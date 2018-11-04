@@ -661,6 +661,7 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				  }
 				  else if(this.field.controlType=="userpickermulti")
 				  {
+
 					   var sc = this.control.items.items[0].getValue();
 					   if(sc)
 						   var tv = sc.map(function(av){ return {"name":av};});
@@ -668,6 +669,7 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 					   		var tv = null;
 
 					   this.newVal = tv;
+
 			      }
 				  else if(this.field.controlType=="grouppickermulti")
 				  {
@@ -731,6 +733,22 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 					{
 						var userObject ={"email":this.control.items.items[0].selection.data.email,"displayName":this.control.items.items[0].selection.data.displayName};
                     	this.newVal = JSON.stringify(userObject);
+					}
+				}
+				else if(this.field.controlType=="userpickermulti")
+				{
+					var vArr = this.control.items.items[0].valueCollection;
+					if((vArr.items) && (vArr.items.length>0))
+					{
+
+						var usersObject = vArr.items.map(function(av){
+							return {"email":av.data.email,"displayName":av.data.displayName};
+						});
+						this.newVal = JSON.stringify(usersObject);
+					}
+					else
+					{
+						this.newVal = null;
 					}
 				}
 				else if(this.field.controlType=="multiselect")
