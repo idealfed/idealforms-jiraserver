@@ -4924,6 +4924,12 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
 							ocf(f,n,o);
 						}
 					};
+    var limitList = true;
+    if (inField.style.indexOf('limit:false')>-1)
+    {
+        limitList=false;
+    }
+
     switch (inField.dataReference)
     {
         case "ijfReference":
@@ -5002,10 +5008,19 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
 					if((typeof data)=="string")
 					{
 						data = JSON.parse(data);
+						/*
 						data = data.map(function(v){
 							var valKey = lookup.reduce(function(inV,av){if(v==av.show) inV=av.id;return inV;},null);
 							return {"id":valKey};
 						});
+						*/
+						data = data.reduce(function(inA,v){
+							var valKey = lookup.reduce(function(inV,av){if(v==av.show) inV=av.id;return inV;},null);
+							if(valKey) inA.push({"id":valKey});
+							else
+							   if(!limitList) if(v) inA.push({"id":v});
+							return inA;
+						},[]);
 					}
 			    }
 	            var cValue = [];
@@ -5078,11 +5093,7 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
         if (!!data) rOnly=true;
     }
 
-    var limitList = true;
-    if (inField.style.indexOf('limit:false')>-1)
-    {
-        limitList=false;
-    }
+
 
     var ocf =  ijfUtils.getEvent(inField);
 
@@ -5110,7 +5121,6 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
 	//end permissions
 	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
-
     var simple = new Ext.FormPanel({
         hidden: hideField,
         border:false,
@@ -5125,9 +5135,11 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
 			hideLabel: hideLabel,
 			allowBlank: lAllowBlank,
 			readOnly: rOnly,
+			forceSelection: limitList,
 			valueField: 'id',
 			displayField: 'show',
 			value: cValue,
+			delimiter: ";",
 			queryMode: 'local',
 			//forceSelection: limitList,
 			triggerAction: 'all',

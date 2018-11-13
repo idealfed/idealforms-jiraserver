@@ -1322,6 +1322,7 @@ function render(options) {
 		var action = JSON.parse(tStr);
 
 		var jql = action.jql;
+		if (action.maxResults) jql = jql + "&maxResults=" + action.maxResults;
 
 		var varBindings = jql.split("$").reduce(function (inKeys, p) {
 			//must walk forward and end on ", ) or space

@@ -753,6 +753,7 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				}
 				else if(this.field.controlType=="multiselect")
 				{
+					/*
 					//value is array.  get the array, switch to actual array values from ijfReference, save a json
 					var vArr = this.control.items.items[0].getValue();
 					var saveVal = [];
@@ -765,6 +766,14 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 							if(addVal) saveVal.push(addVal);
 						});
 					}
+					*/
+
+					var saveVal = this.control.items.items[0].valueCollection.items.reduce(function(inA,v)
+					{
+					  if(v.data.show) inA.push(v.data.show);
+					  return inA;
+					},[]);
+
 					this.newVal = JSON.stringify(saveVal);
 				}
 				else if(this.field.controlType=="attachmentmanaged")
