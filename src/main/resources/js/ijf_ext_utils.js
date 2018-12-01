@@ -4125,12 +4125,24 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 {
 
     inContainer.title = inField.toolTip;
-
-	var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
-    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
-	var jf=item.fields[jfFieldDef.id];
-
-    var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+	if(inField.dataSource=="session")
+	{
+		  var jfFieldMeta = {};
+		  jfFieldMeta.allowedValues = [];
+		  var jfFieldDef = {};
+		  jfFieldDef.id=inField.formCell;
+		  jfFieldDef.schema={};
+		  jfFieldDef.schema.type="option";
+		  jfFieldMeta.operations=true;
+		  var data = ijf.session[inFormKey+'_fld_'+inField.formCell];
+    }
+	else
+	{
+		var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
+		var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+		var jf=item.fields[jfFieldDef.id];
+		var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+	}
 
     var lAllowBlank = true;
     if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
@@ -4285,13 +4297,13 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 			allowBlank: lAllowBlank,
 			readOnly: rOnly,
 			value: data,
-			forceSelection: limitList,
+			forceSelection: false,
 			hideTrigger: true,
 			triggerAction: 'all',
 			queryMode: 'remote',
 			queryParam: fParam,
 			minChars: 2,
-			emptyText:'Start typing name...',
+			emptyText:'Start typing...',
 			selectOnFocus:true,
 			id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
 			listeners: {
@@ -4300,8 +4312,27 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 					this.validate();
 				},
 				change: function(f,n,o){
-					if(!n) return;
-					ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+					if(inField.dataSource=="session")
+					{
+						var vArr = f.valueCollection;
+						if((vArr.items) && (vArr.items.length>0))
+						{
+
+							var usersObject = vArr.items.map(function(av){
+								return {"email":av.data.email,"displayName":av.data.displayName};
+							});
+							ijf.session[inFormKey+'_fld_'+inField.formCell] = JSON.stringify(usersObject[0]);
+						}
+						else
+						{
+							ijf.session[inFormKey+'_fld_'+inField.formCell] = null;
+						}
+
+					}
+					else
+					{
+						ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+				    }
 					ocf(f,n,o);
 				}
 			}}]
