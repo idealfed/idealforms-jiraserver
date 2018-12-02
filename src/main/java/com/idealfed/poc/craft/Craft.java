@@ -23,7 +23,9 @@ import java.util.Comparator;
 import java.util.ArrayList;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.File;
 import java.util.concurrent.*;
+import java.sql.Timestamp;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -38,8 +40,15 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import javax.servlet.http.Cookie;
 
+import javax.mail.Multipart;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.BodyPart;
+import javax.mail.internet.MimeBodyPart;
+import javax.activation.FileDataSource;
+import javax.activation.DataHandler;
+
 import com.atlassian.activeobjects.external.ActiveObjects;
-import com.atlassian.jira.mail.Email;
+import com.atlassian.mail.Email;
 import com.atlassian.mail.MailFactory;
 import com.atlassian.mail.server.SMTPMailServer;
 import com.atlassian.jira.util.json.JSONArray;
@@ -49,9 +58,11 @@ import com.atlassian.jira.util.json.JSONEscaper;
 import com.atlassian.sal.api.auth.LoginUriProvider;
 import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
 import com.atlassian.sal.api.user.UserManager;
-
 import com.atlassian.jira.security.groups.GroupManager;
 import com.atlassian.jira.user.ApplicationUser;
+import com.atlassian.jira.issue.AttachmentManager;
+import com.atlassian.jira.issue.attachment.Attachment;
+import com.atlassian.jira.util.AttachmentUtils;
 
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.upm.api.license.PluginLicenseManager;
@@ -67,6 +78,7 @@ public class Craft extends HttpServlet
     //@ComponentImport
     private final PluginLicenseManager pluginLicenseManager;
 
+	private final AttachmentManager attachmentManager;
 	private final UserManager userManager;
 	private final GroupManager groupManager;
 	private final LoginUriProvider loginUriProvider;
@@ -77,7 +89,8 @@ public class Craft extends HttpServlet
     //private final String reportCacheKey = "test";
     //private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory) {
+	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory, AttachmentManager attachmentManager) {
+		this.attachmentManager = attachmentManager;
         this.pluginLicenseManager = pluginLicenseManager;
 		this.userManager = userManager;
 		this.groupManager = groupManager;
@@ -1022,22 +1035,90 @@ plog.error("writing output");
 			}
 		}
 
+
+
+
+
 		if(iwfAction.equals("sendMail"))
 		{
 			String toAddresses = req.getParameter("targets");
 			String subject = req.getParameter("subject");
 			String body = req.getParameter("body");
 			String html = req.getParameter("html");
+			String attString = req.getParameter("attachments");
 			String targets[] = toAddresses.split(",");
 			try
 			{
+				 SMTPMailServer  mailServer = MailFactory.getServerManager().getDefaultSMTPMailServer();
+				 Email email = null;
+ 		    	 if(attString==null)
+ 		    	 {
+					 //no attachments
+					 email = new Email("tbd@tbd.com").setSubject(subject).setBody(body);
+					 email.setMimeType("text/html");
+					 if (html.equals("true")) email.setMimeType("text/html");
+				 }
+				 else
+				 {
+					 //get atts....
+	  			    String attArray[] = attString.split(",");
+
+					Multipart multipart = new MimeMultipart("mixed");
+			        BodyPart attachBody = null;
+
+				   boolean goodAtts = true;
+				   File attachedFile=null;
+				   FileDataSource source=null;
+				   String attachedFilename=null;
+				   Attachment attachment=null;
+				   for(int i=0;i<attArray.length;i++)
+				   {
+					   try
+					   {
+							attachment = attachmentManager.getAttachment(Long.parseLong(attArray[i]));
+						}
+						catch(Exception ae)
+						{
+							goodAtts=false;
+							continue;
+						}
+						attachedFile  = AttachmentUtils.getAttachmentFile(attachment);
+						attachedFilename = attachment.getFilename();
+						source = new FileDataSource(attachedFile);
+						attachBody = new MimeBodyPart();
+						attachBody.setDataHandler(new DataHandler(source));
+						attachBody.setFileName(attachedFilename);
+						multipart.addBodyPart(attachBody);
+				    }
+
+
+					 email = new Email("tbd@tbd.com");
+					 email.setSubject(subject);
+					 email.setMimeType("text/html");
+					 if (html.equals("true")) email.setMimeType("text/html");
+			         if(goodAtts)
+			         {
+						 email.setMultipart(multipart);
+					 }
+					 else
+					 {
+						 body = body + "<br>\n<br>\nError including attachments";
+					 }
+					 email.setBody(body);
+				 }
+
+
+
+				 //no changes yet
 				   for(int i=0;i<targets.length;i++)
 				   {
-						SMTPMailServer  mailServer = MailFactory.getServerManager().getDefaultSMTPMailServer();
-						if (html.equals("true"))
-							mailServer.send(new Email(targets[i]).setSubject(subject).setBody(body).setMimeType("text/html"));
-						else
-							mailServer.send(new Email(targets[i]).setSubject(subject).setBody(body));
+					    email.setTo(targets[i]);
+  					    mailServer.send(email);
+						//SMTPMailServer  mailServer = MailFactory.getServerManager().getDefaultSMTPMailServer();
+						//if (html.equals("true"))
+						//	mailServer.send(new Email(targets[i]).setSubject(subject).setBody(body).setMimeType("text/html"));
+						//else
+						//	mailServer.send(new Email(targets[i]).setSubject(subject).setBody(body));
 				   }
 				final PrintWriter w = res.getWriter();
 				w.print("sent");

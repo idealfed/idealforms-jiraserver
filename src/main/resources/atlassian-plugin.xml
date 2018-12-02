@@ -106,6 +106,7 @@
   <component-import key="groupManager" interface="com.atlassian.jira.security.groups.GroupManager" filter=""/>  
   <component-import key="loginUriProvider" interface="com.atlassian.sal.api.auth.LoginUriProvider" filter=""/>
   <component-import key="pluginSettingsFactory" interface="com.atlassian.sal.api.pluginsettings.PluginSettingsFactory" filter=""/>
+  <component-import key="attachmentManaqger" interface="com.atlassian.jira.issue.AttachmentManager" filter=""/>
 </atlassian-plugin>
 
 

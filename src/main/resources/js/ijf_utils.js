@@ -250,7 +250,7 @@ var ijfUtils = {
 			});
 			return retVal;
 		},
-     sendEmail:function(inTargets,inSubject,inBody,inHtml,inSuccess,inError){
+     sendEmail:function(inTargets,inSubject,inBody,inHtml,inSuccess,inError,inAttachments){
 		jQuery.ajax({
 				async: true,
 				type: 'POST',
@@ -260,14 +260,15 @@ var ijfUtils = {
 					subject: inSubject,
 					body: inBody,
 					html: inHtml, //true or false
-					action: 'sendMail'
+					action: 'sendMail',
+					attachments: inAttachments
 				},
 				timeout: 60000,
 				success: inSuccess,
 				error: inError
 			});
 		},
-     sendEmailSync:function(inTargets,inSubject,inBody,inHtml){
+     sendEmailSync:function(inTargets,inSubject,inBody,inHtml,inAttachments){
 		var retVal = "";
 		jQuery.ajax({
 				async: false,
@@ -278,7 +279,8 @@ var ijfUtils = {
 					subject: inSubject,
 					body: inBody,
 					html: inHtml, //true or false
-					action: 'sendMail'
+					action: 'sendMail',
+					attachments: inAttachments
 				},
 				timeout: 60000,
 				success: function(data) {
