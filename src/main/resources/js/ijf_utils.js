@@ -293,7 +293,7 @@ var ijfUtils = {
 					}
 					else
 					{
-						retVal = "Failed to save " + jRet.status;
+						retVal = "Failed to send " + data;
 					}
 				},
 				error: function(e) {
