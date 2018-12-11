@@ -683,6 +683,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			  errored: !(lValidator(data))
 			};
 		  }
+
 		  handleChange = (event) => {
 			//add OCF call here..
 			if(inField.dataSource=="session")
@@ -808,8 +809,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			return retProps;
 		  }
 
-
-		  render() {
+	  render() {
 			return (
 			  <div id={inFormKey+'_fldDivId_'+inField.formCell} style={style}>
 			   <MuiThemeProvider style={panelStyle}>
@@ -997,7 +997,9 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				  value: data,
 				  errored: !(lValidator(data))
 				};
+
 			  }
+
 			  handleChange = (event) => {
 				//add OCF call here..
 				if(inField.dataSource=="session")

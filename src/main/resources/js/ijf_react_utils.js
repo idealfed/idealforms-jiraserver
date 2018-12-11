@@ -987,6 +987,7 @@ ijf.reactUtils = {
 					value: data,
 					errored: !lValidator(data)
 				};
+
 				return _this5;
 			}
 

@@ -2030,6 +2030,7 @@ replaceWordChars:function(text) {
 		if(!inText)  return inText;
 
 		retText=retText.replace("#{user}",ijf.main.currentUser.displayName);
+		retText=retText.replace("#{useremail}",ijf.main.currentUser.email);
 		retText=retText.replace("#{userid}",ijf.main.currentUser.id);
         retText=retText.replace("#{datetime}",moment().format('LL'));
 
