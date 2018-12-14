@@ -307,6 +307,14 @@ public class Craft extends HttpServlet
 			{
 				String targetUrl = java.net.URLDecoder.decode(request.getParameter("url"));
 
+				if(checkUrlWhitelist(targetUrl)==false)
+				{
+					final PrintWriter w = response.getWriter();
+				    w.print("Invalid URL request");
+ 				    w.close();
+					return;
+				}
+
 				plog.error("Calling URL: " + targetUrl);
 
 				//establish cache if there
@@ -929,6 +937,44 @@ public class Craft extends HttpServlet
         }
     }
 
+    private boolean checkUrlWhitelist(String inUrl)
+    {
+		try
+		{
+			//lookup custom type, verify URL is in the list....
+			boolean urlOk = false;
+			CustomType ct = null;
+			for (CustomType t : ao.find(CustomType.class))
+			{
+				if(t.getName().equals("Proxy Whitelist")) ct = t;
+			}
+			if(ct==null)
+			{
+				plog.error("Unable to find Proxy Whitelist");
+				return false;
+			}
+			String proxyList = ct.getSettings();
+            String outStyle = "{\"whitelist\":" + proxyList + "}";
+            JSONObject sObject;
+			sObject = new JSONObject(outStyle);
+            String whiteList = sObject.getString("whitelist");
+            whiteList=whiteList.substring(1,whiteList.length()-1);
+			String okUrls[] = whiteList.split("\\\\n");
+			for(int i=0;i<okUrls.length;i++)
+			{
+				//plog.error("Testing URL: " + okUrls[i]);
+				if(inUrl.indexOf(okUrls[i]) >-1) urlOk=true;
+			}
+			return urlOk;
+		}
+		catch(Exception e)
+		{
+			plog.error("Error getting Proxy Whitelist "  + e.getMessage());
+			return false;
+		}
+	}
+
+
 	@Override
     protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
     {
@@ -955,6 +1001,17 @@ public class Craft extends HttpServlet
 				//plog.error("Calling proxy");
 
 				String targetUrl = java.net.URLDecoder.decode(req.getParameter("url"));
+
+
+				if(checkUrlWhitelist(targetUrl)==false)
+				{
+					final PrintWriter w = res.getWriter();
+				    w.print("Invalid URL request");
+ 				    w.close();
+					return;
+				}
+
+
 				plog.error("URL for proxy call: " + targetUrl);
 				String targetMethod = req.getParameter("method");
 				String targetData = req.getParameter("data");
