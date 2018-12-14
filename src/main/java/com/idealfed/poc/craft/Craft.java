@@ -950,8 +950,7 @@ public class Craft extends HttpServlet
 			}
 			if(ct==null)
 			{
-				plog.error("Unable to find Proxy Whitelist");
-				return false;
+				return true;
 			}
 			String proxyList = ct.getSettings();
             String outStyle = "{\"whitelist\":" + proxyList + "}";
