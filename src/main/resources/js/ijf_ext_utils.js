@@ -3787,6 +3787,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 
 			combo = {xtype: 'combobox',
 					store: lookup,
+					queryMode: 'local',
 					labelAlign: 'left',
 					labelStyle: l_labelStyle,
 					style: l_panelStyle,
@@ -9842,7 +9843,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 						var outStr = "";
 						gridStore.ijfCols
 						gridStore.ijfCols.forEach(function(c){
-							outStr+= c.columnName + ","
+							outStr+= "\"" + c.columnName.replace(/"/g,"\"\"") + "\","
 						});
 						outStr+="\n";
 						gridStore.getData().each(function(r){
@@ -9859,7 +9860,11 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 											outStr+=r.data[c.columnName] + ","
 										break;
 										default:
-											outStr+="\"" + r.data[c.columnName] + "\","
+										    if(r.data[c.columnName])
+												outStr+="\"" + r.data[c.columnName].replace(/"/g,"\"\"") + "\",";
+											else
+												outStr+="\"" + r.data[c.columnName] + "\",";
+
 									}
 								}
 								else

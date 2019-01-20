@@ -103,6 +103,7 @@
   <component-import key="pluginLicenseManager" interface="com.atlassian.upm.api.license.PluginLicenseManager" filter=""/>  
   <component-import key="templateRenderer" interface="com.atlassian.templaterenderer.TemplateRenderer" filter=""/>
   <component-import key="userManager" interface="com.atlassian.sal.api.user.UserManager" filter=""/>
+  <component-import key="userManager2" interface="com.atlassian.jira.user.util.UserManager" filter=""/>  
   <component-import key="groupManager" interface="com.atlassian.jira.security.groups.GroupManager" filter=""/>  
   <component-import key="loginUriProvider" interface="com.atlassian.sal.api.auth.LoginUriProvider" filter=""/>
   <component-import key="pluginSettingsFactory" interface="com.atlassian.sal.api.pluginsettings.PluginSettingsFactory" filter=""/>

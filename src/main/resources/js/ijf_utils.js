@@ -250,6 +250,43 @@ var ijfUtils = {
 			});
 			return retVal;
 		},
+     copyAttachments:function(inIssueKey,inAttList,inSuccess,inError){
+		jQuery.ajax({
+				async: true,
+				type: 'GET',
+				url: g_root + '/plugins/servlet/iforms',
+				data: {
+					attachments: inAttList,
+					toIssueKey: inIssueKey,
+					ijfAction: 'copyIssueAttachments'
+				},
+				timeout: 60000,
+				success: inSuccess,
+				error: inError
+			});
+		},
+     copyAttachmentsSync:function(inIssueKey,inAttList){
+		var retVal = "";
+		jQuery.ajax({
+				async: false,
+				type: 'GET',
+				url: g_root + '/plugins/servlet/iforms',
+				data: {
+					attachments: inAttList,
+					toIssueKey: inIssueKey,
+					ijfAction: 'copyIssueAttachments'
+				},
+				timeout: 60000,
+				success: function(data) {
+						retVal=data;
+				},
+				error: function(e) {
+					ijfUtils.footLog("Failed group member get: " + e.message);
+					retVal = "Failed get get group members " + e.message;
+				}
+			});
+			return retVal;
+		},
      sendEmail:function(inTargets,inSubject,inBody,inHtml,inSuccess,inError,inAttachments){
 		jQuery.ajax({
 				async: true,

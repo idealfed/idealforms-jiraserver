@@ -58,6 +58,7 @@ import com.atlassian.jira.util.json.JSONEscaper;
 import com.atlassian.sal.api.auth.LoginUriProvider;
 import com.atlassian.sal.api.pluginsettings.PluginSettingsFactory;
 import com.atlassian.sal.api.user.UserManager;
+//import com.atlassian.jira.user.util.UserManager;
 import com.atlassian.jira.security.groups.GroupManager;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.issue.AttachmentManager;
@@ -80,6 +81,7 @@ public class Craft extends HttpServlet
 
 	private final AttachmentManager attachmentManager;
 	private final UserManager userManager;
+	private final com.atlassian.jira.user.util.UserManager userManager2;
 	private final GroupManager groupManager;
 	private final LoginUriProvider loginUriProvider;
 	private final TemplateRenderer templateRenderer;
@@ -89,10 +91,11 @@ public class Craft extends HttpServlet
     //private final String reportCacheKey = "test";
     //private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory, AttachmentManager attachmentManager) {
+	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, com.atlassian.jira.user.util.UserManager userManager2, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory, AttachmentManager attachmentManager) {
 		this.attachmentManager = attachmentManager;
         this.pluginLicenseManager = pluginLicenseManager;
 		this.userManager = userManager;
+		this.userManager2 = userManager2;
 		this.groupManager = groupManager;
 		this.loginUriProvider = loginUriProvider;
 		this.templateRenderer = templateRenderer;
@@ -142,7 +145,7 @@ public class Craft extends HttpServlet
 
 //section to comment or uncomment license
 
-
+/*
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -164,7 +167,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-
+*/
 
 //end comment section
 
@@ -581,6 +584,58 @@ public class Craft extends HttpServlet
 				return;
 			}
 		}
+
+    	if(iwfAction.equals("copyIssueAttachments"))
+    	{
+			try
+			{
+				StringBuilder retS = new StringBuilder();
+				String attString = request.getParameter("attachments");
+				String targetIssue = request.getParameter("toIssueKey");
+				String attArray[] = attString.split(",");
+				boolean goodAtts = true;
+
+				ApplicationUser au = userManager2.getUserByName(username);
+				Attachment attachment=null;
+				for(int i=0;i<attArray.length;i++)
+				{
+					try
+					{
+						attachment = attachmentManager.getAttachment(Long.parseLong(attArray[i]));
+						attachmentManager.copyAttachment(attachment, au, targetIssue);
+                        retS.append(attArray[i] + " copied\n");
+					}
+					catch(Exception ae)
+					{
+						goodAtts=false;
+						retS.append(attArray[i] + " had error: " + ae.getMessage() + "\n");
+						continue;
+					}
+				}
+				String returnStr = "";
+				if(goodAtts==true)
+				{
+					returnStr = "{\"status\":\"success\",\"message\":\""+retS.toString()+"\"}";
+				}
+				else
+				{
+					returnStr = "{\"status\":\"error\",\"message\":\""+retS.toString()+"\"}";
+				}
+				final PrintWriter w = response.getWriter();
+				w.print(returnStr);
+				w.close();
+				return;
+			}
+			catch(Exception e)
+			{
+				plog.error("Failed to copy issue attachments: " + e.getMessage());
+				final PrintWriter w = response.getWriter();
+				w.print("{\"status\":\"error\",\"message\":\""+e.getMessage()+"\"}");
+				w.close();
+				return;
+			}
+		}
+
 
     	if(iwfAction.equals("getFormConfig"))
     	{
