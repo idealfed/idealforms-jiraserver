@@ -169,8 +169,14 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'attachmentlisttree':
                 ijf.extUtils.renderAttachmentListTree (inFormKey,item,inField,inContainer);
                 break;
+            case 'attachmentSPtree':
+                ijf.extUtils.renderAttachmentSPTree (inFormKey,item,inField,inContainer);
+                break;
             case 'attachmentmanaged':
                 ijf.extUtils.renderAttachmentManaged (inFormKey,item,inField,inContainer);
+                break;
+            case 'attachmentSPmanaged':
+                ijf.extUtils.renderAttachmentSPManaged (inFormKey,item,inField,inContainer);
                 break;
             case 'attachmentupload':
                 ijf.extUtils.renderAttachmentUpload(inFormKey,item,inField,inContainer);
@@ -1812,6 +1818,936 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](gridPanel, inFormKey,item, inField, inContainer);
 
 },
+renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
+{
+    inContainer.title = inField.toolTip;
+
+   //look for file attributes
+	var thisT = null;
+	var indexedData = null;
+
+	if(inField.dataSource)
+	{
+		for(var tF in ijf.fw.CustomTypes){
+			if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+			if(ijf.fw.CustomTypes[tF].name==inField.dataSource) thisT=ijf.fw.CustomTypes[tF];
+		}
+		if(!thisT)
+		{
+			ijfUtils.footLog("Unable to get file att spec from  " + inField.dataSource);
+		}else
+		{
+			var jfFieldMeta = ijf.jiraMetaKeyed[thisT.fieldName];
+			var jfFieldDef = ijf.jiraFieldsKeyed[thisT.fieldName];
+			var jf=item.fields[jfFieldDef.id];
+			var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+			if(data)
+			{
+				data = JSON.parse(data);
+				indexedData=[];
+				data.forEach(function(r){indexedData[r.fileid]=r});
+			}
+		}
+	}
+
+    var sortedAttachments = [];
+
+	//This is the API call to SP to get the document listings......
+	var msaUserId = ijfUtils.getCurrentUserId();
+	//var msaUserId="O001969";
+	var msaIssueKey = ijf.currentItem.key;
+	//msaIssueKey = "ISSUE-3";
+
+
+    var sharePointFiles = ijfUtils.getSharepointIssueFiles(msaIssueKey,msaUserId);
+
+    if(sharePointFiles.status=="success")
+    {
+		//setup sortedAttachments....
+		try
+		{
+			sortedAttachments = sharePointFiles.result.items.sort(function(a, b)
+			{
+				a = moment(a.CreatedDate).format('YYYY-MM-DD HH:mm:ss');
+				b = moment(b.CreatedDate).format('YYYY-MM-DD HH:mm:ss');
+				return a>b ? -1 : a<b ? 1 : 0;
+			});
+		}
+		catch(fe)
+		{
+	     	ijfUtils.footLog("Error parsing SP attachments: " + fe.message);
+		}
+	}
+	else
+	{
+		//either null or error occured....write to footlog the message:
+		ijfUtils.footLog("Error with SP attachments: " + sharePointFiles.message);
+	}
+
+
+    if(inField.referenceFilter)
+    {
+		//filter out any occurence of the CSV list...
+		sortedAttachments = sortedAttachments.reduce(function(inArray, f)
+		{
+			if(inField.referenceFilter.indexOf(f.FileName)>-1) return inArray;
+			inArray.push(f);
+			return inArray;
+		},[]);
+	}
+
+	//these are sorted by title, the FIRST title is NOT a leaf...
+	// if it has children they are next and leaf with parent...
+	var lastName = "";
+	var parentId = "";
+	var lastObj = {};
+
+    var fArray = sortedAttachments.map(function(a){
+			    var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+a.DownloadUrl+"' target='_blank'>"+a.FileName +"</a>","fUser":a.CreatedByName};
+                retObj.id = window.location.hostname.split(".")[0] + "," + msaIssueKey + "," + a.FileName;
+                retObj.raw = a;
+			    //add data if exists
+			    if(indexedData)
+			    {
+					if(indexedData.hasOwnProperty(a.UniqueId))
+					{
+						//add all the attributes to this record...
+						var fileAtts = indexedData[a.UniqueId];
+						Object.keys(fileAtts).forEach(function(a){
+							if(a=="fildid") return;
+							retObj[a]=fileAtts[a];
+						});
+					}
+				}
+			    //is it leaf?  is it parent....
+			    retObj.leaf=false;
+
+			    return retObj;
+	});
+
+
+   //end data prep
+
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
+
+    var ocf =  ijfUtils.getEvent(inField);
+
+    var hideField = ijfUtils.renderIfShowField("",inField);
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
+    var collapsible = true;
+    if (l_fieldStyle.indexOf('collapsible:false')>-1)
+    {
+        collapsible=false;
+    }
+    var collapsed = false;
+    if (l_fieldStyle.indexOf('collapsed:true')>-1)
+    {
+        collapsed=true;
+    }
+    var canDelete = false;
+    if (l_fieldStyle.indexOf('delete:true')>-1)
+    {
+        canDelete=true;
+    }
+	if(!perms.canEdit) canDelete=false;
+
+
+	var l_Height = 300;
+    var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
+    if(l_Height=="")
+    {
+		l_Height=300;
+	}
+	else
+	{
+    	l_Height = l_Height.replace("px","")/1;
+	}
+
+	var l_Width = 600;
+    var l_Width=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"width");
+    if(l_Width=="")
+    {
+		l_Width=600;
+	}
+	else
+	{
+    	l_Width = l_Width.replace("px","")/1;
+	}
+
+    var colWidths=[];
+	var colHeaders = [];
+	if(inField.tableWidths) colWidths=inField.tableWidths.split(",");
+	if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
+
+	var thisColWidth = 120;
+	var thisColHeader = "";
+
+    //base columns
+    var listColumns = [];
+    var tFields = [];
+    var colObj = {};
+    var cIndex=0;
+
+
+    tFields.push({name: "fileid", type: 'string'});
+	listColumns.push({
+			header: "FID",
+			sortable: true,
+			hidden: true,
+			width: 10,
+			dataIndex: "fileid"
+	});
+
+
+	thisColHeader = "File";
+	if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+    tFields.push({name: "filename", type: 'string'});
+	colObj={
+			xtype: 'treecolumn',
+			header: thisColHeader,
+			sortable: true,
+			hidden: false,
+			dataIndex: "filename",
+			filter: {
+				type: 'string'
+			},
+			sorter: function(a,b){
+				var a = a.data.rawFileName;
+				var b = b.data.rawFileName;
+				return a>b ? -1 : a<b ? 1 : 0;
+			}
+	};
+	ijfUtils.setColWidth(colObj,cIndex,colWidths,"70%");
+    listColumns.push(colObj);
+	cIndex++;
+
+	thisColHeader = "User";
+	if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+    tFields.push({name: "fUser", type: 'string'});
+	colObj={
+			header: thisColHeader,
+			sortable: true,
+			hidden: false,
+			dataIndex: "fUser",
+			filter: {
+				type: 'list'
+			}
+	};
+	ijfUtils.setColWidth(colObj,cIndex,colWidths,"30%");
+    listColumns.push(colObj);
+	cIndex++;
+
+    if(ijfUtils.detectIE())
+    {
+		thisColHeader = "Date";
+		if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+		tFields.push({name: "created", type: 'string'});
+		colObj={
+				header: thisColHeader,
+				sortable: true,
+				hidden: false,
+				renderer: function(inVal){return moment(inVal).format('lll');},
+				dataIndex: "created",
+				filter: {
+					type: 'string'
+					}
+		};
+	}
+	else
+	{
+		thisColHeader = "Date";
+		if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+		tFields.push({name: "created", type: 'date'});
+		colObj={
+				header: thisColHeader,
+				sortable: true,
+				hidden: false,
+				xtype: 'datecolumn',
+				formatter:'date("m/d/y h:i:s A")',
+				dataIndex: "created",
+				filter: {
+					type: 'date'
+					}
+		};
+	}
+
+	ijfUtils.setColWidth(colObj,cIndex,colWidths,150);
+    listColumns.push(colObj);
+	cIndex++;
+
+
+	//section for custom attributes...
+	var gCols=null;
+	if(thisT)
+	{
+		//lazy load handling for custom types
+			if(!thisT.settings)
+			{
+			   var typeIndex = ijf.fw.CustomTypes.indexOf(thisT);
+
+				//load the settings...
+               var fullTypeRaw = ijfUtils.jiraApiSync('GET',g_root + '/plugins/servlet/iforms?ijfAction=getCustomType&customTypeId='+thisT.id, null);
+			   var cleanDoubleDouble = fullTypeRaw.replace(/\"\"/g,"\"");
+			   cleanDoubleDouble = cleanDoubleDouble.replace(/~pct~/g,"%");
+			   cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
+			   thisT = JSON.parse(cleanDoubleDouble);
+
+			   //update local memory
+			   ijf.fw.CustomTypes.splice(typeIndex, 1);
+			   ijf.fw.CustomTypes.push(thisT);
+			}
+
+
+	    gCols = JSON.parse(thisT.settings);
+	    //order by order
+	    gCols = gCols.sort(function(a,b){return (a.order-b.order);});
+		var cIndex = 0;
+		var lookups = [];
+		gCols.forEach(function(col)
+		{
+
+			var lValidator = function(v){return true};
+			if((col.regEx!=null) && (col.regEx!=""))
+			{
+				lValidator = function(v)
+				{
+					var rgx = new RegExp(col.regEx);
+					if (!rgx.exec(v)) {
+						return col.regExMess;
+					}
+					return true;
+				}
+			}
+
+            var validRenderer = function (val, meta, rec, rowIndex, colIndex, store) {
+					//at this poing you have the column def, if required or regex fails, make pink
+
+					if((col.required=="Yes") && (!val))
+					{
+						meta.style = "background-color:pink;";
+					}
+					if((col.regEx!=null) && (col.regEx!=""))
+					{
+						var rgxRenderCheck = new RegExp(col.regEx);
+						if (!rgxRenderCheck.exec(val)) {
+							meta.style = "background-color:pink;";
+						}
+					}
+
+				//now manage the value formatting....
+				switch(col.controlType)
+				{
+					case "datefield":
+						return Ext.util.Format.dateRenderer(col.format)(val); //moment(val).format(col.format);
+						break;
+					case "combobox":
+						//if value lookup is two dimensional, lookup value of val...
+						var retVal = val;
+						if(lookups[col.columnName])
+						{
+							var lLookup = lookups[col.columnName];
+							if(lLookup)
+							{
+								if((typeof lLookup[0]) == "object") lLookup.forEach(function(r){if(r[0]==val) retVal=r[1];});
+							}
+						}
+						return retVal;
+						break;
+					case "numberfield":
+						if(col.format) return Ext.util.Format.numberRenderer(col.format)(val); //moment(val).format(col.format);
+						return val;
+						break;
+					default:
+						return val;
+				}
+			}
+
+			//create columns for each type....
+			thisColHeader = col.columnName;
+			if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+			switch(col.controlType)
+			{
+				case "datefield":
+						tFields.push({name: col.columnName, type: 'date'});
+						if(col.format==null) col.format = 'm/d/Y';
+						if(col.format=="") col.format = 'm/d/Y';
+						colObj={
+								header: thisColHeader,
+								sortable: true,
+								hidden: false,
+								xtype: 'datecolumn',
+								renderer: validRenderer,
+								ijfColumn: col,
+								width: thisColWidth,
+								dataIndex: col.columnName,
+								filter: {
+									type: 'date'
+								},
+								editor: {
+									completeOnEnter: true,
+									field: {
+										xtype: col.controlType,
+										allowBlank: (col.required!="Yes"),
+										validator: lValidator,
+										format:col.format,
+										listeners: {
+											change: function(n,o,f)
+											{
+												ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+											}
+										}
+									}
+								}
+				};
+				break;
+				case "numberfield":
+						tFields.push({name: col.columnName, type: 'number'});
+						colObj={
+								header: thisColHeader,
+								sortable: true,
+								hidden: false,
+								xtype: 'numbercolumn',
+								renderer: validRenderer,
+								align: 'end',
+								width: thisColWidth,
+								dataIndex: col.columnName,
+								filter: {
+									type: 'number'
+								},
+								editor: {
+									completeOnEnter: true,
+									field: {
+										xtype: col.controlType,
+										allowBlank: (col.required!="Yes"),
+										validator: lValidator,
+										format:col.format,
+										listeners: {
+											change: function(n,o,f)
+											{
+												ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+											}
+										}
+									}
+								}
+				};
+				break;
+				case "checkbox":
+					tFields.push({name: col.columnName, type: 'boolean'});
+					colObj={
+							header: thisColHeader,
+							sortable: true,
+							hidden: false,
+							xtype: 'checkcolumn',
+							centered:true,
+							//renderer: validRenderer,
+							width: thisColWidth,
+							dataIndex: col.columnName,
+							listeners: {
+								checkchange: function(n,o,f)
+								{
+									ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+								}
+							}
+				};
+				break;
+				case "combobox":
+						tFields.push({name: col.columnName, type: 'string'});
+						//The lookup may be simple 1D array or part of a complex cascade.  The syntax of co.reference tells
+						var cLookupDef = {"index":"0"};
+						var cListener = {
+											change: function(n,o,f)
+											{
+												ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+											},
+											focus: function(){
+												this.validate();
+											}
+										};
+						if(ijf.fw.CustomTypes.reduce(function(inObj,t){if(t.name==col.reference) inObj=t; return inObj;},null))
+						{
+							lookups[col.columnName] = ijfUtils.getReferenceDataByName(col.reference,"0");
+						}
+						else
+						{
+							//complex cascade...
+							try
+							{
+								cLookupDef = JSON.parse(col.reference);
+								lookups[col.columnName] = ijfUtils.getReferenceDataByName(cLookupDef.name,cLookupDef.index);
+
+								//establish a listener for this combo if necessary
+								if(cLookupDef.parents)
+								{
+									var parentIds = cLookupDef.parents;
+									var cFilters = parentIds.reduce(function(inFilter,p){
+											inFilter.push({"property":p.dataIndex.toString(), "value":"tbd", "columnName":p.columnName});
+											return inFilter;
+										},[]);
+									cListener["beforeQuery"] = function(query) {
+												var cContainer = this.up();
+												//cFilters["value"]= cValue;
+												cFilters.forEach(function(f){
+													//for each filter param, we need to get the correct value...
+													var cValue = cContainer.grid.getSelectionModel().getSelected().items[0].data[f.columnName];
+													if(!cValue) cValue = 'novaluetofilterwith';
+													f.value=cValue;
+												});
+												this.store.clearFilter();
+												this.store.filter(cFilters);
+											};
+								}
+
+								//for each child, you need to clear it's value
+								if(cLookupDef.children)
+								{
+									var childFields = cLookupDef.children;
+									cListener["change"]= function(n,o,f)
+									{
+											var cContainer = this.up();
+											childFields.forEach(function(f){
+												cContainer.grid.getSelectionModel().getSelected().items[0].set(f,null);
+											});
+											ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+									};
+								}
+
+							}
+							catch(le)
+							{
+								ijfUtils.footLog("failed to handle complex lookup: " + le.message);
+								lookups[col.columnName] = [];
+							}
+						}
+						colObj={
+								header: thisColHeader,
+								sortable: true,
+								hidden: false,
+								width: thisColWidth,
+								dataIndex: col.columnName,
+								renderer: validRenderer,
+								filter: {
+									type: 'list'
+								},
+								editor: {
+									completeOnEnter: true,
+									field: {
+										xtype: col.controlType,
+										allowBlank: (col.required!="Yes"),
+										validator: lValidator,
+										forceSelection: true,
+										store: lookups[col.columnName],
+										lookupDef: cLookupDef,
+										displayField: cLookupDef.index,
+										valueField: cLookupDef.index,
+										//triggerAction: 'all',
+										//mode: 'local',
+										//lastQuery: '',
+										listeners: cListener
+									}
+								}
+				};
+				break;
+				default:
+						tFields.push({name: col.columnName, type: 'string'});
+
+						colObj={
+								header: thisColHeader,
+								sortable: true,
+								hidden: false,
+								width: thisColWidth,
+								dataIndex: col.columnName,
+								renderer: validRenderer,
+								filter: {
+									type: 'string'
+								},
+								editor: {
+									completeOnEnter: true,
+									field: {
+										xtype: col.controlType,
+										allowBlank: (col.required!="Yes"),
+										validator: lValidator,
+										listeners: {
+											change: function(n,o,f)
+											{
+												ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+											},
+											focus: function(){
+												this.validate();
+											}
+										}
+									}
+								}
+				};
+			}
+
+			ijfUtils.setColWidth(colObj,cIndex,colWidths,150);
+		    listColumns.push(colObj);
+
+			cIndex++;
+
+		});
+
+	}
+
+
+	//adding can Delete at END
+	if(canDelete)
+	{
+		listColumns.push({xtype: 'actioncolumn',
+			  header: "Action",
+			  width: 70,
+			  items: [{icon: '' },{
+					icon: '/download/resources/com.idealfed.poc.idealforms:jiraforms-resources5/images/tree/drop-no.png',
+					handler: function(grid, rowIndex, colIndex, itm) {
+						  try
+						  {
+							  var fileAtts = grid.store.getData().items[rowIndex].data;
+							  //function to delete and remove the record....
+							  var removeFile = function()
+							  {
+								   var delRes = ijfUtils.deleteSpFile(fileAtts.raw,msaIssueKey,msaUserId);
+								   if(delRes!="OK")
+								   {
+										ijfUtils.modalDialogMessage("Error","Unable to delete the file: " + delRes);
+										return;
+								   }
+
+								  //Now IF count of this animal is 0 AND it's a managed with field, we need to
+								  //null the field....
+								  if(grid.getStore().getCount()<1)
+								  {
+									  if(jfFieldDef)
+									  {
+										   var res = ijfUtils.updateJiraFieldValue(jfFieldDef.id, "", item);
+										   if(res!="OK")
+										   {
+												ijfUtils.modalDialogMessage("Error","Unable to update the managed file field, please contact support.");
+												return;
+										   }
+
+									  }
+							  	  }
+	 						      ijf.main.resetForm();
+								  return;
+							  }
+							  ijfUtils.modalDialog("Warning","You are about to permanently remove this file, are you sure you want to continue?",removeFile);
+						  }
+						  catch(e)
+						  {
+							  footLog("Failed delete action ");
+						  }
+					}
+				}]
+	  	});
+    }
+
+
+    //adding concept of post filter to transform the data...
+    if(inField.referenceFilter)
+    {
+        //filter the items...
+        if(ijf.snippets.hasOwnProperty(inField.referenceFilter))
+	        fArray = ijf.snippets[inField.referenceFilter](fArray);
+    }
+
+    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")))
+    {
+        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_"), {
+            extend: 'Ext.data.Model',
+            fields: tFields
+        });
+    }
+
+    var initialLoad = true;
+    var gridStore = new Ext.data.TreeStore({
+        model: inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_"),
+        nodeParam: "msadata",
+        root: {
+		 	expanded:false,
+		 	children: []
+		},
+		 proxy: {
+				type: 'ajax',
+				actionMethods: {
+					read: 'POST'
+				   },
+				extraParams: {
+					action: "run",
+					msamethod: "GetAttachmentHistory"
+				},
+				url: '/plugins/servlet/maxjiraspapi',
+				reader: {
+					type: 'json',
+					getResponseData: function(response) {
+						//var jsonData = Ext.JSON.decode(response.responseText);
+						try
+						{
+							if(initialLoad)
+							{
+								initialLoad=false;
+								return fArray;
+							}
+							var jsonData = Ext.JSON.decode(response.responseText);
+							var tArray = jsonData.result.items.map(function(a){
+								var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+a.DownloadUrl+"' target='_blank'>"+a.FileName +"</a>","fUser":a.CreatedByName};
+								retObj.raw = a;
+								//add data if exists
+								if(indexedData)
+								{
+									if(indexedData.hasOwnProperty(a.UniqueId))
+									{
+										//add all the attributes to this record...
+										var fileAtts = indexedData[a.UniqueId];
+										Object.keys(fileAtts).forEach(function(a){
+											if(a=="fildid") return;
+											retObj[a]=fileAtts[a];
+										});
+									}
+								}
+								//is it leaf?  is it parent....
+								retObj.leaf=true;
+
+								return retObj;
+							});
+							return tArray;
+					    }
+					    catch(pError)
+					    {
+							console.log("Error calling api: " + pError.message);
+							return [];
+						}
+
+					}
+				}
+			},
+			beforeload: function(inStore, operation, eOpts )
+			{
+
+				debugger;
+			}
+    });
+	//gridStore.loadData(fArray);
+    //msadata: window.location.hostname.split(".")[0] + "," +  ijf.currentItem.key + ",According to Scott.docx"
+
+
+
+	var headerButtons =[];
+	if(thisT)
+	{
+		headerButtons.push({
+						xtype:'button',
+						text: 'Save',
+						handler: function(){
+							 //create record...
+							var u1=this.up(); //header
+							var u2=u1.up(); //grid
+							try
+							{
+								u2.editingPlugin.completeEdit();
+							}
+							catch(e){}
+
+							var onSuccessSave = function()
+							{
+								ijfUtils.hideProgress();
+								if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
+								ijf.main.setAllClean();
+								ijf.main.resetForm();
+							};
+							Ext.getBody().mask("Saving...");
+							var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,inField.form,item)};
+							window.setTimeout(saveIt,50);
+						}
+					});
+    }
+			headerButtons.push({
+				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upSPGrdFrm_'+inField.formCell.replace(/,/g,"_")+"'><input id='"+inFormKey+'_upSpGrd_'+inField.formCell.replace(/,/g,"_")+"' type='file' name='file' onchange='ijfUtils.gridSpUploadFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\");'></form>",
+				frame: false,
+				hidden: true,
+				border: false,
+			    xtype: "panel"});
+			headerButtons.push({
+				xtype:'button',
+				text:"Upload",
+				scope: this,
+				handler: function(){
+				   //need the formset ID...
+				   var jKey = '#'+inFormKey+'_upSpGrd_'+inField.formCell.replace(/,/g,"_");
+				   jQuery(jKey).val("");
+				   jQuery(jKey).trigger('click');
+				}
+			});
+
+    var gridPanel = new Ext.tree.Panel({
+		 header:{
+				titlePosition: 0,
+				items: headerButtons
+		},
+		 title:  inField.caption,
+		 style: l_Style,
+		 hidden: hideField,
+		 useArrows: true,
+		 bodyStyle: l_panelStyle,
+		 height: l_Height,
+        store: gridStore,
+         rootVisible: false,
+        width:l_Width,
+        plugins: ['gridfilters',{
+			ptype: 'cellediting',
+			clicksToEdit: 1
+        }],
+        id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
+        //reserveScrollOffset: true,
+        columns: listColumns,
+        frame: true,
+        collapsible: collapsible,
+        collapsed: collapsed,
+        autoLoad:true
+    });
+
+	var treeMenu = new Ext.menu.Menu({ items:
+		[
+			{ text: 'Check In', handler: function(f, i, n, t)  {
+					 var fileAtts = gridPanel.selection.data;
+					 var checkoutResult = ijfUtils.checkInSpFile(fileAtts.raw,msaIssueKey,msaUserId,"JIRA Checkin");
+					 if(checkoutResult=="OK")
+					 {
+						 ijf.main.resetForm();
+					 }
+					 else
+					 {
+						 ijfUtils.modalDialogMessage("Error","Unable to check file out: " + checkoutResult);
+					 }
+			} },
+			{ text: 'Check Out', handler: function(f, i, n, t)  {
+					 var fileAtts = gridPanel.selection.data;
+					var checkoutResult = ijfUtils.checkOutSpFile(fileAtts.raw,msaIssueKey,msaUserId);
+					 if(checkoutResult=="OK")
+					 {
+						 ijf.main.resetForm();
+					 }
+					 else
+					 {
+						 ijfUtils.modalDialogMessage("Error","Unable to check file out: " + checkoutResult);
+					 }
+			} },
+			{ text: 'Delete', handler: function(f, i, n, t)  {
+				 var fileAtts = gridPanel.selection.data;
+
+				  //function to delete and remove the record....
+				  var removeFile = function()
+				  {
+					   var delRes = ijfUtils.deleteSpFile(fileAtts.raw,msaIssueKey,msaUserId);
+					   if(delRes!="OK")
+					   {
+							ijfUtils.modalDialogMessage("Error","Unable to delete the file: " + delRes);
+							return;
+					   }
+
+					  //Now IF count of this animal is 0 AND it's a managed with field, we need to
+					  //null the field....
+					  if(grid.getStore().getCount()<1)
+					  {
+						  if(jfFieldDef)
+						  {
+							   var res = ijfUtils.updateJiraFieldValue(jfFieldDef.id, "", item);
+							   if(res!="OK")
+							   {
+									ijfUtils.modalDialogMessage("Error","Unable to update the managed file field, please contact support.");
+									return;
+							   }
+
+						  }
+					  }
+					  ijf.main.resetForm();
+					  return;
+				  }
+				  ijfUtils.modalDialog("Warning","You are about to permanently remove this file, are you sure you want to continue?",removeFile);
+			} },
+			{ text: 'Details', handler: function(f, i, n, t)  {
+				 var fileAtts = gridPanel.selection.data;
+				 ijfUtils.modalDialogMessage("File Details","<pre>" + JSON.stringify(fileAtts.raw,null,4) + "</pre>");
+			} },
+			{ text: 'Download', handler: function(f, i, n, t)  {
+				 var fileAtts = gridPanel.selection.data;
+				 if(fileAtts.DownloadUrl)
+					 window.open(fileAtts.raw.DownloadUrl);
+			     else
+			         window.open(fileAtts.raw.url);
+			} },
+			{ text: 'Edit', handler: function(f, i, n, t)  {
+				 var fileAtts = gridPanel.selection.data;
+				 window.open(fileAtts.raw.EditInAppUrl);
+			} }	,
+			{ text: 'Edit in Browser', handler: function(f, i, n, t)  {
+				 var fileAtts = gridPanel.selection.data;
+				 window.open(fileAtts.raw.EditInBrowserUrl);
+			} }	,
+			{ text: 'View in Browser', handler: function(f, i, n, t)  {
+				 var fileAtts = gridPanel.selection.data;
+				 window.open(fileAtts.raw.ViewInBrowserUrl);
+			} }	,
+			{ text: 'View Mini View', handler: function(f, i, n, t)  {
+				 var fileAtts = gridPanel.selection.data;
+				 window.open(fileAtts.raw.MiniViewUrl);
+			} }
+
+		],
+		listeners: {
+			beforeshow: function(thisMenu, eOpts)
+			{
+				var fileAtts = gridPanel.selection.data;
+				thisMenu.items.items.forEach(function(m){ m.setHidden(true);});
+
+				if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckIn) thisMenu.items.items[0].setHidden(false);
+				if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckOut) thisMenu.items.items[1].setHidden(false);
+				if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckOut) thisMenu.items.items[2].setHidden(false);
+				thisMenu.items.items[3].setHidden(false); //details
+				thisMenu.items.items[4].setHidden(false); //download
+				if(fileAtts.raw.EditInAppUrl) thisMenu.items.items[5].setHidden(false);
+				if(fileAtts.raw.EditInBrowserUrl) thisMenu.items.items[6].setHidden(false);
+				if(fileAtts.raw.ViewInBrowserUrl) thisMenu.items.items[7].setHidden(false);
+				if(fileAtts.raw.MiniViewUrl) thisMenu.items.items[8].setHidden(false);
+			}
+		}
+	});
+
+
+
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](gridPanel, inFormKey,item, inField, inContainer);
+    gridPanel.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, gridPanel, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](gridPanel, inFormKey,item, inField, inContainer);
+
+	gridPanel.getEl().on('contextmenu', function(e) {
+	  	    e.preventDefault();
+			treeMenu.showAt(e.clientX+window.pageXOffset,e.clientY+window.pageYOffset);
+	});
+
+},
 renderAttachmentManaged:function(inFormKey,item, inField, inContainer)
 {
 
@@ -2225,6 +3161,355 @@ renderAttachmentManaged:function(inFormKey,item, inField, inContainer)
 							handler: function(){
 							   // render a local version
 							   if(currentAttachment) window.open(currentAttachment.content);
+							}
+						 }];
+
+					if(!rOnly)
+					{
+						headerItems.push({
+											xtype:'button',
+											text:"Upload",
+												listeners: {
+													click: function(f,n,o){
+
+														Ext.get(inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+'UploadLabelId').update('No file selected...');
+
+														var clickKey = "#"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId";
+														jQuery(clickKey).val("");
+														jQuery(clickKey).trigger('click');
+													}
+												}
+
+										 });
+					}
+
+
+    //standard file setup...
+    var gridPanel = new Ext.grid.GridPanel({
+		 title:  inField.caption,
+		 header:{
+			titlePosition: 1,
+			items: headerItems
+		 },
+		 style: l_Style,
+		 bodyStyle: l_panelStyle,
+		 height: l_Height,
+        store: gridStore,
+        width:'100%',
+        plugins: 'gridfilters',
+        id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
+        //reserveScrollOffset: true,
+        columns: listColumns,
+        frame: true,
+        collapsible: collapsible,
+        collapsed: collapsed
+    });
+
+    var pnl = new Ext.FormPanel({
+        labelAlign: 'left',
+        border:false,
+        hidden: hideField,
+        bodyStyle: l_Style,
+        width: l_Width,
+        items: [gridPanel,
+           {
+            html: fileLoad,
+            frame: false,
+            hidden: true,
+            border: false,
+            xtype: "panel"}]
+    });
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](pnl, inFormKey,item, inField, inContainer);
+    pnl.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
+
+},
+renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
+
+	var canEditFile = false;
+
+
+	var ocf =  ijfUtils.getEvent(inField);
+
+    var hideField = ijfUtils.renderIfShowField("",inField);
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!hideField) && (!perms.canSee))	hideField=true;
+
+    var canDelete = false;
+    if (l_fieldStyle.indexOf('delete:true')>-1)
+    {
+        canDelete=true;
+    }
+	if(!perms.canEdit) canDelete=false;
+    if(!perms.canSee) rOnly=true;
+
+    var collapsible = true;
+    if (l_fieldStyle.indexOf('collapsible:false')>-1)
+    {
+        collapsible=false;
+    }
+    var collapsed = true;
+    if (l_fieldStyle.indexOf('collapsed:false')>-1)
+    {
+        collapsed=false;
+    }
+
+    var l_Height = 300;
+    var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
+    if(l_Height=="")
+    {
+		l_Height=300;
+	}
+	else
+	{
+    	l_Height = l_Height.replace("px","")/1;
+	}
+
+	var l_Width = 600;
+    var l_Width=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"width");
+    if(l_Width=="")
+    {
+		l_Width=600;
+	}
+	else
+	{
+		if(l_Width.indexOf("px")>-1) l_Width = l_Width.replace("px","")/1;
+	}
+
+
+//The managed file is either explicitly named in dataSource, or dataSource
+//is a single line text that is the name.  If field, then null allows any
+//selection.
+    inField.namedFile = true;
+    var jfFieldDef = ijf.jiraFieldsKeyed[inField.dataSource];
+    var managedFileName = inField.dataSource;
+    if(jfFieldDef)
+    {
+		var jf=item.fields[jfFieldDef.id];
+		var data = ijfUtils.handleJiraFieldType(jfFieldDef,jf);
+		managedFileName=data;
+		inField.namedFile=false;
+	}
+
+
+	//This is the API call to SP to get the document listings......
+	var msaUserId = ijfUtils.getCurrentUserId();
+	//var msaUserId="O001969";
+	var msaIssueKey = ijf.currentItem.key;
+	//msaIssueKey = "ISSUE-3";
+
+
+    var sharePointFiles = ijfUtils.getSharepointIssueFiles(msaIssueKey,msaUserId);
+
+    if(sharePointFiles.status=="success")
+    {
+		var attachments = sharePointFiles.result.items.reduce(function(inArray, a)
+		{
+			if(a.FileName==managedFileName){
+				inArray.push(a);
+				if(a.Status.EditInAppUrl) canEditFile=true;
+				//and call the get versions....
+				var fileVersions = ijfUtils.getSharepointIssueFileVersions(msaIssueKey,a.FileName);
+				if(fileVersions.status="success")
+				{
+					//load the file versions into the array....
+					fileVersions.result.items.forEach(function(fv){
+						inArray.push(fv);
+					});
+				}
+			}
+			return inArray;
+		},[]);
+    }
+    else
+    {
+		//error no files....
+		 var attachments = [];
+	}
+
+
+	var sortedAttachments = attachments.sort(function(a, b)
+	{
+		a = moment(a.CreatedDate).format('YYYY-MM-DD HH:mm:ss');
+		b = moment(b.CreatedDate).format('YYYY-MM-DD HH:mm:ss');
+		return a>b ? -1 : a<b ? 1 : 0;
+	});
+
+
+    var currentAttachment = sortedAttachments[0];
+	//bootstrap null
+	if(!currentAttachment)
+	{
+		//currentAttachment = {"author":{"displayName": "(not loaded)"},"created":"(not loaded)"};
+		currentAttachment = {"CreatedByName":"(not loaded)","CreatedDate":"(not loaded)"};
+	}
+
+
+    var listColumns = [];
+    var tFields = [];
+
+    tFields.push({name: "fileid", type: 'string'});
+	listColumns.push({
+			header: "FID",
+			sortable: true,
+			hidden: true,
+			width: '1%',
+			dataIndex: "fileid"
+	});
+
+    tFields.push({name: "filename", type: 'string'});
+	listColumns.push({
+			header: "File Versions",
+			sortable: true,
+			hidden: false,
+			flex: 70,
+			dataIndex: "FileName",
+			filter: {
+				type: 'string'
+			}
+	});
+
+    tFields.push({name: "fUser", type: 'string'});
+	listColumns.push({
+			header: "User",
+			sortable: true,
+			hidden: false,
+			flex: 30,
+			dataIndex: "CreatedByName",
+			filter: {
+				type: 'string'
+			}
+	});
+
+    if(ijfUtils.detectIE())
+    {
+		tFields.push({name: "created", type: 'string'});
+		listColumns.push({
+				header: "Date",
+				sortable: true,
+				hidden: false,
+				renderer: function(inVal){return moment(inVal).format('lll');},
+				width: 150,
+				dataIndex: "CreatedDate",
+				filter: {
+					type: 'string'
+					}
+		});
+	}
+	else
+	{
+		tFields.push({name: "created", type: 'date'});
+		listColumns.push({
+				header: "Date",
+				sortable: true,
+				hidden: false,
+				xtype: 'datecolumn',
+				formatter:'date("m/d/y h:i:s A")',
+				width: 150,
+				dataIndex: "CreatedDate",
+				filter: {
+					type: 'date'
+					}
+		});
+	}
+
+
+    if(!Ext.ClassManager.isCreated(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")))
+    {
+        Ext.define(inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_"), {
+            extend: 'Ext.data.Model',
+            fields: tFields
+        });
+    }
+    var gridStore = new Ext.data.Store({
+        model: inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")
+    });
+    var fArray = sortedAttachments.map(function(a){
+		    return {"fileid":a.UniqueId,"CreatedDate":a.CreatedDate,"filename":a.FileName + " <a href='"+a.url+"' target='_blank'>open</a>","CreatedByName":a.CreatedByName};
+	});
+	gridStore.loadData(fArray);
+
+
+	//end permissions
+
+	//var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+inField.dataSource+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value+'</span>');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+inField.dataSource+"');}\"></form>";
+	//id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId'
+	if(managedFileName)
+	{
+	    var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>File: " + managedFileName + "<br> uploaded by " + currentAttachment.CreatedByName + " on " + moment(currentAttachment.CreatedDate).format('lll') + "</div>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSave();} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
+
+    }
+    else
+    {
+        var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>Managed File has not been Initialized<br>&nbsp;</div>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSave(); \"></form>";
+	}
+
+
+    var headerItems = [{
+							xtype:'panel',
+							html: headerHtml,
+							bodyStyle: 'background:transparent;color:white;width:100px'
+						 },
+						{
+							xtype:'button',
+							text:"Edit",
+							hidden: canEditFile,
+							handler: function(){
+							   // render a local version
+							   if(window.onbeforeunload!=null)
+							   {
+								   //cannot run, tell them to save first
+								   ijfUtils.modalDialogMessage("Information","Sorry you cannot edit a file with unsaved fields in your form.  Please save first then try again.");
+								   return;
+                			   }
+							   if(currentAttachment)
+							   {
+									window.open(currentAttachment.EditInAppUrl);
+							   }
+						  }
+						 },
+						 {
+							xtype:'button',
+							text:"Download",
+							handler: function(){
+							   // render a local version
+							   if(currentAttachment)
+							   {
+								   if(currentAttachment.DownloadUrl) window.open(currentAttachment.DownloadUrl);
+								   else window.open(currentAttachment.url);
+							   }
 							}
 						 }];
 
