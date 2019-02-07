@@ -507,14 +507,13 @@ var ijfUtils = {
              error: onError
         });
 },
-getSharepointIssueFiles: function(inIssueId,inUserId)
+getSharepointIssueFiles: function(inIssueId)
 {
 	var resMessage = "";
 	//save the form, update the message at bottom....
 	var params = [];
 	params.push(window.location.hostname.split(".")[0]);
 	params.push(inIssueId);
-	params.push(inUserId);
 	try
 	{
 	    //perform post
@@ -584,7 +583,7 @@ getSharepointIssueFileVersions: function(inIssueId,inFileName)
     //window.setTimeout(msaClearMessage,8000);
     return resMessage;
 },
-checkOutSpFile: function(inRawFile,inIssueId,inUserId)
+undoSpCheckout: function(inRawFile,inIssueId)
 {
 	var resMessage = "";
 	//save the form, update the message at bottom....
@@ -592,7 +591,46 @@ checkOutSpFile: function(inRawFile,inIssueId,inUserId)
 	params.push(window.location.hostname.split(".")[0]);
 	params.push(inIssueId);
 	params.push(inRawFile.FileName);
-	params.push(inUserId);
+	try
+	{
+	    //perform post
+		jQuery.ajax({
+				async: false,
+				type: 'POST',
+				url: '/plugins/servlet/maxjiraspapi',
+				data: {
+					action: "run",
+					msamethod: "UndoCheckOut",
+					msadata: params.join(",")
+				},
+				timeout: 60000,
+				success: function(data) {
+					if(data.status=="success")
+						resMessage="OK";
+					else
+						resMessage=data.message;
+				},
+				error: function(e) {
+					resMessage = "Failed to run " + e.message;
+				}
+			});
+
+    }
+    catch(e)
+    {
+		resMessage = e.message;
+    }
+    //window.setTimeout(msaClearMessage,8000);
+    return resMessage;
+},
+checkOutSpFile: function(inRawFile,inIssueId)
+{
+	var resMessage = "";
+	//save the form, update the message at bottom....
+	var params = [];
+	params.push(window.location.hostname.split(".")[0]);
+	params.push(inIssueId);
+	params.push(inRawFile.FileName);
 	try
 	{
 	    //perform post
@@ -625,7 +663,7 @@ checkOutSpFile: function(inRawFile,inIssueId,inUserId)
     //window.setTimeout(msaClearMessage,8000);
     return resMessage;
 },
-checkInSpFile: function(inRawFile,inIssueId,inUserId,inComment)
+checkInSpFile: function(inRawFile,inIssueId,inComment)
 {
 	var resMessage = "";
 	//save the form, update the message at bottom....
@@ -634,7 +672,6 @@ checkInSpFile: function(inRawFile,inIssueId,inUserId,inComment)
 	params.push(inIssueId);
 	params.push(inRawFile.FileName);
 	params.push(inComment);
-	params.push(inUserId);
 	try
 	{
 	    //perform post
@@ -667,7 +704,7 @@ checkInSpFile: function(inRawFile,inIssueId,inUserId,inComment)
     //window.setTimeout(msaClearMessage,8000);
     return resMessage;
 },
-deleteSpFile: function(inRawFile,inIssueId,inUserId)
+deleteSpFile: function(inRawFile,inIssueId)
 {
 	var resMessage = "";
 	//save the form, update the message at bottom....
@@ -675,7 +712,6 @@ deleteSpFile: function(inRawFile,inIssueId,inUserId)
 	params.push(window.location.hostname.split(".")[0]);
 	params.push(inIssueId);
 	params.push(inRawFile.FileName);
-	params.push(inUserId);
 	try
 	{
 	    //perform post
@@ -1107,6 +1143,8 @@ gridSpUploadFile: function(event, inGridId, inControlId, dontSetDirty)
 
 	//you are going to UPLOAD a file to sharepoint here.....
 
+    ijfUtils.showProgress();
+
 	var grid = Ext.getCmp(inGridId);
 	if(!grid){ijfUtils.footLog("failed to get to grid with " + inGridId); return;}
 	var input = event.target;
@@ -1119,11 +1157,10 @@ gridSpUploadFile: function(event, inGridId, inControlId, dontSetDirty)
 	  params.push(window.location.hostname.split(".")[0]);
 	  params.push(ijf.currentItem.key);
 	  params.push(thisFileName);
-	  var userId = ijfUtils.getCurrentUserId();
-	  params.push(userId);
 	  params.push(base64);
 
 	  var fSave = ijfUtils.runSharepointMethod("UploadOrUpdateAttachment",params.join(","));
+	  ijfUtils.hideProgress();
 	  if(fSave.status=="error")
 	  {
 		  ijfUtils.modalDialogMessage("Error saving",fSave.message);

@@ -1853,13 +1853,13 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
     var sortedAttachments = [];
 
 	//This is the API call to SP to get the document listings......
-	var msaUserId = ijfUtils.getCurrentUserId();
+
 	//var msaUserId="O001969";
 	var msaIssueKey = ijf.currentItem.key;
 	//msaIssueKey = "ISSUE-3";
 
 
-    var sharePointFiles = ijfUtils.getSharepointIssueFiles(msaIssueKey,msaUserId);
+    var sharePointFiles = ijfUtils.getSharepointIssueFiles(msaIssueKey);
 
     if(sharePointFiles.status=="success")
     {
@@ -1903,7 +1903,11 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 	var lastObj = {};
 
     var fArray = sortedAttachments.map(function(a){
-			    var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+a.DownloadUrl+"' target='_blank'>"+a.FileName +"</a>","fUser":a.CreatedByName};
+
+		        var fStatus = "";
+		        if(a.Status) if(a.Status.checkedOutBy) if(a.Status.checkedOutBy.fullName) fStatus="Checked Out";
+
+			    var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+a.DownloadUrl+"' target='_blank'>"+a.FileName +"</a>","fUser":a.CreatedByName,"fStatus":fStatus};
                 retObj.id = window.location.hostname.split(".")[0] + "," + msaIssueKey + "," + a.FileName;
                 retObj.raw = a;
 			    //add data if exists
@@ -2056,6 +2060,23 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 	ijfUtils.setColWidth(colObj,cIndex,colWidths,"30%");
     listColumns.push(colObj);
 	cIndex++;
+
+	thisColHeader = "Status";
+	if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+    tFields.push({name: "fUser", type: 'string'});
+	colObj={
+			header: thisColHeader,
+			sortable: true,
+			hidden: false,
+			dataIndex: "fStatus",
+			filter: {
+				type: 'list'
+			}
+	};
+	ijfUtils.setColWidth(colObj,cIndex,colWidths,"30%");
+    listColumns.push(colObj);
+	cIndex++;
+
 
     if(ijfUtils.detectIE())
     {
@@ -2425,30 +2446,30 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 							  //function to delete and remove the record....
 							  var removeFile = function()
 							  {
-								   var delRes = ijfUtils.deleteSpFile(fileAtts.raw,msaIssueKey,msaUserId);
-								   if(delRes!="OK")
+								   ijfUtils.showProgress();
+								   var delayIt=function()
 								   {
-										ijfUtils.modalDialogMessage("Error","Unable to delete the file: " + delRes);
-										return;
-								   }
-
-								  //Now IF count of this animal is 0 AND it's a managed with field, we need to
-								  //null the field....
-								  if(grid.getStore().getCount()<1)
-								  {
-									  if(jfFieldDef)
-									  {
-										   var res = ijfUtils.updateJiraFieldValue(jfFieldDef.id, "", item);
-										   if(res!="OK")
-										   {
-												ijfUtils.modalDialogMessage("Error","Unable to update the managed file field, please contact support.");
+									   var delRes = ijfUtils.deleteSpFile(fileAtts.raw,msaIssueKey);
+									   if(delRes!="OK")
+									   {
+											if(delRes.indexOf("checked out for editing")>-1)
+											{
+												ijfUtils.hideProgress();
+												ijfUtils.modalDialogMessage("Error","Unable to delete because the file is checked out for editing");
 												return;
-										   }
-
-									  }
-							  	  }
-	 						      ijf.main.resetForm();
-								  return;
+											}
+											else
+											{
+												ijfUtils.hideProgress();
+												ijfUtils.modalDialogMessage("Error","Unable to delete the file: " + delRes);
+												return;
+										    }
+									   }
+									  ijf.main.resetForm();
+									  ijfUtils.hideProgress();
+									  return;
+								   }
+								   window.setTimeout(delayIt,50);
 							  }
 							  ijfUtils.modalDialog("Warning","You are about to permanently remove this file, are you sure you want to continue?",removeFile);
 						  }
@@ -2629,27 +2650,43 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 		[
 			{ text: 'Check In', handler: function(f, i, n, t)  {
 					 var fileAtts = gridPanel.selection.data;
-					 var checkoutResult = ijfUtils.checkInSpFile(fileAtts.raw,msaIssueKey,msaUserId,"JIRA Checkin");
-					 if(checkoutResult=="OK")
-					 {
-						 ijf.main.resetForm();
-					 }
-					 else
-					 {
-						 ijfUtils.modalDialogMessage("Error","Unable to check file out: " + checkoutResult);
-					 }
+					 ijfUtils.showProgress();
+					   var delayIt=function()
+					   {
+						 var checkoutResult = ijfUtils.checkInSpFile(fileAtts.raw,msaIssueKey,"JIRA Checkin");
+						 if(checkoutResult=="OK")
+						 {
+							 ijf.main.resetForm();
+							 ijfUtils.hideProgress();
+						 }
+						 else
+						 {
+						     ijfUtils.hideProgress();
+							 ijfUtils.modalDialogMessage("Error","Unable to check file out: " + checkoutResult);
+						 }
+ 					     return;
+	 				   }
+                       window.setTimeout(delayIt,50);
 			} },
 			{ text: 'Check Out', handler: function(f, i, n, t)  {
 					 var fileAtts = gridPanel.selection.data;
-					var checkoutResult = ijfUtils.checkOutSpFile(fileAtts.raw,msaIssueKey,msaUserId);
-					 if(checkoutResult=="OK")
+					 ijfUtils.showProgress();
+					 var delayIt=function()
 					 {
-						 ijf.main.resetForm();
-					 }
-					 else
-					 {
-						 ijfUtils.modalDialogMessage("Error","Unable to check file out: " + checkoutResult);
-					 }
+						 var checkoutResult = ijfUtils.checkOutSpFile(fileAtts.raw,msaIssueKey);
+						 if(checkoutResult=="OK")
+						 {
+							 ijf.main.resetForm();
+							 ijfUtils.hideProgress();
+						 }
+						 else
+						 {
+							 ijfUtils.hideProgress();
+							 ijfUtils.modalDialogMessage("Error","Unable to check file out: " + checkoutResult);
+						 }
+ 					     return;
+	 				 }
+                     window.setTimeout(delayIt,50);
 			} },
 			{ text: 'Delete', handler: function(f, i, n, t)  {
 				 var fileAtts = gridPanel.selection.data;
@@ -2657,30 +2694,21 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 				  //function to delete and remove the record....
 				  var removeFile = function()
 				  {
-					   var delRes = ijfUtils.deleteSpFile(fileAtts.raw,msaIssueKey,msaUserId);
-					   if(delRes!="OK")
+					   ijfUtils.showProgress();
+					   var delayIt=function()
 					   {
-							ijfUtils.modalDialogMessage("Error","Unable to delete the file: " + delRes);
-							return;
-					   }
-
-					  //Now IF count of this animal is 0 AND it's a managed with field, we need to
-					  //null the field....
-					  if(grid.getStore().getCount()<1)
-					  {
-						  if(jfFieldDef)
-						  {
-							   var res = ijfUtils.updateJiraFieldValue(jfFieldDef.id, "", item);
-							   if(res!="OK")
-							   {
-									ijfUtils.modalDialogMessage("Error","Unable to update the managed file field, please contact support.");
-									return;
-							   }
-
-						  }
-					  }
-					  ijf.main.resetForm();
-					  return;
+						   var delRes = ijfUtils.deleteSpFile(fileAtts.raw,msaIssueKey);
+						   if(delRes!="OK")
+						   {
+								ijfUtils.hideProgress();
+								ijfUtils.modalDialogMessage("Error","Unable to delete the file: " + delRes);
+								return;
+						   }
+						  ijf.main.resetForm();
+ 					      ijfUtils.hideProgress();
+						  return;
+	 				   }
+                       window.setTimeout(delayIt,50);
 				  }
 				  ijfUtils.modalDialog("Warning","You are about to permanently remove this file, are you sure you want to continue?",removeFile);
 			} },
@@ -2703,6 +2731,30 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 				 var fileAtts = gridPanel.selection.data;
 				 window.open(fileAtts.raw.EditInBrowserUrl);
 			} }	,
+			{ text: 'Force Check In', handler: function(f, i, n, t)  {
+					 var fileAtts = gridPanel.selection.data;
+				  //function to delete and remove the record....
+				  var undoCheckout = function()
+				  {
+					   ijfUtils.showProgress();
+					   var delayIt=function()
+					   {
+						   var delRes = ijfUtils.undoSpCheckout(fileAtts.raw,msaIssueKey);
+						   if(delRes!="OK")
+						   {
+								ijfUtils.hideProgress();
+								ijfUtils.modalDialogMessage("Error","Unable to remove checkout: " + delRes);
+								return;
+						   }
+						  ijf.main.resetForm();
+ 					      ijfUtils.hideProgress();
+						  return;
+	 				   }
+                       window.setTimeout(delayIt,50);
+				  }
+				  ijfUtils.modalDialog("Warning","You are about to remove the file checkout which will revert to the last saved version.  The person who currently holds the checked out file may lose edits.  Proceed?",undoCheckout);
+
+			} },
 			{ text: 'View in Browser', handler: function(f, i, n, t)  {
 				 var fileAtts = gridPanel.selection.data;
 				 window.open(fileAtts.raw.ViewInBrowserUrl);
@@ -2718,16 +2770,17 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 			{
 				var fileAtts = gridPanel.selection.data;
 				thisMenu.items.items.forEach(function(m){ m.setHidden(true);});
-
-				if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckIn) thisMenu.items.items[0].setHidden(false);
+				if(fileAtts.raw.Status) if(fileAtts.raw.Status.checkedOutBy) if(fileAtts.raw.Status.checkedOutBy.email==ijf.main.currentUser.email) thisMenu.items.items[0].setHidden(false);
+				//if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckIn) thisMenu.items.items[0].setHidden(false);
 				if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckOut) thisMenu.items.items[1].setHidden(false);
 				if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckOut) thisMenu.items.items[2].setHidden(false);
 				thisMenu.items.items[3].setHidden(false); //details
 				thisMenu.items.items[4].setHidden(false); //download
 				if(fileAtts.raw.EditInAppUrl) thisMenu.items.items[5].setHidden(false);
 				if(fileAtts.raw.EditInBrowserUrl) thisMenu.items.items[6].setHidden(false);
-				if(fileAtts.raw.ViewInBrowserUrl) thisMenu.items.items[7].setHidden(false);
-				if(fileAtts.raw.MiniViewUrl) thisMenu.items.items[8].setHidden(false);
+				if(fileAtts.raw.Status) if(fileAtts.raw.Status.checkedOutBy) if(fileAtts.raw.Status.checkedOutBy.email) thisMenu.items.items[7].setHidden(false); //undo checkout
+				if(fileAtts.raw.ViewInBrowserUrl) thisMenu.items.items[8].setHidden(false);
+				if(fileAtts.raw.MiniViewUrl) thisMenu.items.items[9].setHidden(false);
 			}
 		}
 	});
@@ -3322,14 +3375,12 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
 	}
 
 
-	//This is the API call to SP to get the document listings......
-	var msaUserId = ijfUtils.getCurrentUserId();
-	//var msaUserId="O001969";
+
 	var msaIssueKey = ijf.currentItem.key;
 	//msaIssueKey = "ISSUE-3";
 
 
-    var sharePointFiles = ijfUtils.getSharepointIssueFiles(msaIssueKey,msaUserId);
+    var sharePointFiles = ijfUtils.getSharepointIssueFiles(msaIssueKey);
 
     if(sharePointFiles.status=="success")
     {
@@ -7715,6 +7766,12 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         urlkey = true;
     }
 
+    var enableLocking = false;
+    if (l_fieldStyle.indexOf('locking:true')>-1)
+    {
+        enableLocking = true;
+    }
+
     var hideField = ijfUtils.renderIfShowField("",inField);
 
     var collapsible = false;
@@ -9045,6 +9102,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         width: "100%",
         layout: 'fit',
         ijfForm: inField,
+        enableLocking: enableLocking,
         columns: colSettingsArray,
         selModel: {selType: 'rowmodel', mode: 'SINGLE'},
         bbar: myBbar,
@@ -10512,6 +10570,12 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
         if (!!data) rOnly=true;
     }
 
+    var enableLocking = false;
+    if (l_fieldStyle.indexOf('locking:true')>-1)
+    {
+        enableLocking = true;
+    }
+
     var l_labelStyle = inField.labelStyle;
     var l_panelStyle = inField.panelStyle;
     var l_Style = inField.style;
@@ -11222,6 +11286,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
         //reserveScrollOffset: true,
         columns: listColumns,
         frame: true,
+        enableLocking: enableLocking,
         collapsible: collapsible,
         collapsed: collapsed,
         selModel: selModelSettings,
@@ -11368,6 +11433,12 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
         features=[{
 		        ftype: 'summary'
 		        }];
+    }
+
+    var enableLocking = false;
+    if (l_fieldStyle.indexOf('locking:true')>-1)
+    {
+        enableLocking = true;
     }
 
 	var l_Height = 300;
@@ -11596,6 +11667,7 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
 		},
         store: gridStore,
         width:l_Width,
+        enableLocking: enableLocking,
         id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
         //reserveScrollOffset: true,
         columns: listColumns,
