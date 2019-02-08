@@ -2529,8 +2529,25 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 								return fArray;
 							}
 							var jsonData = Ext.JSON.decode(response.responseText);
-							var tArray = jsonData.result.items.map(function(a){
+
+							jsonData = jsonData.result.items.sort(function(a, b)
+										{
+											a = moment(a.CreatedDate).format('YYYY-MM-DD HH:mm:ss');
+											b = moment(b.CreatedDate).format('YYYY-MM-DD HH:mm:ss');
+											return a>b ? -1 : a<b ? 1 : 0;
+							});
+
+							var tArray = jsonData.map(function(a){
 								var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+a.DownloadUrl+"' target='_blank'>"+a.FileName +"</a>","fUser":a.CreatedByName};
+
+								if(a.IsCurrent)
+								{
+									retObj.fStatus = "Current";
+								}
+								else
+								{
+									retObj.fStatus = "Version: " + a.VersionLabel;
+								}
 								retObj.raw = a;
 								//add data if exists
 								if(indexedData)
@@ -2646,6 +2663,13 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
         autoLoad:true
     });
 
+    var userIsSpAdmin=false;
+    var adminGrpsArry = [];
+    if(inField.dataReference) adminGrpsArry=inField.dataReference.split(",");
+    adminGrpsArry.forEach(function(g){
+		if(ijf.main.currentUser.groupList.indexOf(g.trim())>-1) userIsSpAdmin=true;
+	});
+
 	var treeMenu = new Ext.menu.Menu({ items:
 		[
 			{ text: 'Check In', handler: function(f, i, n, t)  {
@@ -2714,7 +2738,14 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 			} },
 			{ text: 'Details', handler: function(f, i, n, t)  {
 				 var fileAtts = gridPanel.selection.data;
-				 ijfUtils.modalDialogMessage("File Details","<pre>" + JSON.stringify(fileAtts.raw,null,4) + "</pre>");
+
+				 var detailsStr = JSON.stringify(fileAtts.raw,null,4);
+				 detailsStr = detailsStr.replace(/\"/g,"");
+				 detailsStr = detailsStr.replace(/{/g,"");
+				 detailsStr = detailsStr.replace(/}/g,"");
+				 detailsStr = detailsStr.replace(/,/g,"");
+
+				 ijfUtils.modalDialogMessage("File Details","<pre>" + detailsStr + "</pre>");
 			} },
 			{ text: 'Download', handler: function(f, i, n, t)  {
 				 var fileAtts = gridPanel.selection.data;
@@ -2731,6 +2762,35 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 				 var fileAtts = gridPanel.selection.data;
 				 window.open(fileAtts.raw.EditInBrowserUrl);
 			} }	,
+			{ text: 'View in Browser', handler: function(f, i, n, t)  {
+				 var fileAtts = gridPanel.selection.data;
+				 window.open(fileAtts.raw.ViewInBrowserUrl);
+			} }	,
+			{ text: 'View Mini View', handler: function(f, i, n, t)  {
+				 var fileAtts = gridPanel.selection.data;
+				 window.open(fileAtts.raw.MiniViewUrl);
+			} },
+			{ text: 'Copy to JIRA', handler: function(f, i, n, t)  {
+					 var fileAtts = gridPanel.selection.data;
+					 ijfUtils.showProgress();
+					 var copyFile=function()
+					 {
+						 var fileName = fileAtts.raw.FileName;
+						 var copyResult = ijfUtils.copySpFilesToJira(fileName,msaIssueKey);
+						 if(copyResult=="OK")
+						 {
+							 ijf.main.resetForm();
+							 ijfUtils.hideProgress();
+						 }
+						 else
+						 {
+							 ijfUtils.hideProgress();
+							 ijfUtils.modalDialogMessage("Error","Unable to copy file: " + copyResult);
+						 }
+ 					     return;
+	 				 }
+                     window.setTimeout(copyFile,50);
+			} },
 			{ text: 'Force Check In', handler: function(f, i, n, t)  {
 					 var fileAtts = gridPanel.selection.data;
 				  //function to delete and remove the record....
@@ -2754,14 +2814,6 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 				  }
 				  ijfUtils.modalDialog("Warning","You are about to remove the file checkout which will revert to the last saved version.  The person who currently holds the checked out file may lose edits.  Proceed?",undoCheckout);
 
-			} },
-			{ text: 'View in Browser', handler: function(f, i, n, t)  {
-				 var fileAtts = gridPanel.selection.data;
-				 window.open(fileAtts.raw.ViewInBrowserUrl);
-			} }	,
-			{ text: 'View Mini View', handler: function(f, i, n, t)  {
-				 var fileAtts = gridPanel.selection.data;
-				 window.open(fileAtts.raw.MiniViewUrl);
 			} }
 
 		],
@@ -2775,12 +2827,15 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 				if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckOut) thisMenu.items.items[1].setHidden(false);
 				if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckOut) thisMenu.items.items[2].setHidden(false);
 				thisMenu.items.items[3].setHidden(false); //details
-				thisMenu.items.items[4].setHidden(false); //download
+				if(fileAtts.raw.url) thisMenu.items.items[4].setHidden(false); //download
 				if(fileAtts.raw.EditInAppUrl) thisMenu.items.items[5].setHidden(false);
 				if(fileAtts.raw.EditInBrowserUrl) thisMenu.items.items[6].setHidden(false);
-				if(fileAtts.raw.Status) if(fileAtts.raw.Status.checkedOutBy) if(fileAtts.raw.Status.checkedOutBy.email) thisMenu.items.items[7].setHidden(false); //undo checkout
-				if(fileAtts.raw.ViewInBrowserUrl) thisMenu.items.items[8].setHidden(false);
-				if(fileAtts.raw.MiniViewUrl) thisMenu.items.items[9].setHidden(false);
+				if(fileAtts.raw.ViewInBrowserUrl) thisMenu.items.items[7].setHidden(false);
+				if(fileAtts.raw.MiniViewUrl) thisMenu.items.items[8].setHidden(false);
+
+				if(userIsSpAdmin) if(fileAtts.raw.IsCurrent) thisMenu.items.items[9].setHidden(false); //copy to jira
+				if(userIsSpAdmin) if(fileAtts.raw.Status) if(fileAtts.raw.Status.checkedOutBy) if(fileAtts.raw.Status.checkedOutBy.email) thisMenu.items.items[10].setHidden(false); //undo checkout
+
 			}
 		}
 	});

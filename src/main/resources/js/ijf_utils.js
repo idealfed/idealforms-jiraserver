@@ -583,6 +583,80 @@ getSharepointIssueFileVersions: function(inIssueId,inFileName)
     //window.setTimeout(msaClearMessage,8000);
     return resMessage;
 },
+copySpFilesToJira: function(inFileNames,inIssueId)
+{
+	var resMessage = "";
+	//save the form, update the message at bottom....
+	var siteName = window.location.hostname.split(".")[0];
+	try
+	{
+	    //perform post
+		jQuery.ajax({
+				async: false,
+				type: 'POST',
+				url: '/plugins/servlet/maxjiraspapi',
+				data: {
+					action: "copytojira",
+					sitename: siteName,
+					key: inIssueId,
+					attachments: inFileNames,
+				},
+				timeout: 60000,
+				success: function(data) {
+					if(data.status=="success")
+						resMessage="OK";
+					else
+						resMessage=data.message;
+				},
+				error: function(e) {
+					resMessage = "Failed to run " + e.message;
+				}
+			});
+    }
+    catch(e)
+    {
+		resMessage = e.message;
+    }
+    //window.setTimeout(msaClearMessage,8000);
+    return resMessage;
+},
+copyJiraFilesToSp: function(inFileIds,inIssueId)
+{
+	var resMessage = "";
+	//save the form, update the message at bottom....
+	var siteName = window.location.hostname.split(".")[0];
+	try
+	{
+	    //perform post
+		jQuery.ajax({
+				async: false,
+				type: 'POST',
+				url: '/plugins/servlet/maxjiraspapi',
+				data: {
+					action: "copytosharepoint",
+					sitename: siteName,
+					key: inIssueId,
+					attachments: inFileIds,
+				},
+				timeout: 60000,
+				success: function(data) {
+					if(data.status=="success")
+						resMessage="OK";
+					else
+						resMessage=data.message;
+				},
+				error: function(e) {
+					resMessage = "Failed to run " + e.message;
+				}
+			});
+    }
+    catch(e)
+    {
+		resMessage = e.message;
+    }
+    //window.setTimeout(msaClearMessage,8000);
+    return resMessage;
+},
 undoSpCheckout: function(inRawFile,inIssueId)
 {
 	var resMessage = "";

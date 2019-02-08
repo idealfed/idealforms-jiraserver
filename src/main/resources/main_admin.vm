@@ -2,7 +2,7 @@
   <head>
     <title>IJF</title>
     $webResourceManager.requireResource("com.idealfed.poc.idealforms:jiraforms-resources5")
-
+   
     <metaname="decorator"content="atl.admin"/>
 
   <script>

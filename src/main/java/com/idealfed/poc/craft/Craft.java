@@ -780,6 +780,8 @@ public class Craft extends HttpServlet
     	}
     	else
     	{
+			String vInj = getVelocityInjections();
+
         	Map<String, Object> craft = Maps.newHashMap();
         	craft.put("ijfUsername",username);
         	craft.put("ijfExercise", "123");
@@ -790,6 +792,7 @@ public class Craft extends HttpServlet
         	craft.put("ijfCraft", craftFlag);
         	craft.put("ijfRoot", contextPath);
         	craft.put("ijfRemote", remote);
+        	craft.put("ijfHtmlReferences", vInj);
 
         	response.setContentType("text/html;charset=utf-8");
 
@@ -1027,6 +1030,45 @@ public class Craft extends HttpServlet
 			return false;
 		}
 	}
+
+
+    private String getVelocityInjections()
+    {
+		try
+		{
+			//lookup custom type, verify URL is in the list....
+			CustomType ct = null;
+			String retStr = "";
+			for (CustomType t : ao.find(CustomType.class))
+			{
+				if(t.getName().equals("HTML References")) ct = t;
+			}
+			if(ct==null)
+			{
+				return "";
+			}
+			String proxyList = ct.getSettings();
+            String tempRefs = "{\"references\":" + proxyList + "}";
+            JSONObject sObject;
+			sObject = new JSONObject(tempRefs);
+            String refs = sObject.getString("references");
+            refs=refs.substring(1,refs.length()-1);
+            String refLines[] = refs.split("\\\\n");
+			for(int i=0;i<refLines.length;i++)
+			{
+				//plog.error("Testing URL: " + okUrls[i]);
+				retStr += refLines[i].replaceAll("\\\\\\\"","\"") + "\n";
+			}
+			return retStr;
+		}
+		catch(Exception e)
+		{
+			plog.error("Error getting Proxy Whitelist "  + e.getMessage());
+			return "";
+		}
+	}
+
+
 
 
 	@Override
