@@ -3436,13 +3436,14 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
 
 
     var sharePointFiles = ijfUtils.getSharepointIssueFiles(msaIssueKey);
-
+    var currentAttachment = {};
     if(sharePointFiles.status=="success")
     {
 		var attachments = sharePointFiles.result.items.reduce(function(inArray, a)
 		{
 			if(a.FileName==managedFileName){
-				inArray.push(a);
+				//inArray.push(a);
+				currentAttachment=a;
 				if(a.Status.EditInAppUrl) canEditFile=true;
 				//and call the get versions....
 				var fileVersions = ijfUtils.getSharepointIssueFileVersions(msaIssueKey,a.FileName);
@@ -3472,7 +3473,7 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
 	});
 
 
-    var currentAttachment = sortedAttachments[0];
+    //var currentAttachment = sortedAttachments[0];
 	//bootstrap null
 	if(!currentAttachment)
 	{
@@ -3484,33 +3485,33 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
     var listColumns = [];
     var tFields = [];
 
-    tFields.push({name: "fileid", type: 'string'});
+    tFields.push({name: "url", type: 'string'});
 	listColumns.push({
 			header: "FID",
 			sortable: true,
 			hidden: true,
 			width: '1%',
-			dataIndex: "fileid"
+			dataIndex: "url"
 	});
 
-    tFields.push({name: "filename", type: 'string'});
+    tFields.push({name: "FileVersion", type: 'string'});
 	listColumns.push({
 			header: "File Versions",
 			sortable: true,
 			hidden: false,
-			flex: 70,
-			dataIndex: "FileName",
+			flex: 30,
+			dataIndex: "FileVersion",
 			filter: {
 				type: 'string'
 			}
 	});
 
-    tFields.push({name: "fUser", type: 'string'});
+    tFields.push({name: "CreatedByName", type: 'string'});
 	listColumns.push({
 			header: "User",
 			sortable: true,
 			hidden: false,
-			flex: 30,
+			flex: 70,
 			dataIndex: "CreatedByName",
 			filter: {
 				type: 'string'
@@ -3519,7 +3520,7 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
 
     if(ijfUtils.detectIE())
     {
-		tFields.push({name: "created", type: 'string'});
+		tFields.push({name: "CreatedDate", type: 'string'});
 		listColumns.push({
 				header: "Date",
 				sortable: true,
@@ -3534,7 +3535,7 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		tFields.push({name: "created", type: 'date'});
+		tFields.push({name: "CreatedDate", type: 'date'});
 		listColumns.push({
 				header: "Date",
 				sortable: true,
@@ -3561,7 +3562,7 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
         model: inFormKey+'_mdl_'+inField.formCell.replace(/,/g,"_")
     });
     var fArray = sortedAttachments.map(function(a){
-		    return {"fileid":a.UniqueId,"CreatedDate":a.CreatedDate,"filename":a.FileName + " <a href='"+a.url+"' target='_blank'>open</a>","CreatedByName":a.CreatedByName};
+		    return {"url":a.url,"CreatedDate":a.CreatedDate,"FileVersion":"<a href='"+a.url+"' target='_blank'>"+a.VersionLabel+"</a>","CreatedByName":a.CreatedByName};
 	});
 	gridStore.loadData(fArray);
 
@@ -3573,13 +3574,13 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
 	if(managedFileName)
 	{
 	    var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>File: " + managedFileName + "<br> uploaded by " + currentAttachment.CreatedByName + " on " + moment(currentAttachment.CreatedDate).format('lll') + "</div>";
-	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSave();} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSaveQuiet();ijfUtils.gridSpUploadFile(event,'"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"','"+inFormKey+'_fld_'+inField.formCell+"');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
 
     }
     else
     {
         var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>Managed File has not been Initialized<br>&nbsp;</div>";
-	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSave(); \"></form>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSaveQuiet();ijfUtils.gridSpUploadFile(event,'"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"','"+inFormKey+'_fld_'+inField.formCell+"'); \"></form>";
 	}
 
 
@@ -3594,16 +3595,7 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
 							hidden: canEditFile,
 							handler: function(){
 							   // render a local version
-							   if(window.onbeforeunload!=null)
-							   {
-								   //cannot run, tell them to save first
-								   ijfUtils.modalDialogMessage("Information","Sorry you cannot edit a file with unsaved fields in your form.  Please save first then try again.");
-								   return;
-                			   }
-							   if(currentAttachment)
-							   {
 									window.open(currentAttachment.EditInAppUrl);
-							   }
 						  }
 						 },
 						 {

@@ -1039,6 +1039,15 @@ simpleSave:function()
 	var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,ijf.main.outerForm,ijf.currentItem)};
 	window.setTimeout(saveIt,50);
 },
+simpleSaveQuiet:function()
+{
+	var onSuccessSave = function()
+	{
+		ijf.main.setAllClean();
+	};
+	var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,ijf.main.outerForm,ijf.currentItem)};
+	window.setTimeout(saveIt,50);
+},
 getPermissionObj:function(inPerms,inItem,inUser)
 {
 	var retObj = {"canEdit":true,"canSee":true};
