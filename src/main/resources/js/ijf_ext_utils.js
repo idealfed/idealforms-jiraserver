@@ -7814,7 +7814,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     }
 
     var enableLocking = false;
-    if (l_fieldStyle.indexOf('locking:true')>-1)
+    if (inField.fieldStyle.indexOf('locking:true')>-1)
     {
         enableLocking = true;
     }
@@ -10612,13 +10612,13 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
     {
         rOnly=true;
     }
-    if (inField.style.indexOf('enteronce:true')>-1)
+    if (inField.fieldStyle.indexOf('enteronce:true')>-1)
     {
         if (!!data) rOnly=true;
     }
 
     var enableLocking = false;
-    if (l_fieldStyle.indexOf('locking:true')>-1)
+    if (inField.fieldStyle.indexOf('locking:true')>-1)
     {
         enableLocking = true;
     }
