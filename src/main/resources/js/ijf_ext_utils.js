@@ -1907,7 +1907,10 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 		        var fStatus = "";
 		        if(a.Status) if(a.Status.checkedOutBy) if(a.Status.checkedOutBy.fullName) fStatus="Checked Out";
 
-			    var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+a.DownloadUrl+"' target='_blank'>"+a.FileName +"</a>","fUser":a.CreatedByName,"fStatus":fStatus};
+                var primaryLink = a.DownloadUrl;
+                if(a.EditInAppUrl) primaryLink=a.EditInAppUrl;
+
+			    var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+primaryLink+"' target='_blank'>"+a.FileName +"</a>","fUser":a.CreatedByName,"fStatus":fStatus};
                 retObj.id = window.location.hostname.split(".")[0] + "," + msaIssueKey + "," + a.FileName;
                 retObj.raw = a;
 			    //add data if exists
@@ -1928,6 +1931,10 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 
 			    return retObj;
 	});
+
+    //lastly alter file list if necessary
+	if(ijf.snippets.hasOwnProperty(inField.referenceFilter)) fArray = ijf.snippets[inField.referenceFilter](fArray);
+
 
 
    //end data prep
@@ -2538,7 +2545,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 							});
 
 							var tArray = jsonData.map(function(a){
-								var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+a.DownloadUrl+"' target='_blank'>"+a.FileName +"</a>","fUser":a.CreatedByName};
+								var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+a.url+"' target='_blank'>"+a.FileName +"</a>","fUser":a.CreatedByName};
 
 								if(a.IsCurrent)
 								{
@@ -2669,6 +2676,8 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
     adminGrpsArry.forEach(function(g){
 		if(ijf.main.currentUser.groupList.indexOf(g.trim())>-1) userIsSpAdmin=true;
 	});
+
+
 
 	var treeMenu = new Ext.menu.Menu({ items:
 		[
@@ -2820,21 +2829,28 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 		listeners: {
 			beforeshow: function(thisMenu, eOpts)
 			{
+
+				//checkin,checkout,delete,details,download,edit,browseredit,browserview,miniview,copytojira,forcecheckin
+				var filtered = false;
+				if(inField.dataReference2) filtered=true;
+
 				var fileAtts = gridPanel.selection.data;
 				thisMenu.items.items.forEach(function(m){ m.setHidden(true);});
-				if(fileAtts.raw.Status) if(fileAtts.raw.Status.checkedOutBy) if(fileAtts.raw.Status.checkedOutBy.email==ijf.main.currentUser.email) thisMenu.items.items[0].setHidden(false);
-				//if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckIn) thisMenu.items.items[0].setHidden(false);
-				if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckOut) thisMenu.items.items[1].setHidden(false);
-				if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckOut) thisMenu.items.items[2].setHidden(false);
-				thisMenu.items.items[3].setHidden(false); //details
-				if(fileAtts.raw.url) thisMenu.items.items[4].setHidden(false); //download
-				if(fileAtts.raw.EditInAppUrl) thisMenu.items.items[5].setHidden(false);
-				if(fileAtts.raw.EditInBrowserUrl) thisMenu.items.items[6].setHidden(false);
-				if(fileAtts.raw.ViewInBrowserUrl) thisMenu.items.items[7].setHidden(false);
-				if(fileAtts.raw.MiniViewUrl) thisMenu.items.items[8].setHidden(false);
 
-				if(userIsSpAdmin) if(fileAtts.raw.IsCurrent) thisMenu.items.items[9].setHidden(false); //copy to jira
-				if(userIsSpAdmin) if(fileAtts.raw.Status) if(fileAtts.raw.Status.checkedOutBy) if(fileAtts.raw.Status.checkedOutBy.email) thisMenu.items.items[10].setHidden(false); //undo checkout
+                //context menu
+
+				if(((filtered) && (inField.dataReference2.indexOf("checkin")>-1)) || (!filtered)) if(fileAtts.raw.Status) if(fileAtts.raw.Status.checkedOutBy) if(fileAtts.raw.Status.checkedOutBy.email==ijf.main.currentUser.email) thisMenu.items.items[0].setHidden(false);
+				if(((filtered) && (inField.dataReference2.indexOf("checkout")>-1)) || (!filtered)) if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckOut) thisMenu.items.items[1].setHidden(false);
+				if(((filtered) && (inField.dataReference2.indexOf("delete")>-1)) || (!filtered)) if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckOut) thisMenu.items.items[2].setHidden(false);
+				if(((filtered) && (inField.dataReference2.indexOf("details")>-1)) || (!filtered)) thisMenu.items.items[3].setHidden(false); //details
+				if(((filtered) && (inField.dataReference2.indexOf("download")>-1)) || (!filtered)) if(fileAtts.raw.url) thisMenu.items.items[4].setHidden(false); //download
+				if(((filtered) && (inField.dataReference2.indexOf("edit")>-1)) || (!filtered)) if(fileAtts.raw.EditInAppUrl) thisMenu.items.items[5].setHidden(false);
+				if(((filtered) && (inField.dataReference2.indexOf("browseredit")>-1)) || (!filtered)) if(fileAtts.raw.EditInBrowserUrl) thisMenu.items.items[6].setHidden(false);
+				if(((filtered) && (inField.dataReference2.indexOf("browserview")>-1)) || (!filtered)) if(fileAtts.raw.ViewInBrowserUrl) thisMenu.items.items[7].setHidden(false);
+				if(((filtered) && (inField.dataReference2.indexOf("miniview")>-1)) || (!filtered)) if(fileAtts.raw.MiniViewUrl) thisMenu.items.items[8].setHidden(false);
+
+				if(((filtered) && (inField.dataReference2.indexOf("copytojira")>-1)) || (!filtered)) if(userIsSpAdmin) if(fileAtts.raw.IsCurrent) thisMenu.items.items[9].setHidden(false); //copy to jira
+				if(((filtered) && (inField.dataReference2.indexOf("forcecheckin")>-1)) || (!filtered)) if(userIsSpAdmin) if(fileAtts.raw.Status) if(fileAtts.raw.Status.checkedOutBy) if(fileAtts.raw.Status.checkedOutBy.email) thisMenu.items.items[10].setHidden(false); //undo checkout
 
 			}
 		}
@@ -7298,6 +7314,19 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 
     var hideField = ijfUtils.renderIfShowField("",inField);
 
+
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!hideField) && (!perms.canSee))	hideField=true;
+
+
     var ocf =  ijfUtils.getEvent(inField);
 
 	var aWidth = ijfUtils.getNameValueFromStyleString(inField.panelStyle,"width");
@@ -7820,6 +7849,18 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     }
 
     var hideField = ijfUtils.renderIfShowField("",inField);
+
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!hideField) && (!perms.canSee))	hideField=true;
+
 
     var collapsible = false;
     if (inField.style.indexOf('collapsible:true')>-1)
@@ -9261,6 +9302,19 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
     }
 
     var hideField = ijfUtils.renderIfShowField("",inField);
+
+
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!hideField) && (!perms.canSee))	hideField=true;
+
 
     var collapsible = true;
     if (inField.style.indexOf('collapsible:false')>-1)

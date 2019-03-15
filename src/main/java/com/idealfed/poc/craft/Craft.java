@@ -145,7 +145,7 @@ public class Craft extends HttpServlet
 
 //section to comment or uncomment license
 
-
+/*
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -167,7 +167,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-
+*/
 
 //end comment section
 
