@@ -1221,7 +1221,7 @@ gridUploadCsvFile: function(event, inGridId, inControlId, dontSetDirty)
 	reader.readAsText(input.files[0]);
 
 },
-gridSpUploadFile: function(event, inGridId, inControlId, dontSetDirty)
+gridSpUploadFile: function(event, inGridId, inControlId, inIssueId)
 {
 
 	//you are going to UPLOAD a file to sharepoint here.....
@@ -1238,7 +1238,7 @@ gridSpUploadFile: function(event, inGridId, inControlId, dontSetDirty)
 
 	  var params = [];
 	  params.push(window.location.hostname.split(".")[0]);
-	  params.push(ijf.currentItem.key);
+	  params.push(inIssueId);
 	  params.push(thisFileName);
 	  params.push(base64);
 

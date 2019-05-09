@@ -279,7 +279,7 @@ renderField:function(inFormKey, item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
@@ -347,7 +347,7 @@ renderField:function(inFormKey, item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -614,7 +614,7 @@ renderCommentList:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -714,7 +714,7 @@ renderHistoryList:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -813,7 +813,7 @@ renderAttchmentList:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -892,7 +892,7 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -1184,7 +1184,7 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -1856,6 +1856,8 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 
 	//var msaUserId="O001969";
 	var msaIssueKey = ijf.currentItem.key;
+	if(inField.dataSource=="parentFiles") msaIssueKey = ijf.currentItem.fields.parent.key;
+	if(inField.event) msaIssueKey = ijf.snippets[inField.event]();
 	//msaIssueKey = "ISSUE-3";
 
 
@@ -1960,7 +1962,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -2626,7 +2628,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 					});
     }
 			headerButtons.push({
-				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upSPGrdFrm_'+inField.formCell.replace(/,/g,"_")+"'><input id='"+inFormKey+'_upSpGrd_'+inField.formCell.replace(/,/g,"_")+"' type='file' name='file' onchange='ijfUtils.gridSpUploadFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\");'></form>",
+				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upSPGrdFrm_'+inField.formCell.replace(/,/g,"_")+"'><input id='"+inFormKey+'_upSpGrd_'+inField.formCell.replace(/,/g,"_")+"' type='file' name='file' onchange='ijfUtils.gridSpUploadFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\",\"" + msaIssueKey + "\");'></form>",
 				frame: false,
 				hidden: true,
 				border: false,
@@ -2908,7 +2910,7 @@ renderAttachmentManaged:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 
@@ -3385,7 +3387,7 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 
@@ -3590,13 +3592,13 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
 	if(managedFileName)
 	{
 	    var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>File: " + managedFileName + "<br> uploaded by " + currentAttachment.CreatedByName + " on " + moment(currentAttachment.CreatedDate).format('lll') + "</div>";
-	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSaveQuiet();ijfUtils.gridSpUploadFile(event,'"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"','"+inFormKey+'_fld_'+inField.formCell+"');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSaveQuiet();ijfUtils.gridSpUploadFile(event,'"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"','"+inFormKey+'_fld_'+inField.formCell+"','" + ijf.currentItem.key + "');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
 
     }
     else
     {
         var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>Managed File has not been Initialized<br>&nbsp;</div>";
-	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSaveQuiet();ijfUtils.gridSpUploadFile(event,'"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"','"+inFormKey+'_fld_'+inField.formCell+"'); \"></form>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSaveQuiet();ijfUtils.gridSpUploadFile(event,'"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"','"+inFormKey+'_fld_'+inField.formCell+"','" + ijf.currentItem.key + "'); \"></form>";
 	}
 
 
@@ -3763,7 +3765,7 @@ renderHtml:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -3872,7 +3874,7 @@ renderRaw:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -3921,7 +3923,7 @@ renderRaw:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -4106,7 +4108,7 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -4189,6 +4191,7 @@ renderPopupFormButtons:function(inFormKey,item, inField, inContainer)
             xtype:'button',
 			margin: '0 4 0 0',
 			inField: inField,
+			hidden: (!perms.canEdit),
             handler: function(){
 
 				if(ijf.snippets.hasOwnProperty(inField["event"]))
@@ -4325,7 +4328,7 @@ renderNavigateToForm:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -4435,7 +4438,7 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -4607,7 +4610,7 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
     //console.log(JSON.stringify(perms));
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
@@ -4912,7 +4915,7 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
@@ -5079,7 +5082,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
@@ -5464,7 +5467,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
@@ -5667,7 +5670,7 @@ renderUserPicker:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
@@ -5892,7 +5895,7 @@ renderUserMultiselect:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
@@ -6082,7 +6085,7 @@ renderGroupPicker:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
@@ -6250,7 +6253,7 @@ renderGroupMultiselect:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
@@ -6447,7 +6450,7 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
 						*/
 						data = data.reduce(function(inA,v){
 							var valKey = lookup.reduce(function(inV,av){if(v==av.show) inV=av.id;return inV;},null);
-							if(valKey) inA.push({"id":valKey});
+							if(valKey!=null) inA.push({"id":valKey});
 							else
 							   if(!limitList) if(v) inA.push({"id":v});
 							return inA;
@@ -6545,7 +6548,7 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
@@ -6732,7 +6735,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
@@ -6830,7 +6833,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	//end permissions
 
@@ -6973,17 +6976,6 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 		  return retVal;
 	  }
 
-      var rOptions= jfFieldMeta.allowedValues.map(function(e)
-      {
-  			     	return {id: "check_" + jfFieldDef.id + "_" + e.id,
-  			     			boxLabel: e.value,
-  			     			value : getChecked(e.id),
-       						style: l_fieldStyle,
-  			     			name: jfFieldDef.id,
-  			     			readOnly: rOnly,
-  			     			inputValue: e.id};
-      });
-
       var ocf =  ijfUtils.getEvent(inField);
       var hideField = ijfUtils.renderIfShowField(data,inField);
 
@@ -6994,12 +6986,24 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
+
+    var rOptions= jfFieldMeta.allowedValues.map(function(e)
+    {
+  			     	return {id: "check_" + jfFieldDef.id + "_" + e.id,
+  			     			boxLabel: e.value,
+  			     			value : getChecked(e.id),
+       						style: l_fieldStyle,
+  			     			name: jfFieldDef.id,
+  			     			readOnly: rOnly,
+  			     			inputValue: e.id};
+     });
+
 
       var simple = new Ext.FormPanel({
           hidden: hideField,
@@ -7078,7 +7082,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -7152,7 +7156,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -7220,7 +7224,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -7322,7 +7326,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 
@@ -7502,7 +7506,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 		}
 		else
 		{
-			var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+			if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 		}
 		if((!rOnly) && (!perms.canEdit)) rOnly=true;
 		if((!hideField) && (!perms.canSee))	hideField=true;
@@ -7709,7 +7713,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 		}
 		else
 		{
-			var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+			if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 		}
 		if((!rOnly) && (!perms.canEdit)) rOnly=true;
 		if((!hideField) && (!perms.canSee))	hideField=true;
@@ -7857,7 +7861,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 
@@ -9311,7 +9315,7 @@ renderItemTree:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 
@@ -10439,7 +10443,7 @@ renderItemlistHtml:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -10581,7 +10585,7 @@ renderGridHtml:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
@@ -10698,7 +10702,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 
 	if((!hideField) && (!perms.canSee))	hideField=true;
@@ -10946,6 +10950,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 						header: thisColHeader,
 						sortable: true,
 						hidden: false,
+						disabled: rOnly,
 						xtype: 'checkcolumn',
 						centered:true,
 						//renderer: validRenderer,
@@ -11511,7 +11516,7 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 
 	if((!hideField) && (!perms.canSee))	hideField=true;
