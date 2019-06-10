@@ -2781,6 +2781,70 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 				 var fileAtts = gridPanel.selection.data;
 				 window.open(fileAtts.raw.MiniViewUrl);
 			} },
+		    { text: 'Rename', handler: function(f, i, n, t)  {
+				 var fileAtts = gridPanel.selection.data;
+				//function to rename and remove the record....
+
+				  var renameFile = function(oldFile,newFile)
+				  {
+					   ijfUtils.showProgress();
+					   var delayIt=function()
+					   {
+						   var rRes = ijfUtils.renameSpFile(ijf.currentItem.key,oldFile,newFile);
+						   if(rRes!="OK")
+						   {
+								ijfUtils.hideProgress();
+								ijfUtils.modalDialogMessage("Error","Unable to rename the file: " + rRes);
+								return;
+						   }
+						  ijf.main.resetForm();
+ 					      ijfUtils.hideProgress();
+						  return;
+	 				   }
+                       window.setTimeout(delayIt,50);
+				  }
+
+				  //need a prompt right here...
+				  var renameFun = function(inPrompted)
+				  {
+ 				       renameFile(fileAtts.raw.FileName,inPrompted);
+				  }
+				  ijfUtils.modalDialogPrompt("Renaming File","Please provide a new name, not including suffix.",fileAtts.raw.FileName.split(".")[0], renameFun);
+			} },
+            { text: 'Duplicate', handler: function(f, i, n, t)  {
+				 var fileAtts = gridPanel.selection.data;
+
+				  var duplicateFile = function(currentFile,newFileName)
+				  {
+					   ijfUtils.showProgress();
+					   var delayIt=function()
+					   {
+						   var fileData = ijfUtils.getSpFileData(ijf.currentItem.key, currentFile);
+						   var fParts = currentFile.FileName.split(".");
+						   var fNewName = newFileName + "." + fParts[fParts.length-1];
+						   var rRes = ijfUtils.uploadSpFile(ijf.currentItem.key,newFileName,fileData);
+						   if(rRes!="OK")
+						   {
+								ijfUtils.hideProgress();
+								ijfUtils.modalDialogMessage("Error","Unable to rename the file: " + rRes);
+								return;
+						   }
+						  ijf.main.resetForm();
+ 					      ijfUtils.hideProgress();
+						  return;
+	 				   }
+                       window.setTimeout(delayIt,50);
+				  }
+
+				  //need a prompt right here...
+				  var duplicateFun = function(inPrompted)
+				  {
+ 				       duplicateFile(fileAtts.raw,inPrompted);
+				  }
+				  ijfUtils.modalDialogPrompt("Duplicating File","Please provide a new name, not including suffix.","Copy of " + fileAtts.raw.FileName.split(".")[0], duplicateFun);
+
+
+			} },
 			{ text: 'Copy to JIRA', handler: function(f, i, n, t)  {
 					 var fileAtts = gridPanel.selection.data;
 					 ijfUtils.showProgress();
@@ -2836,6 +2900,9 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 				var filtered = false;
 				if(inField.dataReference2) filtered=true;
 
+				if(!gridPanel.selection) return;
+				if(!gridPanel.selection.data) return;
+
 				var fileAtts = gridPanel.selection.data;
 				thisMenu.items.items.forEach(function(m){ m.setHidden(true);});
 
@@ -2851,8 +2918,11 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 				if(((filtered) && (inField.dataReference2.indexOf("browserview")>-1)) || (!filtered)) if(fileAtts.raw.ViewInBrowserUrl) thisMenu.items.items[7].setHidden(false);
 				if(((filtered) && (inField.dataReference2.indexOf("miniview")>-1)) || (!filtered)) if(fileAtts.raw.MiniViewUrl) thisMenu.items.items[8].setHidden(false);
 
-				if(((filtered) && (inField.dataReference2.indexOf("copytojira")>-1)) || (!filtered)) if(userIsSpAdmin) if(fileAtts.raw.IsCurrent) thisMenu.items.items[9].setHidden(false); //copy to jira
-				if(((filtered) && (inField.dataReference2.indexOf("forcecheckin")>-1)) || (!filtered)) if(userIsSpAdmin) if(fileAtts.raw.Status) if(fileAtts.raw.Status.checkedOutBy) if(fileAtts.raw.Status.checkedOutBy.email) thisMenu.items.items[10].setHidden(false); //undo checkout
+				if(((filtered) && (inField.dataReference2.indexOf("rename")>-1)) || (!filtered))  if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckOut) thisMenu.items.items[9].setHidden(false);
+				if(((filtered) && (inField.dataReference2.indexOf("duplicate")>-1)) || (!filtered)) if(fileAtts.raw.Status)	if(fileAtts.raw.Status.canCheckOut)  thisMenu.items.items[10].setHidden(false);
+
+				if(((filtered) && (inField.dataReference2.indexOf("copytojira")>-1)) || (!filtered)) if(userIsSpAdmin) if(fileAtts.raw.IsCurrent) thisMenu.items.items[11].setHidden(false); //copy to jira
+				if(((filtered) && (inField.dataReference2.indexOf("forcecheckin")>-1)) || (!filtered)) if(userIsSpAdmin) if(fileAtts.raw.Status) if(fileAtts.raw.Status.checkedOutBy) if(fileAtts.raw.Status.checkedOutBy.email) thisMenu.items.items[12].setHidden(false); //undo checkout
 
 			}
 		}
@@ -8014,22 +8084,22 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 						//where >=
 						if(inStr.substr(i,3).toUpperCase()==" >=")
 						{
-							vStart=i-1;
+							vStart=i;
 							vStartFound=true;
 						}
 						else if(inStr.substr(i,2).toUpperCase()==" >")
 						{
-							vStart=i-1;
+							vStart=i;
 							vStartFound=true;
 						}
 						if(inStr.substr(i,3).toUpperCase()==" <=")
 						{
-							vStart=i-1;
+							vStart=i;
 							vStartFound=true;
 						}
 						else if(inStr.substr(i,2).toUpperCase()==" <")
 						{
-							vStart=i-1;
+							vStart=i;
 							vStartFound=true;
 						}
 
@@ -8187,22 +8257,22 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 						//where >=
 						if(inStr.substr(i,3).toUpperCase()==" >=")
 						{
-							vStart=i-1;
+							vStart=i;
 							vStartFound=true;
 						}
 						else if(inStr.substr(i,2).toUpperCase()==" >")
 						{
-							vStart=i-1;
+							vStart=i;
 							vStartFound=true;
 						}
 						if(inStr.substr(i,3).toUpperCase()==" <=")
 						{
-							vStart=i-1;
+							vStart=i;
 							vStartFound=true;
 						}
 						else if(inStr.substr(i,2).toUpperCase()==" <")
 						{
-							vStart=i-1;
+							vStart=i;
 							vStartFound=true;
 						}
 

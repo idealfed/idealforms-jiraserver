@@ -573,8 +573,6 @@ getSharepointIssueFileVersions: function(inIssueId,inFileName)
 					resMessage = "Failed to run " + e.message;
 				}
 			});
-
-
     }
     catch(e)
     {
@@ -817,6 +815,134 @@ deleteSpFile: function(inRawFile,inIssueId)
     }
     //window.setTimeout(msaClearMessage,8000);
     return resMessage;
+},
+getSpFileData:function(inIssueId, att) {
+        var resMessage = "";
+        var resultObj;
+        //save the form, update the message at bottom....
+        var params = [];
+        params.push(window.location.hostname.split(".")[0]);
+        params.push(inIssueId);
+        params.push(att.FileName);
+        params.push(att.VersionLabel);
+        //version number?
+        //params.push(inComment);
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiraspapi',
+                data: {
+                    action: "run",
+                    msamethod: "GetAttachmentData",
+                    msadata: params.join(",")
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+                        resMessage = "OK";
+                        resultObj = data.result;
+                    } else {
+                        resMessage = data.message;
+                    }
+                },
+                error: function(e) {
+                    resMessage = "Failed to run " + e.message;
+                }
+            });
+
+        } catch (e) {
+            resMessage = e.message;
+            return resMessage;
+        }
+        //window.setTimeout(msaClearMessage,8000);
+        return resultObj;
+    },
+renameSpFile:function(inIssueId, oldFileName, newFileName) {
+        var resMessage = "";
+        var resultObj;
+        //save the form, update the message at bottom....
+        var params = [];
+        params.push(window.location.hostname.split(".")[0]);
+        params.push(inIssueId);
+        params.push(oldFileName);
+        params.push(newFileName);
+        //version number?
+        //params.push(inComment);
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiraspapi',
+                data: {
+                    action: "run",
+                    msamethod: "RenameAttachment",
+                    msadata: params.join(",")
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+                        resMessage = "OK";
+                        resultObj = data.result;
+                    } else {
+                        resMessage = data.message;
+                    }
+                },
+                error: function(e) {
+                    resMessage = "Failed to run " + e.message;
+                }
+            });
+
+        } catch (e) {
+            resMessage = e.message;
+            return resMessage;
+        }
+        return resMessage;
+    },
+uploadSpFile: function(inIssueId, inFileName, inBase64)
+{
+	//you are going to UPLOAD a file to sharepoint here.....
+
+	  var params = [];
+	  params.push(window.location.hostname.split(".")[0]);
+	  params.push(inIssueId);
+	  params.push(inFileName);
+	  params.push(inBase64);
+
+        //version number?
+        //params.push(inComment);
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiraspapi',
+                data: {
+                    action: "run",
+                    msamethod: "UploadOrUpdateAttachment",
+                    msadata: params.join(",")
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+                        resMessage = "OK";
+                        resultObj = data.result;
+                    } else {
+                        resMessage = data.message;
+                    }
+                },
+                error: function(e) {
+                    resMessage = "Failed to run " + e.message;
+                }
+            });
+
+        } catch (e) {
+            resMessage = e.message;
+            return resMessage;
+        }
+        return resMessage;
 },
 runSharepointMethod: function(inMethod,inData)
 {
@@ -1799,7 +1925,60 @@ modalDialog:function(inTitle,inMessage,inFunction)
     tm.setY(window.pageYOffset+300);
 
 },
+modalDialogPrompt:function(inTitle,inMessage,inDefault, inFunction)
+{
+	         var localValue = inDefault;
+			 var rWin = new Ext.Window({
+					title: inTitle,
+					width: 600,
+					height: 200,
+					closable: true,
+					scrollable: true,
+					items:[
+						{
+							xtype: 'panel',
+							layout: 'fit',
+							margin: '10 0 0 10',
+							html: inMessage
+						}
+						,
+						{
+							xtype: 'textfield',
+							labelAlign: 'left',
+							labelWidth: 120,
+							style: 'margin:0 0 0 10',
+							width: 500,
+							value: inDefault,
+							listeners: {
+								change: function(f, n, o){
+									localValue=n;
+								}}
+				          }
+					],
+					buttons:[
+						{
+							text:'OK',
+							handler: function(){
+								if(!localValue)
+								{
+									ijfUtils.modalDialogMessage("Info","You must provide a value");
+									return;
+								}
 
+								rWin.close();
+								inFunction(localValue);
+							}},
+						{
+							text:'Cancel',
+							handler: function(){
+								rWin.close();
+							}}
+					],
+					modal: true
+				});
+		rWin.show();
+		rWin.setY(window.pageYOffset+300);
+},
 modalMessage:function(inTitle,inMessage)
 {
 

@@ -2,6 +2,8 @@ package com.idealfed.poc.craft;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.ArrayUtils;
+
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -145,7 +147,7 @@ public class Craft extends HttpServlet
 
 //section to comment or uncomment license
 
-/*
+
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -167,7 +169,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-*/
+
 
 //end comment section
 
@@ -346,6 +348,15 @@ public class Craft extends HttpServlet
 
 				plog.error("Api call response code: " + status);
 
+				//add special handler for 400 responses, do not return result due to x attack
+				if(status==400)
+				{
+					final PrintWriter w = response.getWriter();
+					w.print("Remote server responded with invalid URL, response code: " + status);
+					w.close();
+					return;
+				}
+
 
 				BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
 				String inputLine;
@@ -363,6 +374,8 @@ public class Craft extends HttpServlet
 					plog.error("cookie is : " + cookies);
 					request.getSession().setAttribute(sessionKey,cookies);
 				}
+
+
 
 
 				//set cache results if needed
@@ -1116,10 +1129,10 @@ public class Craft extends HttpServlet
 
 
 				//plog.error("Have params");
-plog.error("Creating URL");
+//plog.error("Creating URL");
 				URL url = new URL(targetUrl);
 				HttpURLConnection con = (HttpURLConnection) url.openConnection();
-plog.error("Connection open");
+//plog.error("Connection open");
 
 				//handle cookie from session
 				if(sessionKey!=null)
@@ -1137,7 +1150,7 @@ plog.error("Connection open");
 							return;
 						}
 						String jSessionId=sCookie.toString();
-	plog.error("Cookie set to: " + jSessionId);
+//	plog.error("Cookie set to: " + jSessionId);
 
 						con.setRequestProperty("Cookie", jSessionId);
 					}
@@ -1150,6 +1163,15 @@ plog.error("Connection open");
 				con.setRequestMethod(targetMethod);
 				plog.error("method set");
 
+
+			    String[] METHODS = {"POST","PUT","GET","DELETE"};
+				if (ArrayUtils.contains( METHODS, targetMethod)==false)
+				{
+					final PrintWriter w = res.getWriter();
+					w.print("Invalid method request");
+					w.close();
+				}
+
 				if((targetMethod.equals("POST")) || (targetMethod.equals("PUT")))
 				{
 					//targetData=targetData;
@@ -1161,7 +1183,17 @@ plog.error("Connection open");
 				}
 
 				int status = con.getResponseCode();
-plog.error("status is: " + status);
+//plog.error("status is: " + status);
+
+				//add special handler for 400 responses, do not return result due to x attack
+				if(status==400)
+				{
+					final PrintWriter w = res.getWriter();
+					w.print("Remote server responded with invalid URL, response code: " + status);
+					w.close();
+					return;
+				}
+
 
 				BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
 				String inputLine;
@@ -1171,7 +1203,7 @@ plog.error("status is: " + status);
 				}
 				in.close();
 				con.disconnect();
-plog.error("writing output");
+//plog.error("writing output");
 				//plog.error("Have response");
 				final PrintWriter w = res.getWriter();
 				w.print(content.toString());
