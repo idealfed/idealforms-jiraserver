@@ -977,6 +977,277 @@ runSharepointMethod: function(inMethod,inData)
     //window.setTimeout(msaClearMessage,8000);
     return resMessage;
 },
+/***************************************
+     begin MDS methods
+****************************************/
+acceptWordChanges: function(inFileName, inInsertionKey, inBase64)
+{
+        var resMessage = "";
+        var resultObj;
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiramdsapi',
+                data: {
+                    action: "AcceptChanges",
+                    filename: inFileName,
+                    insertionkey: inInsertionKey,
+                    filedata: inBase64
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+                        resMessage = "OK";
+                        resultObj = data.result;
+                    } else {
+                        resMessage = data.message;
+                    }
+                },
+                error: function(e) {
+                    resMessage = "Failed to run " + e.message;
+                    return resMessage;
+                }
+            });
+
+        } catch (e) {
+            resMessage = e.message;
+            return resMessage;
+        }
+        return resultObj;
+},
+uploadMdsFile: function(inJobKey, inFileName, inInsertionKey, inBase64)
+{
+        var resMessage = "";
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiramdsapi',
+                data: {
+                    action: "UploadDocument",
+                    jobkey: inJobKey,
+                    filename: inFileName,
+                    insertionkey: inInsertionKey,
+                    filedata: inBase64
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+                         if(data.result.stringvalue=="")
+                        {
+							resMessage="OK";
+						}
+						else
+						{
+							resMessage = data.message;
+						}
+                    }
+                    else
+                    {
+						resMessage = data.message;
+					}
+                },
+                error: function(e) {
+                    resMessage = "Failed to run " + e.message;
+                }
+            });
+
+        } catch (e) {
+            resMessage = e.message;
+            return resMessage;
+        }
+        return resMessage;
+},
+assembleMdsDocument: function(inJobKey, inTemplateFileName, inTemplateData)
+{
+        var resMessage = "";
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiramdsapi',
+                data: {
+                    action: "AssembleDocument",
+                    jobkey: inJobKey,
+                    templatefilename: inTemplateFileName,
+                    templatedata: inTemplateData
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+                         if(data.result.stringvalue=="")
+                        {
+							resMessage="OK";
+						}
+						else
+						{
+							resMessage = data.result.stringvalue;
+						}
+                    }
+                    else
+                    {
+						resMessage = data.message;
+					}
+                },
+                error: function(e) {
+                    resMessage = "Failed to run " + e.message;
+                }
+            });
+
+        } catch (e) {
+            resMessage = e.message;
+            return resMessage;
+        }
+        return resMessage;
+},
+cleanupMdsAssembly: function(inJobKey)
+{
+        var resMessage = "";
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiramdsapi',
+                data: {
+                    action: "CleanupAssembly",
+                    jobkey: inJobKey
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+                         if(data.result.stringvalue=="")
+                        {
+							resMessage="OK";
+						}
+						else
+						{
+							resMessage = data.message;
+						}
+                    }
+                    else
+                    {
+						resMessage = data.message;
+					}
+                },
+                error: function(e) {
+                    resMessage = "Failed to run " + e.message;
+                }
+            });
+
+        } catch (e) {
+            resMessage = e.message;
+            return resMessage;
+        }
+        return resMessage;
+},
+getMdsAssemblyDocuments: function(inJobKey)
+{
+		var resMessage ="";
+        var resObj;
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiramdsapi',
+                data: {
+                    action: "GetAssemblyDocuments",
+                    jobkey: inJobKey
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+						resObj= data.result;
+                    }
+                    else
+                    {
+						resObj = data.message;
+					}
+                },
+                error: function(e) {
+                    resObj = "Failed to run " + e.message;
+                }
+            });
+
+        } catch (e) {
+            resObj = e.message;
+        }
+        return resObj;
+},
+getMdsAssemblyResultData: function(inJobKey, inOffset, inLength)
+{
+		var resObj = null;
+        var resMessage = "";
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiramdsapi',
+                data: {
+                    action: "GetAssemblyResultData",
+                    jobkey: inJobKey,
+                    offset: inOffset,
+                    length: inLength
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+                         resObj= data.result;
+                    }
+                    else
+                    {
+						resObj = data.message;
+					}
+                },
+                error: function(e) {
+                    resObj = "Failed to run " + e.message;
+                }
+            });
+
+        } catch (e) {
+            resObj = e.message;
+        }
+        return resObj;
+},
+getMdsAssemblyStatus: function(inJobKey)
+{
+		var resObj = null;
+        var resMessage = "";
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiramdsapi',
+                data: {
+                    action: "GetAssemblyStatus",
+                    jobkey: inJobKey
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+                      resObj = data.result;
+					}
+                },
+                error: function(e) {
+                    resObj = "Failed to run " + e.message;
+                }
+            });
+
+        } catch (e) {
+            resObj = e.message;
+        }
+        return resObj;
+},
+/*********************
+  END MDS
+*********************/
 updateJiraFieldValue: function(inFieldKey, inValue, inItem) {
         //update the issue and the local item
 
@@ -3656,6 +3927,11 @@ Base64Binary: {
 		return bytes.buffer;
 	}
 
+},
+getUuid:function() {
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  )
 },
 /**
  * detect IE

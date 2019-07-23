@@ -3067,6 +3067,7 @@ addEditCustomTypeDetails:function (inTypeId)
     ijf.lists.dWin2 = new Ext.Window({
         layout: 'vbox',
         title: "IJF Custom Type Specs",
+        scrollable: true,
         width: 1120,
         height:420,
         closable: true,
