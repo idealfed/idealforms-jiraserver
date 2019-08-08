@@ -980,6 +980,114 @@ runSharepointMethod: function(inMethod,inData)
 /***************************************
      begin MDS methods
 ****************************************/
+generateDocumentAsync: function(inJobKey, inDocumentMaster, inDocumentSections, inIssueKey)
+{
+        var resMessage = "";
+        var resultObj;
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiramdsapi',
+                data: {
+                    action: "GenerateDocumentAsynch",
+                    jobkey: inJobKey,
+                    jobmaster: inDocumentMaster,
+                    jobsections: inDocumentSections,
+                    issuekey: inIssueKey
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+                        resMessage = "OK";
+                        resultObj = data.result;
+                    } else {
+                        resMessage = data.message;
+                    }
+                },
+                error: function(e) {
+                    resMessage = "Failed to run " + e.message;
+                    return resMessage;
+                }
+            });
+
+        } catch (e) {
+            resMessage = e.message;
+            return resMessage;
+        }
+        return resultObj;
+},
+getAyncDocumentStatus: function(inJobKey)
+{
+        var resMessage = "";
+        var resultObj;
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiramdsapi',
+                data: {
+                    action: "GetAsyncDocumentStatus",
+                    jobkey: inJobKey
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+                        resMessage = "OK";
+                        resultObj = data.result;
+                    } else {
+                        resMessage = data.message;
+                    }
+                },
+                error: function(e) {
+                    resMessage = "Failed to run " + e.message;
+                    return resMessage;
+                }
+            });
+
+        } catch (e) {
+            resMessage = e.message;
+            return resMessage;
+        }
+        return resultObj;
+},
+removeAyncDocumentJob: function(inJobKey)
+{
+        var resMessage = "";
+        var resultObj;
+        try {
+            //perform post
+            jQuery.ajax({
+                async: false,
+                type: 'POST',
+                url: '/plugins/servlet/maxjiramdsapi',
+                data: {
+                    action: "RemoveAyncDocumentJob",
+                    jobkey: inJobKey
+                },
+                timeout: 60000,
+                success: function(data) {
+                    if (data.status == "success") {
+                        resMessage = "OK";
+                        resultObj = data.result;
+                    } else {
+                        resMessage = data.message;
+                    }
+                },
+                error: function(e) {
+                    resMessage = "Failed to run " + e.message;
+                    return resMessage;
+                }
+            });
+
+        } catch (e) {
+            resMessage = e.message;
+            return resMessage;
+        }
+        return resultObj;
+},
 acceptWordChanges: function(inFileName, inInsertionKey, inBase64)
 {
         var resMessage = "";
@@ -1647,7 +1755,8 @@ gridSpUploadFile: function(event, inGridId, inControlId, inIssueId)
 	  }
 	  else if(fSave.status=="success")
 	  {
-		  //I think you need to refresh the whole page?  perhaps don't let them do this if page is dirty
+		  //perform simple save here...it will skip if nothing to save...i think
+		  ijfUtils.simpleSave();
 		  ijf.main.resetForm();
 	  }
 	  else
@@ -2531,11 +2640,13 @@ replaceWordChars:function(text) {
 			+ tagBody
 			+ ')>',
 			'gi');
-	  var oldHtml;
-	  do {
-	    oldHtml = html;
-	    html = html.replace(tagOrComment, '');
-	  } while (html !== oldHtml);
+	  //var oldHtml;
+	  //do {
+	  //  oldHtml = html;
+	  //  html = html.replace(tagOrComment, '');
+	  //} while (html !== oldHtml);
+	  html = html.replace(/script/gi, '');
+	  html = html.replace(/style/gi, '');
 	  return html.replace(/</g, '&lt;');
     },
 	clearExt:function()
@@ -3241,7 +3352,15 @@ replaceWordChars:function(text) {
     getJiraFieldById:function(inId)
     {
 		var retVal ={};
-		ijf.jiraFields.forEach(function(f){if(f.id==inId)retVal=f});
+		//ijf.jiraFields.forEach(function(f){if(f.id==inId)retVal=f});
+		for(var i=0;i<ijf.jiraFields.length;i++){
+			//console.log(ijf.jiraFields[i].id);
+			if(ijf.jiraFields[i].id==inId)
+			{
+				retVal=ijf.jiraFields[i];
+				break;
+			}
+		}
 		return retVal;
 	},
 
@@ -3961,7 +4080,20 @@ detectIE:function() {
 
     // other browser
     return false;
+},
+
+sharepointFilenameOk:function(inFileName)
+{
+  var fSplit = inFileName.split(".");
+  if(fSplit.length>2) return false; //has a . in name
+  var invalidChars = "~\"#%&*:<>?/\\{|}.";
+  for(var i=0;i<invalidChars.length;i++)
+  {
+      if(fSplit[0].indexOf(invalidChars[i])>-1) return false;
+  }
+  return true;
 }
+
 
 
 };

@@ -776,7 +776,7 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 
 					this.newVal = JSON.stringify(saveVal);
 				}
-				else if(this.field.controlType=="attachmentmanaged")
+				else if((this.field.controlType=="attachmentmanaged") || (this.field.controlType=="attachmentSPmanaged"))
 				{
 					//this managed attachment is backed by a field to store name...
 					//datasource is the field, newValue is

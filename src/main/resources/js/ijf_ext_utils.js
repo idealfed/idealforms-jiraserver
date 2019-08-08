@@ -1912,7 +1912,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
                 var primaryLink = a.DownloadUrl;
                 if(a.EditInAppUrl) primaryLink=a.EditInAppUrl;
 
-			    var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+primaryLink+"' target='_blank'>"+a.FileName +"</a>","fUser":a.CreatedByName,"fStatus":fStatus};
+			    var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+primaryLink+"'>"+a.FileName +"</a>","fUser":a.CreatedByName,"fStatus":fStatus};
                 retObj.id = window.location.hostname.split(".")[0] + "," + msaIssueKey + "," + a.FileName;
                 retObj.raw = a;
 			    //add data if exists
@@ -2547,7 +2547,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 							});
 
 							var tArray = jsonData.map(function(a){
-								var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+a.url+"' target='_blank'>"+a.FileName +"</a>","fUser":a.CreatedByName};
+								var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+a.url+"'>"+a.FileName +"</a>","fUser":a.CreatedByName};
 
 								if(a.IsCurrent)
 								{
@@ -2767,7 +2767,8 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 			} },
 			{ text: 'Edit', handler: function(f, i, n, t)  {
 				 var fileAtts = gridPanel.selection.data;
-				 window.open(fileAtts.raw.EditInAppUrl);
+				 //window.open(fileAtts.raw.EditInAppUrl);
+				 window.location.href=fileAtts.raw.EditInAppUrl;
 			} }	,
 			{ text: 'Edit in Browser', handler: function(f, i, n, t)  {
 				 var fileAtts = gridPanel.selection.data;
@@ -9061,8 +9062,17 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 							totalProperty: 'total',
 							transform: function(data) {
 									// do some manipulation of the raw data object
+
+									var tFields = [];
+									translateFields.split(",").forEach(function(f){
+										var thisField = f.trim();
+										var jField = ijfUtils.getJiraFieldById(thisField);
+										tFields[thisField]=jField;
+									});
+
 									var dataItems = data.issues.map(function(i){
 												var retObj ={};
+												/*
 												translateFields.split(",").forEach(function(f){
 													var thisField = f.trim();
 													var dVal = "unknown";
@@ -9075,6 +9085,19 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 													}
 													retObj[thisField]= dVal;
 												});
+												*/
+												Object.keys(tFields).forEach(function(f){
+													var jField = tFields[f];
+													var dVal = "unknown";
+													if(i.fields.hasOwnProperty(jField.id))
+													{
+														dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
+														//perhaps build the types here...
+														colMeta[jField.id]=jField;
+													}
+													retObj[f]= dVal;
+												});
+
 												//retObj.iid=i.id;
 												retObj.iid=i.key;
 												retObj.key = i.key
