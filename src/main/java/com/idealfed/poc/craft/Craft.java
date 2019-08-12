@@ -147,7 +147,7 @@ public class Craft extends HttpServlet
 
 //section to comment or uncomment license
 
-/*
+
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -169,7 +169,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-*/
+
 
 //end comment section
 
@@ -215,7 +215,7 @@ public class Craft extends HttpServlet
 //comment for unlicensed running
 //determine if Admin call or a Craft call, either way, require Administrator....
 
-/*
+
         if(iwfAction.equals("noAction"))
         {
 			if ((craftFlag.equals("true")) || (formId.equals("")))
@@ -236,7 +236,7 @@ public class Craft extends HttpServlet
 				}
 			}
 	    }
-*/
+
 
 //end comment section
 
@@ -720,7 +720,7 @@ public class Craft extends HttpServlet
     		//pull the config from AO and return...
     		final PrintWriter w = response.getWriter();
     		w.printf("{\"status\":\"OK\",\"resultSet\":[");
-    		for (Version v : ao.find(Version.class))
+    		for (Version v : ao.find(Version.class, Query.select().order("ID DESC")))
             {
                 w.printf("{\"id\":\""+v.getID()+"\",\"created\":\""+v.getDate()+"\",\"author\":\""+v.getAuthor()+"\"},");
             }
@@ -982,30 +982,14 @@ public class Craft extends HttpServlet
  	}
     private void cleanVersions(int keepNum)
     {
-        ArrayList versions = new ArrayList();
-    	int ctr=0;
-		for (Version v : ao.find(Version.class, Query.select()))
+    	int maxVersion = 0;
+		for (Version v : ao.find(Version.class, Query.select().limit(1).order("ID DESC")))
         {
-			versions.add(v);
+			maxVersion = v.getID();
         }
-
-		Collections.sort(versions, new Comparator<Version>() {
-				public int compare(Version lhs, Version rhs) {
-								// -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
-								return lhs.getID() > rhs.getID() ? -1 : (lhs.getID() < rhs.getID()) ? 1 : 0;
-				}
-		});
-
-		//iterate them
-		for(int i=0;i<versions.size();i++)
-		{
-			Version v = (Version) versions.get(i);
-			ctr++;
-			if(ctr > keepNum)
-			{
-				ao.delete(v);
-			}
-        }
+        maxVersion = maxVersion - keepNum;
+        plog.debug("deleting versions older than " + maxVersion);
+        ao.deleteWithSQL(Version.class, "\"ID\" < ?", maxVersion);
     }
 
     private boolean checkUrlWhitelist(String inUrl)
@@ -1438,31 +1422,35 @@ public class Craft extends HttpServlet
     	}
     	else if(iwfAction.equals("saveFormConfig"))
     	{
-
-			//backup the existing configuration first
-			StringBuffer cConfig = new StringBuffer();
-			cConfig.append("{\"status\":\"OK\",\"resultSet\":[");
-    		for (FormSet fs : ao.find(FormSet.class))
-            {
-    			cConfig.append(getAoFormSetJson(fs));
-            }
-    		cConfig.append("{}],\"customTypes\":[");
-			for (CustomType ct : ao.find(CustomType.class))
-			{
-				cConfig.append(getCustomTypeJson(ct));
-			}
-			cConfig.append("{}]}");
-
-    		Version v = ao.create(Version.class);
-    		v.setDate(new Date());
-    		v.setAuthor(userManager.getRemoteUsername(req));
-    		v.setConfig(cConfig.toString());
-    		v.save();
-    		cleanVersions(50);
-
-    		//formset exists.  And, form exists...so, use the get by ID and update the values....
     		try
     		{
+
+				//backup the existing configuration first
+				StringBuffer cConfig = new StringBuffer();
+				cConfig.append("{\"status\":\"OK\",\"resultSet\":[");
+				for (FormSet fs : ao.find(FormSet.class))
+				{
+					cConfig.append(getAoFormSetJson(fs));
+				}
+				cConfig.append("{}],\"customTypes\":[");
+				for (CustomType ct : ao.find(CustomType.class))
+				{
+					cConfig.append(getCustomTypeJson(ct));
+				}
+				cConfig.append("{}]}");
+
+
+				Version v = ao.create(Version.class);
+				v.setDate(new Date());
+				v.setAuthor(userManager.getRemoteUsername(req));
+				v.setConfig(cConfig.toString());
+				v.save();
+				cleanVersions(50);
+plog.debug("Configurations cleaned");
+
+
+				//formset exists.  And, form exists...so, use the get by ID and update the values....
+
 	    		JSONObject inForm = new JSONObject(inJson);
 	    		//JSONObject formSettings = inForm.getJSONObject("settings");
 	    		//JSONObject formFields = inForm.getJSONObject("fields");
