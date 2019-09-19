@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "5.2.13";
+    window.g_version = "5.2.14";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);
@@ -509,7 +509,19 @@ function renderForm(inContainerId, inFormId, isNested, item, afterRender)
 			//no item, look for Add form
 			if(thisForm.formType=="Add")
 			{
-				ijfUtils.loadIssueTypeDetails(thisForm.formSet.projectId);
+				try
+				{
+					ijfUtils.loadIssueTypeDetails(thisForm.formSet.projectId);
+				}
+				catch(ae)
+				{
+					//need to bail, this is an Add but something is wrong, likely cannot add.
+					delete ijf.jiraAddMeta[thisForm.formSet.projectId];
+					delete ijf.jiraAddMetaKeyed[thisForm.formSet.projectId];
+					ijfUtils.modalDialogMessage("Error","Unable to initiate the add process.  If this is an error please contact support.");
+					ijf.main.resetForm();
+					return;
+				}
 
 				//meta is keyed by issue type for add
 				ijf.jiraMeta.fields=ijf.jiraAddMeta[thisForm.formSet.projectId][thisForm.issueType]

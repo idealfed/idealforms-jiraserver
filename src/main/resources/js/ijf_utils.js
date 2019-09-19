@@ -867,7 +867,8 @@ renameSpFile:function(inIssueId, oldFileName, newFileName) {
         params.push(window.location.hostname.split(".")[0]);
         params.push(inIssueId);
         params.push(oldFileName);
-        params.push(newFileName);
+        var newFName = ijfUtils.sharepointFilenameClean(newFileName);
+        params.push(newFName);
         //version number?
         //params.push(inComment);
         try {
@@ -1756,8 +1757,11 @@ gridSpUploadFile: function(event, inGridId, inControlId, inIssueId)
 	  else if(fSave.status=="success")
 	  {
 		  //perform simple save here...it will skip if nothing to save...i think
-		  ijfUtils.simpleSave();
-		  ijf.main.resetForm();
+		  if(ijf.main.allControlsClean())
+			  ijf.main.resetForm();
+		  else
+			  ijfUtils.simpleSave();
+
 	  }
 	  else
 	  {
@@ -1767,6 +1771,7 @@ gridSpUploadFile: function(event, inGridId, inControlId, inIssueId)
 
 	};
 	var thisFileName = input.files[0].name;
+	thisFileName = ijfUtils.sharepointFilenameClean(thisFileName);
 	reader.readAsArrayBuffer(input.files[0]);
 
 },
@@ -2640,13 +2645,13 @@ replaceWordChars:function(text) {
 			+ tagBody
 			+ ')>',
 			'gi');
-	  //var oldHtml;
-	  //do {
-	  //  oldHtml = html;
-	  //  html = html.replace(tagOrComment, '');
-	  //} while (html !== oldHtml);
-	  html = html.replace(/script/gi, '');
-	  html = html.replace(/style/gi, '');
+	  var oldHtml;
+	  do {
+	    oldHtml = html;
+	    html = html.replace(tagOrComment, '');
+	  } while (html !== oldHtml);
+	  //html = html.replace(/script/gi, '');
+	  //html = html.replace(/style/gi, '');
 	  return html.replace(/</g, '&lt;');
     },
 	clearExt:function()
@@ -4087,13 +4092,36 @@ sharepointFilenameOk:function(inFileName)
 {
   var fSplit = inFileName.split(".");
   if(fSplit.length>2) return false; //has a . in name
-  var invalidChars = "~\"#%&*:<>?/\\{|}.";
+  var invalidChars = ",~\"#%&*:<>?/\\{|}";
   for(var i=0;i<invalidChars.length;i++)
   {
       if(fSplit[0].indexOf(invalidChars[i])>-1) return false;
   }
   return true;
+},
+
+sharepointFilenameClean:function(inFileName)
+{
+  var fSplit = inFileName.split(".");
+  var fNameNoPeriods = fSplit[0];
+  var fNameSuffix = null;
+  if(fSplit.length>1)
+  {
+	  fNameNoPeriods = fSplit.slice(0,fSplit.length-1).join("_");
+      fNameSuffix= fSplit[fSplit.length-1];
+  }
+
+  //var invalidChars = ",~\"#%&*:<>?/\\{|}";
+  var invalidChars = [",","~","\\\"","\\#","\\%","\\&","\\*","\\:","\\<","\\>","\\?","/","\\\\","{","\\|","}"];
+  for(var i=0;i<invalidChars.length;i++)
+  {
+	  fNameNoPeriods = fNameNoPeriods.replace(new RegExp(invalidChars[i], 'g'), "_");
+  }
+
+  if(fNameSuffix) return fNameNoPeriods + "." + fNameSuffix;
+  return fNameNoPeriods;
 }
+
 
 
 

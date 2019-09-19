@@ -1156,6 +1156,7 @@ ijf.reactUtils = {
 			var perms = ijfUtils.getPermissionObj(inField.form.permissions, ijf.currentItem, ijf.main.currentUser);
 		}
 		if (!hideField && !perms.canSee) hideField = true;
+
 		//end permissions
 		try {
 			var style = JSON.parse(inField.style);
@@ -1176,6 +1177,12 @@ ijf.reactUtils = {
 			var labelSettings = JSON.parse(inField.labelStyle);
 		} catch (e) {
 			var labelSettings = {};
+		}
+
+		//from meta data, set readonly if we don't have the ability...
+		if (fieldSettings['hideIfReadOnly'] == true) {
+			var jfFieldMeta = ijf.jiraMetaKeyed["Summary"];
+			if (jfFieldMeta) if (!jfFieldMeta.operations) hideField = true;
 		}
 
 		var disabled = false;
@@ -3721,6 +3728,7 @@ ijf.reactUtils = {
 		}
 		if (!hideField && !perms.canSee) hideField = true;
 		if (!perms.canEdit) readOnly = true;
+
 		//end permissions
 
 		var l_save = "Save";
@@ -3751,6 +3759,13 @@ ijf.reactUtils = {
 			var fieldSettings = JSON.parse(inField.fieldStyle);
 		} catch (e) {
 			var fieldSettings = {};
+		}
+
+		//from meta data, set readonly if we don't have the ability...
+		var hideSave = false;
+		if (fieldSettings["hideIfReadOnly"] == true) {
+			var jfFieldMeta = ijf.jiraMetaKeyed["Summary"];
+			if (jfFieldMeta) if (!jfFieldMeta.operations) hideSave = true;
 		}
 
 		var disabled = false;
@@ -3847,7 +3862,7 @@ ijf.reactUtils = {
 		};
 
 		var getSave = function getSave() {
-			if (!l_save) return;else return React.createElement(
+			if (!l_save || hideSave) return;else return React.createElement(
 				MuiButton,
 				{ onClick: handleSave, disabled: disabled, size: fieldSettings.size, color: fieldSettings.color, variant: fieldSettings.variant, style: panelStyle },
 				getIcon(l_save),

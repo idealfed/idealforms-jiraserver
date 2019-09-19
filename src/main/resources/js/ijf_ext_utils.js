@@ -1096,6 +1096,8 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 		}
 	}
 
+
+
 	//sort asc by TITILE + date
 	var sortedAttachments = item.fields.attachment.sort(function(a, b)
 	{
@@ -1187,6 +1189,12 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
+
+	  //special for read only (hide the delete if there....
+	    var userIsReadOnly = false;
+  		var tempFieldMeta = ijf.jiraMetaKeyed["Summary"];
+  		if(tempFieldMeta)	if(!tempFieldMeta.operations) userIsReadOnly=true;
+
 	//end permissions
 
     var collapsible = true;
@@ -1205,7 +1213,7 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
         canDelete=true;
     }
 	if(!perms.canEdit) canDelete=false;
-
+    if(userIsReadOnly)  canDelete=false;
 
 	var l_Height = 300;
     var l_Height=ijfUtils.getNameValueFromStyleString(l_fieldStyle,"height");
@@ -1911,8 +1919,13 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 
                 var primaryLink = a.DownloadUrl;
                 if(a.EditInAppUrl) primaryLink=a.EditInAppUrl;
+                var target="";
+                var lowerFileName = a.FileName.toLowerCase();
+                if(lowerFileName.indexOf(".pdf")>-1) target=" target='_blank' ";
+                if(lowerFileName.indexOf(".txt")>-1) target=" target='_blank' ";
+				if(lowerFileName.indexOf(".htm")>-1) target=" target='_blank' ";
 
-			    var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a href='"+primaryLink+"'>"+a.FileName +"</a>","fUser":a.CreatedByName,"fStatus":fStatus};
+			    var retObj =  {"fileid":a.UniqueId,"created":a.CreatedDate,"rawFileName":a.FileName,"filename":"<a "+target+"href='"+primaryLink+"'>"+a.FileName +"</a>","fUser":a.CreatedByName,"fStatus":fStatus};
                 retObj.id = window.location.hostname.split(".")[0] + "," + msaIssueKey + "," + a.FileName;
                 retObj.raw = a;
 			    //add data if exists
@@ -3663,13 +3676,15 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
 	if(managedFileName)
 	{
 	    var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>File: " + managedFileName + "<br> uploaded by " + currentAttachment.CreatedByName + " on " + moment(currentAttachment.CreatedDate).format('lll') + "</div>";
-	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSaveQuiet();ijfUtils.gridSpUploadFile(event,'"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"','"+inFormKey+'_fld_'+inField.formCell+"','" + ijf.currentItem.key + "');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
+	    //var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSaveQuiet();ijfUtils.gridSpUploadFile(event,'"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"','"+inFormKey+'_fld_'+inField.formCell+"','" + ijf.currentItem.key + "');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
+		var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:if(this.value.indexOf('"+managedFileName+"')>-1){ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.gridSpUploadFile(event,'"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"','"+inFormKey+'_fld_'+inField.formCell+"','" + ijf.currentItem.key + "');} else {ijfUtils.modalDialogMessage('Error','Sorry, you must select a file named: <br><br>"+managedFileName+"');}\"></form>";
 
     }
     else
     {
         var headerHtml = "<div id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId'>Managed File has not been Initialized<br>&nbsp;</div>";
-	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSaveQuiet();ijfUtils.gridSpUploadFile(event,'"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"','"+inFormKey+'_fld_'+inField.formCell+"','" + ijf.currentItem.key + "'); \"></form>";
+	    //var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.simpleSaveQuiet();ijfUtils.gridSpUploadFile(event,'"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"','"+inFormKey+'_fld_'+inField.formCell+"','" + ijf.currentItem.key + "'); \"></form>";
+	    var fileLoad = "<form enctype='multipart/form-data' id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFormId'><input id='"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadFileId' type='file' name='file' onChange=\"javascript:ijf.main.controlChanged('"+inFormKey+"_fld_"+inField.formCell+"');Ext.get('"+inFormKey+'_fld_'+inField.formCell.replace(/,/g,"_")+"UploadLabelId').update('File Selected (hit save to upload):<br><span style=color:yellow>'+this.value.split('\\\\')[this.value.split('\\\\').length-1]+'</span>');ijfUtils.gridSpUploadFile(event,'"+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"','"+inFormKey+'_fld_'+inField.formCell+"','" + ijf.currentItem.key + "'); \"></form>";
 	}
 
 
@@ -3997,6 +4012,15 @@ renderRaw:function(inFormKey,item, inField, inContainer)
 		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
+
+	var rOnly = false;
+	//from meta data, set readonly if we don't have the ability...
+	if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'hideIfReadOnly')=="true")
+	{
+		var jfFieldMeta = ijf.jiraMetaKeyed["Summary"];
+		if(jfFieldMeta)	if(!jfFieldMeta.operations) rOnly=true;
+	}
+
 	//end permissions
 
     var l_save="Save";
@@ -4010,7 +4034,7 @@ renderRaw:function(inFormKey,item, inField, inContainer)
         l_done =l_style[2];
     }
     var lButtons = [];
-    if(l_save)
+    if((l_save) && (!rOnly))
     {
 
 		lButtons.push({
@@ -4402,6 +4426,15 @@ renderNavigateToForm:function(inFormKey,item, inField, inContainer)
 		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
+
+	//from meta data, set readonly if we don't have the ability...
+	if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'hideIfReadOnly')=="true")
+	{
+		var jfFieldMeta = ijf.jiraMetaKeyed["Summary"];
+		if(jfFieldMeta)	if(!jfFieldMeta.operations) hideField=true;
+	}
+
+
 	//end permissions
 
     var hFunction = function(){
@@ -4512,6 +4545,10 @@ renderAttachmentUpload:function(inFormKey,item, inField, inContainer)
 		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
+
+    var jfFieldMeta = ijf.jiraMetaKeyed["Summary"];
+    if(jfFieldMeta)	if(!jfFieldMeta.operations) hideField=true;
+
 	//end permissions
 
     var hideLabel = false;
@@ -4686,6 +4723,9 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
     //console.log(JSON.stringify(perms));
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
+
+	//from meta data, set readonly if we don't have the ability...
+	if(jfFieldMeta)	if((!jfFieldMeta.operations) && (inField.dataSource!="session")) rOnly=true;
 	//end permissions
 
 
@@ -4990,6 +5030,8 @@ renderDatebox:function(inFormKey,item, inField, inContainer)
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
+	//from meta data, set readonly if we don't have the ability...
+	if(jfFieldMeta)	if((!jfFieldMeta.operations) && (inField.dataSource!="session")) rOnly=true;
 	//end permissions
 		if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
@@ -5088,8 +5130,9 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 	}
 
     var lAllowBlank = true;
+    if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'allowblank')=="false") lAllowBlank=false;
     if (jfFieldMeta.hasOwnProperty("required")) lAllowBlank = (jfFieldMeta.required) ? false : true;
-        if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
+    if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'required')=="true") lAllowBlank=false;
 
     //manage cases for the lookups
     //case one, simple collect constraint
@@ -5157,6 +5200,9 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
+	//from meta data, set readonly if we don't have the ability...
+	if(jfFieldMeta)	if((!jfFieldMeta.operations) && (inField.dataSource!="session")) rOnly=true;
+
 	//end permissions
 	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
@@ -5175,7 +5221,19 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 								{
 									this.validate();
 								},
-								select: function(f,n,o){
+								/*select: function(f,n,o){
+
+									if(inField.dataSource=="session")
+									{
+										ijf.session[inFormKey+'_fld_'+inField.formCell]=n;
+									}
+									else
+									{
+										ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+									}
+									ocf(f,n,o);
+								},*/
+								change: function(f,n,o){
 
 									if(inField.dataSource=="session")
 									{
@@ -5542,6 +5600,10 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
+
+	//from meta data, set readonly if we don't have the ability...
+	if(jfFieldMeta)	if((!jfFieldMeta.operations) && (inField.dataSource!="session")) rOnly=true;
+
 	//end permissions
 	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
@@ -6623,6 +6685,10 @@ renderMultiselect:function(inFormKey,item, inField, inContainer)
 	}
 	if((!rOnly) && (!perms.canEdit)) rOnly=true;
 	if((!hideField) && (!perms.canSee))	hideField=true;
+
+		//from meta data, set readonly if we don't have the ability...
+	if(jfFieldMeta)	if((!jfFieldMeta.operations) && (inField.dataSource!="session")) rOnly=true;
+
 	//end permissions
 	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
 
@@ -6668,7 +6734,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 {
 
     inContainer.title = inField.toolTip;
-
+    var userReadOnly = false;
 	if(inField.dataSource=="session")
 	{
 		  var jfFieldMeta = {};
@@ -6700,6 +6766,14 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 		{
 			var jfFieldMeta = ijf.jiraMetaKeyed[inField.dataSource];
 		}
+
+		//special handling for read only radio
+		if(jfFieldMeta)	if(!jfFieldMeta.operations)
+		{
+			data = ijfUtils.handleJiraFieldType(jfFieldDef,jf,true,true);
+			userReadOnly=true;
+		}
+
 	}
 
     var lAllowBlank = true;
@@ -6780,16 +6854,34 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
 										inputValue: data});
 				break;
 			case "option":
-				var rOptions= jfFieldMeta.allowedValues.map(function(e)
+			    if(userReadOnly)
+			    {
+					var rOptoins = [];
+					if(data){
+						rOptions= [
+										  {id: "radio_" + jfFieldDef.id + "_0",
+																boxLabel: data,
+																value : true,
+																style: l_fieldStyle,
+																readOnly: true,
+																name: jfFieldDef.id,
+											inputValue: 0}
+						];
+					}
+				}
+				else
 				{
-								return {id: "radio_" + jfFieldDef.id + "_" + e.id,
-										boxLabel: e.value,
-										value : (data==e.id) ?  true : false,
-										style: l_fieldStyle,
-										readOnly: rOnly,
-										name: jfFieldDef.id,
-										inputValue: e.id};
-				 });
+					var rOptions= jfFieldMeta.allowedValues.map(function(e)
+					{
+									return {id: "radio_" + jfFieldDef.id + "_" + e.id,
+											boxLabel: e.value,
+											value : (data==e.id) ?  true : false,
+											style: l_fieldStyle,
+											readOnly: rOnly,
+											name: jfFieldDef.id,
+											inputValue: e.id};
+					 });
+				}
 				break;
 			default:
 				var rOptions = [];
@@ -7230,6 +7322,14 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
+
+	//from meta data, set readonly if we don't have the ability...
+	if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'hideIfReadOnly')=="true")
+	{
+		var jfFieldMeta = ijf.jiraMetaKeyed["Summary"];
+		if(jfFieldMeta)	if(!jfFieldMeta.operations) hideField=true;
+	}
+
 	//end permissions
 
     var xType = "button";
@@ -7400,6 +7500,14 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
 	}
 	if((!hideField) && (!perms.canSee))	hideField=true;
+
+	//from meta data, set readonly if we don't have the ability...
+	if (ijfUtils.getNameValueFromStyleString(inField.fieldStyle,'hideIfReadOnly')=="true")
+	{
+		var jfFieldMeta = ijf.jiraMetaKeyed["Summary"];
+		if(jfFieldMeta)	if(!jfFieldMeta.operations) hideField=true;
+	}
+
 
 
     var ocf =  ijfUtils.getEvent(inField);
@@ -7581,6 +7689,9 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 		}
 		if((!rOnly) && (!perms.canEdit)) rOnly=true;
 		if((!hideField) && (!perms.canSee))	hideField=true;
+
+		//from meta data, set readonly if we don't have the ability...
+		if(jfFieldMeta)	if((!jfFieldMeta.operations) && (inField.dataSource!="session")) rOnly=true;
 		//end permissions
 
 		if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";

@@ -1171,6 +1171,8 @@ renderTextbox(inFormKey,item, inField, inContainer)
 			var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser);
 		}
 		if((!hideField) && (!perms.canSee))	hideField=true;
+
+
 		//end permissions
 		try
 		{
@@ -1203,6 +1205,13 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		catch(e)
 		{
 			var labelSettings = {}
+		}
+
+		//from meta data, set readonly if we don't have the ability...
+		if (fieldSettings['hideIfReadOnly']==true)
+		{
+			var jfFieldMeta = ijf.jiraMetaKeyed["Summary"];
+			if(jfFieldMeta)	if(!jfFieldMeta.operations) hideField=true;
 		}
 
 		var disabled = false;
@@ -3817,6 +3826,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 		}
 		if((!hideField) && (!perms.canSee))	hideField=true;
 		if(!perms.canEdit) readOnly=true;
+
 		//end permissions
 
 		var l_save="Save";
@@ -3858,6 +3868,15 @@ renderSelect(inFormKey,item, inField, inContainer)
 		catch(e)
 		{
 			var fieldSettings = {}
+		}
+
+
+		//from meta data, set readonly if we don't have the ability...
+		var hideSave = false;
+		if (fieldSettings["hideIfReadOnly"]==true)
+		{
+			var jfFieldMeta = ijf.jiraMetaKeyed["Summary"];
+			if(jfFieldMeta)	if(!jfFieldMeta.operations) hideSave=true;
 		}
 
 		var disabled = false;
@@ -3973,7 +3992,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 
 		var getSave=function()
 		{
-			if(!l_save) return;
+			if((!l_save) || (hideSave)) return;
 			else
 			return (
  			  <MuiButton onClick={handleSave} disabled={disabled} size={fieldSettings.size} color={fieldSettings.color} variant={fieldSettings.variant} style={panelStyle}>
