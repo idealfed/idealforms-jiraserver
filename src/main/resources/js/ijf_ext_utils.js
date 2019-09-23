@@ -5221,7 +5221,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 								{
 									this.validate();
 								},
-								/*select: function(f,n,o){
+								select: function(f,n,o){
 
 									if(inField.dataSource=="session")
 									{
@@ -5232,7 +5232,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 										ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
 									}
 									ocf(f,n,o);
-								},*/
+								},
 								change: function(f,n,o){
 
 									if(inField.dataSource=="session")
@@ -5243,7 +5243,7 @@ renderDropdown:function(inFormKey,item, inField, inContainer)
 									{
 										ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
 									}
-									ocf(f,n,o);
+									if(n==null) ocf(f,n,o);
 								}
 							};
 
