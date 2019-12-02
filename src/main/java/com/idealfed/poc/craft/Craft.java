@@ -982,14 +982,21 @@ public class Craft extends HttpServlet
  	}
     private void cleanVersions(int keepNum)
     {
-    	int maxVersion = 0;
-		for (Version v : ao.find(Version.class, Query.select().limit(1).order("ID DESC")))
-        {
-			maxVersion = v.getID();
-        }
-        maxVersion = maxVersion - keepNum;
-        plog.debug("deleting versions older than " + maxVersion);
-        ao.deleteWithSQL(Version.class, "\"ID\" < ?", maxVersion);
+		try
+		{
+			int maxVersion = 0;
+			for (Version v : ao.find(Version.class, Query.select().limit(1).order("ID DESC")))
+			{
+				maxVersion = v.getID();
+			}
+			maxVersion = maxVersion - keepNum;
+			plog.debug("deleting versions older than " + maxVersion);
+			ao.deleteWithSQL(Version.class, "\"ID\" < ?", maxVersion);
+		}
+		catch(Exception ve)
+		{
+		  plog.error("Failed to get version: " + ve.getMessage());
+		}
     }
 
     private boolean checkUrlWhitelist(String inUrl)

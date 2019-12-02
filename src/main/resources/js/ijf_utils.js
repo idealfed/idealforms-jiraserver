@@ -1595,8 +1595,18 @@ applyStyle:function(element, style){
         element.style[key] = style[key];
     });
 },
-
-
+renderFormItem:function(inForm,inKey)
+{
+	ijfUtils.showProgress();
+	var renderForm = function(){
+		ijf.currentItem=null;
+		ijf.main.itemId= inKey;
+		window.g_formId=inForm;
+		ijf.main.processSetup("ijfContent");
+	}
+    window.setTimeout(renderForm,50);
+	return;
+},
 cssToJson: function (inStr) {
 
 	var retJson = {};

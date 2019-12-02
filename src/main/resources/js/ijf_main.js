@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "5.2.16";
+    window.g_version = "5.2.17";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);
@@ -864,6 +864,8 @@ function saveBatch(onSuccess,inFields,inForm, item)
     var fields = {};
     if(inFields) fields=inFields;
     var attachment = null;
+    var relations = null;
+
     for (var i in ijf.main.saveQueueBatch)
     {
         if(ijf.main.saveQueueBatch.hasOwnProperty(i))
@@ -874,6 +876,11 @@ function saveBatch(onSuccess,inFields,inForm, item)
 				if(!attachment) attachment=[];
 				attachment.push(thisCnt);
 				if(!thisCnt.field.dynamicAttachementManaged)	continue;
+			}
+			if(thisCnt.field.controlType=="issue relator")
+			{
+				relations = thisCnt.newVal;
+				continue;
 			}
             var thisSect = thisCnt.batchSaveSection;
 			fields[thisSect.jiraField.id]=thisCnt.newVal;
@@ -1004,10 +1011,42 @@ function saveBatch(onSuccess,inFields,inForm, item)
 		}
 	}
 
-	if((!fieldsOk) || (!transOk))
+	//issue relations
+	var relationsOk = true;
+	var relationsResult = "";
+	if(relations)
+	{
+
+		var jsonString = {
+				"type": {
+					"name": "Relates"
+				   },
+				"inwardIssue": {
+					"key": ijf.currentItem.key
+				   },
+				"outwardIssue": {
+					"key": "tbd"
+				   },
+				"comment":{
+					"body":"Linked related issue"
+				  }
+			};
+		relations.forEach(function(rIssue)
+		{
+			jsonString.outwardIssue.key=rIssue.key;
+			var saveRelRes = ijfUtils.jiraApiSync("POST","/rest/api/2/issueLink",JSON.stringify(jsonString));
+			if(saveRelRes!="OK")
+			{
+				relationsOk=false;
+				relationsResult+=saveRelRes;
+			}
+		});
+	}
+
+	if((!fieldsOk) || (!transOk) || (!relationsOk))
 	{
 		ijfUtils.hideProgress();
-        ijfUtils.modalDialogMessage("Error","Sorry, but something went wrong with the save: <br><br>" + saveRes);
+        ijfUtils.modalDialogMessage("Error","Sorry, but something went wrong with the save: <br><br>" + saveRes + " <br>" + relationsResult);
         return;
 	}
 

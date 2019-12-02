@@ -615,7 +615,8 @@ ijf.reactUtils = {
 
 		var ocf = ijfUtils.getEvent(inField);
 
-		if (hideField) style.visibility = "hidden";
+		//if(hideField) style.visibility="hidden";
+		if (hideField) style.display = "none";
 
 		if (!lAllowBlank) fieldStyle.required = true;
 
@@ -929,7 +930,8 @@ ijf.reactUtils = {
 
 		var ocf = ijfUtils.getEvent(inField);
 
-		if (hideField) style.visibility = "hidden";
+		//if(hideField) style.visibility="hidden";
+		if (hideField) style.display = "none";
 
 		if (!lAllowBlank) fieldStyle.required = true;
 

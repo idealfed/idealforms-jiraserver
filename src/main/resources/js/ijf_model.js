@@ -531,28 +531,35 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 	//manage custom types first....
 	if(!tSection.jiraMeta)
 	{
-		var testDs = this.field.dataSource;
-		ijf.fw.CustomTypes.forEach(function(t){if(t.name==testDs) thisT=t;});
-		if(thisT)
-		{
-			//we have a custom type....
-			if(thisT.customType=="GRID")
+	  //look for special types
+	  if(this.field.controlType=="issue relator")
+	  {
+			tSection = {"jiraMeta":{"schema":{"type":"string"}}};
+			tSection["jiraField"]={};
+	  }
+	  else
+	  {
+			var testDs = this.field.dataSource;
+			ijf.fw.CustomTypes.forEach(function(t){if(t.name==testDs) thisT=t;});
+			if(thisT)
 			{
-				tSection = {"jiraMeta":{"schema":{"type":"grid"}}};
-				tSection["jiraField"]={};
-				tSection.jiraField["id"] = ijf.jiraFieldsKeyed[thisT.fieldName].id; //jira id of the custom type field store
+				//we have a custom type....
+				if(thisT.customType=="GRID")
+				{
+					tSection = {"jiraMeta":{"schema":{"type":"grid"}}};
+					tSection["jiraField"]={};
+					tSection.jiraFitesteld["id"] = ijf.jiraFieldsKeyed[thisT.fieldName].id; //jira id of the custom type field store
+				}
+
+				//we have a custom type....
+				if(thisT.customType=="FILE ATTRIBUTES")
+				{
+					tSection = {"jiraMeta":{"schema":{"type":"fileattributes"}}};
+					tSection["jiraField"]={};
+					tSection.jiraField["id"] = ijf.jiraFieldsKeyed[thisT.fieldName].id; //jira id of the custom type field store
+				}
 			}
-
-			//we have a custom type....
-			if(thisT.customType=="FILE ATTRIBUTES")
-			{
-				tSection = {"jiraMeta":{"schema":{"type":"fileattributes"}}};
-				tSection["jiraField"]={};
-				tSection.jiraField["id"] = ijf.jiraFieldsKeyed[thisT.fieldName].id; //jira id of the custom type field store
-			}
-
-
-		}
+	   }
 	}
 
 
@@ -745,6 +752,22 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 							return {"email":av.data.email,"displayName":av.data.displayName};
 						});
 						this.newVal = JSON.stringify(usersObject);
+					}
+					else
+					{
+						this.newVal = null;
+					}
+				}
+				else if(this.field.controlType=="issue relator")
+				{
+					var vArr = this.control.items.items[0].valueCollection;
+					if((vArr.items) && (vArr.items.length>0))
+					{
+
+						var issueKeys = vArr.items.map(function(av){
+							return {"key":av.data.key};
+						});
+						this.newVal = issueKeys;
 					}
 					else
 					{

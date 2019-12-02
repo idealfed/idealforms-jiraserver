@@ -30,6 +30,9 @@ helpLink:function(inLabel, inCaller)
 	switch(cType)
 	{
 		//field styles
+		case "issue relator":
+				    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+issue+relator");
+		break;
 		case "muiAppBar":
 				    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiAppBar");
 		break;
@@ -1539,7 +1542,7 @@ addEditForm:function (sRow)
 		});
 
 
-		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentSPmanaged","attachmentlisttree","attachmentSPtree","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","GRIDHTML","grouppicker","grouppickermulti","html","htmldata","htmleditor","historylist","iframe","itemlist","itemlistHTML","itemtree","muiAppBar","muiButton","muiCardList","muiCommentList","muiCommentSuperList","muiDatebox","muiDrawer","muiFormButtons","muiGrid","muiHtml","muiHistoryList","muiIcon","muiRadio","muiSelect","muiTextarea","muiTextbox","multiselect","navigatetoform","Reference Editor","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
+		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentSPmanaged","attachmentlisttree","attachmentSPtree","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","GRIDHTML","grouppicker","grouppickermulti","html","htmldata","htmleditor","historylist","iframe","issue relator","itemlist","itemlistHTML","itemtree","muiAppBar","muiButton","muiCardList","muiCommentList","muiCommentSuperList","muiDatebox","muiDrawer","muiFormButtons","muiGrid","muiHtml","muiHistoryList","muiIcon","muiRadio","muiSelect","muiTextarea","muiTextbox","multiselect","navigatetoform","Reference Editor","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
 
 	    var  sectionLookup = [];
 
@@ -2249,7 +2252,8 @@ addEditForm:function (sRow)
 				fields: [
 					{name: 'iid',  type: 'string'},
 					{name: 'name', type: 'string'},
-					{name: 'snippet', type: 'string'}
+					{name: 'snippet', type: 'string'},
+					{name: 'sshort', type: 'string'}
 				]
 			});
 		}
@@ -2265,7 +2269,8 @@ addEditForm:function (sRow)
 			snips.push({
 				iid: s.id,
 				name: s.name,
-				snippet: s.snippet
+				snippet: s.snippet,
+				sshort: s.snippet.substring(0,40) + "..."
 			});
 		});
 
@@ -2355,7 +2360,7 @@ addEditForm:function (sRow)
 					header: 'Snippet',
 					width:350,
 					sortable: true,
-					dataIndex: 'snippet'
+					dataIndex: 'sshort'
 				},
 				{
 					header: 'Status',

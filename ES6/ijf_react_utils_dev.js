@@ -641,7 +641,8 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 		var ocf =  ijfUtils.getEvent(inField);
 
-		if(hideField) style.visibility="hidden";
+		//if(hideField) style.visibility="hidden";
+		if(hideField) style.display="none";
 
 		if(!lAllowBlank) fieldStyle.required = true;
 
@@ -956,7 +957,8 @@ renderTextbox(inFormKey,item, inField, inContainer)
 
 		var ocf =  ijfUtils.getEvent(inField);
 
-        if(hideField) style.visibility="hidden";
+        //if(hideField) style.visibility="hidden";
+        if(hideField) style.display="none";
 
 		if(!lAllowBlank) fieldStyle.required = true;
 

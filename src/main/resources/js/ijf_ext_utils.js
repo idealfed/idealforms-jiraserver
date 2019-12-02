@@ -85,6 +85,10 @@ renderField:function(inFormKey, item, inField, inContainer)
 
 
 			//SENCHA Section
+
+            case 'issue relator':
+                ijf.extUtils.renderIssueRelations(inFormKey,item,inField,inContainer);
+                break;
             case 'Reference Editor':
                 ijf.extUtils.renderGridRefEditor(inFormKey,item,inField,inContainer);
                 break;
@@ -2599,11 +2603,6 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 
 					}
 				}
-			},
-			beforeload: function(inStore, operation, eOpts )
-			{
-
-				debugger;
 			}
     });
 	//gridStore.loadData(fArray);
@@ -4808,6 +4807,233 @@ renderTextbox:function(inFormKey,item, inField, inContainer)
         layout: 'hbox',
         items: sItems
     });
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple,inFormKey,item, inField, inContainer);
+
+    simple.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, simple, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](simple, inFormKey,item, inField, inContainer);
+}
+,
+renderIssueRelations:function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+    var lAllowBlank = true;
+    //adding concept of session vars.
+
+    var data = "";
+
+
+    var lValidator = function(v){return true};
+
+    var hideField = ijfUtils.renderIfShowField(data,inField);
+    var hideLabel = false;
+    if (inField.caption=="")
+        var lCaption = inField.dataSource;
+    else if(inField.caption=="none")
+    {
+        var lCaption = "";
+        hideLabel=true;
+    }
+    else
+        var lCaption = inField.caption;
+
+    var tipText = "Related Issues Search...";
+    var tempTipText = ijfUtils.getNameValueFromStyleString(inField.labelStyle,"tiptext");
+    if(tempTipText) tipText = tempTipText;
+
+    var summaryLength = 50;
+    var summaryLengthText = ijfUtils.getNameValueFromStyleString(inField.fieldStyle,"length");
+	if(summaryLengthText) summaryLength = summaryLengthText/1;
+
+
+    var showRelatedIssues = true;
+    var showRelatedIssuesText = ijfUtils.getNameValueFromStyleString(inField.fieldStyle,"showrelated");
+	if(showRelatedIssuesText=='false') showRelatedIssues = false;
+
+
+    if (inField.style.indexOf('hidden:true')>-1)
+    {
+        hideLabel=true;
+        hideField=true;
+    }
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+    if (inField.style.indexOf('enteronce:true')>-1)
+    {
+        if (!!data) rOnly=true;
+    }
+
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		if(inField.form.permissions) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+    //console.log(JSON.stringify(perms));
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+
+    var l_labelStyle = inField.labelStyle;
+    var l_panelStyle = inField.panelStyle;
+    var l_Style = inField.style;
+    var l_fieldStyle = inField.fieldStyle;
+
+
+    if(!l_labelStyle) l_labelStyle="background:transparent";
+    if(!l_panelStyle) l_panelStyle="background:transparent";
+    if(!l_Style) l_Style="background:transparent";
+    if(!l_fieldStyle) l_fieldStyle="background:white";
+	if(rOnly) l_fieldStyle=l_fieldStyle+";background:lightgray";
+
+    var ocf =  ijfUtils.getEvent(inField);  //alters the data after it returns  (onchange)
+    var bQueryEvent = inField.dataReference; //alters the query prior to execution
+    var referenceFilter = inField.referenceFilter;    //filter out unwanted links, mainly for CMM, postive matches show
+    var openFormName = inField.dataReference2 //form for link
+
+    var tSearch = inField.dataSource;
+    tSearch = ijfUtils.replaceKeyValues(tSearch,item);
+
+	var apiUrl = "/rest/api/2/search?jql=" + tSearch + " AND summary~REPLACETHIS&maxResults=25&fields=summary";
+
+	var	fParam = "query";
+	var xtrParam = null;
+	var iRoot = 'issues';
+	//xtrParam={"fields":"summary"};
+
+	Ext.define('JiraIssueModelMulti', {
+			extend: 'Ext.data.Model',
+			fields: [{name:'key', type: 'string'},
+					 {name: 'summary', type: 'string'},
+					 {name: 'sortsummary', type: 'string'}]
+	});
+	var lookup = Ext.create('Ext.data.Store', {
+		storeId: 'issueDropdownMultipleId',
+		model: 'JiraIssueModelMulti',
+		autoLoad: false,
+		proxy: {
+			type: 'ajax',
+			url: g_root + apiUrl,
+			extraParams : xtrParam,
+			filterParam: fParam,
+			groupParam: '',
+			limitParam: '',
+			pageParam: '',
+			sortParam: '',
+			startParam: '',
+			reader: {
+				type: 'json',
+				root: iRoot
+			}
+		}
+	});
+
+	lookup.addListener("load",function(thisStore,records,successful,operation,eOpts)
+	{
+		records.forEach(function(r){
+			r.set("key",r.data["key"]);
+			r.set("summary",r.data["key"] + " " + ijfUtils.sanitize(r.data.fields["summary"]));
+			r.set("sortsummary",r.data.fields["summary"]);
+		});
+		thisStore.sort("sortsummary",'ASC');
+		ocf(records,thisStore);
+	});
+
+
+
+
+	//create list of related issues if needed....
+	var relatedIssuesHtml = "";
+	if ((showRelatedIssues==true) && (ijf.currentItem.fields.issuelinks)){
+			var relatedIssuesHtml = "";
+			ijf.currentItem.fields.issuelinks.forEach(function(a) {
+				 var addIt = true;
+				 if(a.inwardIssue)
+				 {
+				 	if((referenceFilter) && (a.inwardIssue.key.indexOf(referenceFilter)<0)) addIt=false;
+ 			 	    if(addIt)
+ 			 	    	if(openFormName) relatedIssuesHtml += '<div><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;<a href="javascript:ijfUtils.renderFormItem(\''+openFormName+'\',\''+a.inwardIssue.key+'\')">' + a.inwardIssue.key + " " + ijfUtils.sanitize(a.inwardIssue.fields["summary"]).substring(0,summaryLength) + '...</a><br></div>';
+ 			 	    	else relatedIssuesHtml += '<div><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;' + a.inwardIssue.key + " " + ijfUtils.sanitize(a.inwardIssue.fields["summary"]).substring(0,summaryLength) + '...<br></div>';
+			 	 }
+
+				 if(a.outwardIssue)
+				 {
+					 if((referenceFilter) && (a.outwardIssue.key.indexOf(referenceFilter)<0)) addIt=false;
+					 if(addIt)
+					 	if(openFormName) relatedIssuesHtml += '<div><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;<a href="javascript:ijfUtils.renderFormItem(\''+openFormName+'\',\''+a.outwardIssue.key+'\')">' + a.outwardIssue.key + " " + ijfUtils.sanitize(a.outwardIssue.fields["summary"]).substring(0,summaryLength) + '...</a><br></div>';
+					 	else relatedIssuesHtml += '<div><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;' + a.outwardIssue.key + " " + ijfUtils.sanitize(a.outwardIssue.fields["summary"]).substring(0,summaryLength) + '...<br></div>';
+				 }
+			});
+	}
+
+
+
+    var simple = new Ext.FormPanel({
+        hidden: hideField,
+        border:false,
+        bodyStyle: l_Style,
+        items:[{xtype: 'tagfield',
+		            store: lookup,
+		            filterPickList: true,
+					labelStyle: l_labelStyle,
+					style: l_panelStyle,
+					fieldStyle: l_fieldStyle,
+					fieldLabel: lCaption,
+					hideLabel: hideLabel,
+					allowBlank: lAllowBlank,
+					readOnly: rOnly,
+					valueField: 'key',
+					displayField: 'summary',
+					value: null,
+					triggerAction: 'all',
+					//selectOnFocus:false,
+					forceSelection: true,
+					queryMode: 'remote',
+					queryParam: fParam,
+					delimiter: ';',
+					minChars: 2,
+					emptyText: tipText,
+					id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
+					listeners: {
+						afterrender: function(f)
+						{
+							this.validate();
+						},
+						change: function(f,n,o){
+							ijf.main.controlChanged(inFormKey+'_fld_'+inField.formCell);
+
+						},
+						beforequery: function(queryPlan, eOpts)
+						{
+							if(!queryPlan.query) return;
+							var qText = "\"" + queryPlan.query + "*\"";
+						    var tUrl = apiUrl.replace("REPLACETHIS",qText)
+						    if(bQueryEvent)
+						    {
+								//attempt to alter query
+								try{
+									tUrl = ijf.snippets[bQueryEvent](tUrl);
+								}catch{}
+							}
+						    queryPlan.combo.store.proxy.url = tUrl;
+						}
+					}},
+					{
+						xtype: 'panel',
+						html: relatedIssuesHtml
+					}]
+    });
+
+
     //before render....
     if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple,inFormKey,item, inField, inContainer);
 
@@ -7388,6 +7614,7 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 
     var ocf =  ijfUtils.getEvent(inField);
 
+
 	//permissions check....has to exist...
 	if(inField.permissions.enabled)
 	{
@@ -7417,18 +7644,21 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 
 					//prep data
 					var itemData={};
-					Object.keys(ijf.jiraMeta.fields).forEach(function(k)
+					if(ijf.jiraMeta.fields)
 					{
-						if(ijf.currentItem.fields.hasOwnProperty(k))
+						Object.keys(ijf.jiraMeta.fields).forEach(function(k)
 						{
-							var f = ijf.currentItem.fields[k];
-							var v = ijfUtils.handleJiraFieldType(ijf.jiraMeta.fields[k],f,true,true);
-							itemData[ijf.jiraMeta.fields[k].name]=v;
-						}
-					});
-					//add special values:  key, status
-					itemData["key"]=ijf.currentItem.key;
-					itemData["status"]=ijf.currentItem.fields.status.name;
+							if(ijf.currentItem.fields.hasOwnProperty(k))
+							{
+								var f = ijf.currentItem.fields[k];
+								var v = ijfUtils.handleJiraFieldType(ijf.jiraMeta.fields[k],f,true,true);
+								itemData[ijf.jiraMeta.fields[k].name]=v;
+							}
+						});
+						//add special values:  key, status
+						itemData["key"]=ijf.currentItem.key;
+						itemData["status"]=ijf.currentItem.fields.status.name;
+				    }
 
 					//add ocf hook to alter data
 					ocf(itemData);
