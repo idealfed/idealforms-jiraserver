@@ -4961,16 +4961,16 @@ renderIssueRelations:function(inFormKey,item, inField, inContainer)
 				 {
 				 	if((referenceFilter) && (a.inwardIssue.key.indexOf(referenceFilter)<0)) addIt=false;
  			 	    if(addIt)
- 			 	    	if(openFormName) relatedIssuesHtml += '<div><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;<a href="javascript:ijfUtils.renderFormItem(\''+openFormName+'\',\''+a.inwardIssue.key+'\')">' + a.inwardIssue.key + " " + ijfUtils.sanitize(a.inwardIssue.fields["summary"]).substring(0,summaryLength) + '...</a><br></div>';
- 			 	    	else relatedIssuesHtml += '<div><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;' + a.inwardIssue.key + " " + ijfUtils.sanitize(a.inwardIssue.fields["summary"]).substring(0,summaryLength) + '...<br></div>';
+ 			 	    	if(openFormName) relatedIssuesHtml += '<div class="relatedIssueClass"><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;<a href="javascript:ijfUtils.renderFormItem(\''+openFormName+'\',\''+a.inwardIssue.key+'\')">' + a.inwardIssue.key + " " + ijfUtils.sanitize(a.inwardIssue.fields["summary"]).substring(0,summaryLength) + '...</a><br></div>';
+ 			 	    	else relatedIssuesHtml += '<div class="relatedIssueClass"><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;' + a.inwardIssue.key + " " + ijfUtils.sanitize(a.inwardIssue.fields["summary"]).substring(0,summaryLength) + '...<br></div>';
 			 	 }
 
 				 if(a.outwardIssue)
 				 {
 					 if((referenceFilter) && (a.outwardIssue.key.indexOf(referenceFilter)<0)) addIt=false;
 					 if(addIt)
-					 	if(openFormName) relatedIssuesHtml += '<div><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;<a href="javascript:ijfUtils.renderFormItem(\''+openFormName+'\',\''+a.outwardIssue.key+'\')">' + a.outwardIssue.key + " " + ijfUtils.sanitize(a.outwardIssue.fields["summary"]).substring(0,summaryLength) + '...</a><br></div>';
-					 	else relatedIssuesHtml += '<div><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;' + a.outwardIssue.key + " " + ijfUtils.sanitize(a.outwardIssue.fields["summary"]).substring(0,summaryLength) + '...<br></div>';
+					 	if(openFormName) relatedIssuesHtml += '<div class="relatedIssueClass"><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;<a href="javascript:ijfUtils.renderFormItem(\''+openFormName+'\',\''+a.outwardIssue.key+'\')">' + a.outwardIssue.key + " " + ijfUtils.sanitize(a.outwardIssue.fields["summary"]).substring(0,summaryLength) + '...</a><br></div>';
+					 	else relatedIssuesHtml += '<div class="relatedIssueClass"><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;' + a.outwardIssue.key + " " + ijfUtils.sanitize(a.outwardIssue.fields["summary"]).substring(0,summaryLength) + '...<br></div>';
 				 }
 			});
 	}
@@ -5016,13 +5016,17 @@ renderIssueRelations:function(inFormKey,item, inField, inContainer)
 						{
 							if(!queryPlan.query) return;
 							var qText = "\"" + queryPlan.query + "*\"";
-						    var tUrl = apiUrl.replace("REPLACETHIS",qText)
+						    var tUrl = apiUrl.replace("REPLACETHIS",qText);
 						    if(bQueryEvent)
 						    {
 								//attempt to alter query
 								try{
 									tUrl = ijf.snippets[bQueryEvent](tUrl);
-								}catch{}
+								}
+								catch(te)
+								{
+
+								}
 							}
 						    queryPlan.combo.store.proxy.url = tUrl;
 						}
