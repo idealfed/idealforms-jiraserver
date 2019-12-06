@@ -548,7 +548,7 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
 				{
 					tSection = {"jiraMeta":{"schema":{"type":"grid"}}};
 					tSection["jiraField"]={};
-					tSection.jiraFitesteld["id"] = ijf.jiraFieldsKeyed[thisT.fieldName].id; //jira id of the custom type field store
+					tSection.jiraField["id"] = ijf.jiraFieldsKeyed[thisT.fieldName].id; //jira id of the custom type field store
 				}
 
 				//we have a custom type....
