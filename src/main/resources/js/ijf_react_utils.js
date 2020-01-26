@@ -2276,6 +2276,8 @@ ijf.reactUtils = {
 						_this13.setState({
 							"open": open
 						});
+
+						ocf(open);
 					};
 				}, _this13.openFromChevron = function (side, open) {
 					return function () {
@@ -2289,6 +2291,7 @@ ijf.reactUtils = {
 						_this13.setState({
 							"open": open
 						});
+						ocf(open);
 					};
 				}, _temp2), _possibleConstructorReturn(_this13, _ret2);
 			}
@@ -2324,6 +2327,13 @@ ijf.reactUtils = {
 						if (m.type == "button") {
 							var snip = function snip() {};
 							if (ijf.snippets.hasOwnProperty(m.snippet)) snip = function snip() {
+								//if variant = temporary...close the drawer first...
+								if (variant == "temporary") {
+									//sets drawer to close
+									ijf.session["drawerState_" + inField.formCell] = false;
+									owningClass.toggleDrawer(fieldSettings.direction, false);
+								}
+
 								ijf.snippets[m.snippet](m);
 							};
 

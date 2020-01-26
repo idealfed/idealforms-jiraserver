@@ -2317,6 +2317,10 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				this.setState({
 					"open" : open
 				});
+
+				ocf(open);
+
+
 			  };
 
 			  openFromChevron = (side, open) => () => {
@@ -2333,6 +2337,7 @@ renderTextbox(inFormKey,item, inField, inContainer)
 				this.setState({
 					"open" : open
 				});
+				ocf(open);
 			  };
 
 			getMenuIcon(m)
@@ -2360,7 +2365,16 @@ renderTextbox(inFormKey,item, inField, inContainer)
 					  if(m.type=="button")
 					  {
 						  var snip = function(){};
-						  if(ijf.snippets.hasOwnProperty(m.snippet)) snip = function(){ijf.snippets[m.snippet](m)};
+						  if(ijf.snippets.hasOwnProperty(m.snippet)) snip = function(){
+							  		//if variant = temporary...close the drawer first...
+							  		if(variant=="temporary")
+							  		{   //sets drawer to close
+										ijf.session["drawerState_"+inField.formCell] = false;
+										owningClass.toggleDrawer(fieldSettings.direction,false);
+									}
+
+							  		ijf.snippets[m.snippet](m);
+							  	};
 
 						  var bStyle = {};
 						  if(m.style) bStyle=m.style;

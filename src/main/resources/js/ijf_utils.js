@@ -2939,7 +2939,28 @@ replaceWordChars:function(text) {
 	},
     getControlByDataSource: function(inDataSource)
     {
-		var retCnt = Object.keys(ijf.main.controlSet).reduce(function(inObj,c){if(ijf.main.controlSet[c].field.dataSource==inDataSource) inObj=ijf.main.controlSet[c];return inObj;},null);
+		//new logic, inDatasource may be "session + cell"  if field begins witih session....use those params to find your control
+		var retCnt = Object.keys(ijf.main.controlSet).reduce(function(inObj,c)
+		{
+			if(ijf.main.controlSet[c].field.dataSource==inDataSource)
+			{
+				inObj=ijf.main.controlSet[c];
+				return inObj;
+			}
+			if(typeof inDataSource === 'string')
+			{
+				if(inDataSource.substring(0,7)=="session")
+				{
+					var targetCell = inDataSource.replace("session","");
+					if(ijf.main.controlSet[c].field.formCell==targetCell)
+					{
+						inObj=ijf.main.controlSet[c];
+						return inObj;
+					}
+				}
+			}
+			return inObj;
+		},null);
 		return retCnt;
 	},
     getControlByKey: function(inKey)

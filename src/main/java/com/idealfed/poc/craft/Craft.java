@@ -260,7 +260,23 @@ public class Craft extends HttpServlet
 		}
 		if(!remote.equals(""))
 		{
-			outTemplate+="_remote";
+
+			if(remote.equals("libpm"))
+			{
+				outTemplate+="_remotepm";
+			}
+			else if(remote.equals("libjh"))
+			{
+				outTemplate+="_remotejh";
+			}
+			else if(remote.equals("libde"))
+			{
+				outTemplate+="_remotede";
+			}
+			else
+			{
+				outTemplate+="_remote";
+			}
 		}
 		outTemplate+=".vm";
 
@@ -1118,6 +1134,29 @@ public class Craft extends HttpServlet
 				String contentType = req.getParameter("contenttype");
 				String sessionKey = req.getParameter("sessionKey");
 
+			    if(!targetMethod.equals("GET"))
+			    {
+					if(!targetMethod.equals("POST"))
+					{
+						if(!targetMethod.equals("PUT"))
+						{
+							if(!targetMethod.equals("DELETE"))
+							{
+								final PrintWriter w = res.getWriter();
+								w.print("Invalid method request");
+								w.close();
+								return;
+							}
+						}
+					}
+				}
+
+				//need to protect XSS in the form of nested scripts within "data"
+				//data is POST or PUT content that will be passed on.  This data should never have script content
+				//in it's current state, data should be urlDecoded. and can be cleaned as it is
+				targetData = sanitize(targetData);
+
+
 
 				//plog.error("Have params");
 //plog.error("Creating URL");
@@ -1153,15 +1192,6 @@ public class Craft extends HttpServlet
 				}
 				con.setRequestMethod(targetMethod);
 				plog.error("method set");
-
-
-			    String[] METHODS = {"POST","PUT","GET","DELETE"};
-				if (ArrayUtils.contains( METHODS, targetMethod)==false)
-				{
-					final PrintWriter w = res.getWriter();
-					w.print("Invalid method request");
-					w.close();
-				}
 
 				if((targetMethod.equals("POST")) || (targetMethod.equals("PUT")))
 				{
@@ -1205,7 +1235,7 @@ public class Craft extends HttpServlet
 			{
 				plog.error("Failed to get proxy call: " + e.getMessage());
 				final PrintWriter w = res.getWriter();
-				w.print("Failed call: " + e.getMessage());
+				w.print("Exception occurred on procy call, refer to log.");
 				w.close();
 				return;
 			}
