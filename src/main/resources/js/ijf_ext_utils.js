@@ -1216,6 +1216,13 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
     {
         canDelete=true;
     }
+
+    if (l_fieldStyle.indexOf('readonly:true')>-1)
+    {
+        userIsReadOnly=true;
+    }
+
+
 	if(!perms.canSee) canDelete=false;
     if(userIsReadOnly)  canDelete=false;
 
@@ -1457,6 +1464,7 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 										allowBlank: (col.required!="Yes"),
 										validator: lValidator,
 										format:col.format,
+										readOnly:userIsReadOnly,
 										listeners: {
 											change: function(n,o,f)
 											{
@@ -1488,6 +1496,7 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 										allowBlank: (col.required!="Yes"),
 										validator: lValidator,
 										format:col.format,
+										readOnly:userIsReadOnly,
 										listeners: {
 											change: function(n,o,f)
 											{
@@ -1506,6 +1515,7 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 							hidden: false,
 							xtype: 'checkcolumn',
 							centered:true,
+							readOnly:userIsReadOnly,
 							//renderer: validRenderer,
 							width: thisColWidth,
 							dataIndex: col.columnName,
@@ -1602,6 +1612,7 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 										allowBlank: (col.required!="Yes"),
 										validator: lValidator,
 										forceSelection: true,
+										readOnly:userIsReadOnly,
 										store: lookups[col.columnName],
 										lookupDef: cLookupDef,
 										displayField: cLookupDef.index,
@@ -1632,6 +1643,7 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 									field: {
 										xtype: col.controlType,
 										allowBlank: (col.required!="Yes"),
+										readOnly:userIsReadOnly,
 										validator: lValidator,
 										listeners: {
 											change: function(n,o,f)
@@ -1738,34 +1750,37 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 	//gridStore.loadData(fArray);
 
 	var headerButtons =[];
-	if(thisT)
+	if(!userIsReadOnly)
 	{
-		headerButtons.push({
-						xtype:'button',
-						text: 'Save',
-						handler: function(){
-							 //create record...
-							var u1=this.up(); //header
-							var u2=u1.up(); //grid
-							try
-							{
-								u2.editingPlugin.completeEdit();
-							}
-							catch(e){}
+		if(thisT)
+		{
+			headerButtons.push({
+							xtype:'button',
+							text: 'Save',
+							handler: function(){
+								 //create record...
+								var u1=this.up(); //header
+								var u2=u1.up(); //grid
+								try
+								{
+									u2.editingPlugin.completeEdit();
+								}
+								catch(e){}
 
-							var onSuccessSave = function()
-							{
-								ijfUtils.hideProgress();
-								if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
-								ijf.main.setAllClean();
-								ijf.main.resetForm();
-							};
-							Ext.getBody().mask("Saving...");
-							var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,inField.form,item)};
-							window.setTimeout(saveIt,50);
-						}
-					});
-    }
+								var onSuccessSave = function()
+								{
+									ijfUtils.hideProgress();
+									if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
+									ijf.main.setAllClean();
+									ijf.main.resetForm();
+								};
+								Ext.getBody().mask("Saving...");
+								var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,inField.form,item)};
+								window.setTimeout(saveIt,50);
+							}
+						});
+		}
+	}
 
     var gridPanel = new Ext.tree.Panel({
 		 header:{
@@ -1984,6 +1999,13 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 	if((!hideField) && (!perms.canSee))	hideField=true;
 	//end permissions
 
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+        canDelete=false;
+    }
+
     var collapsible = true;
     if (l_fieldStyle.indexOf('collapsible:false')>-1)
     {
@@ -1999,7 +2021,10 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
     {
         canDelete=true;
     }
-	if(!perms.canEdit) canDelete=false;
+	if(!perms.canEdit){
+		canDelete=false;
+		rOnly=true;
+	}
 
 
 	var l_Height = 300;
@@ -2256,6 +2281,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 										xtype: col.controlType,
 										allowBlank: (col.required!="Yes"),
 										validator: lValidator,
+										readOnly: rOnly,
 										format:col.format,
 										listeners: {
 											change: function(n,o,f)
@@ -2288,6 +2314,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 										allowBlank: (col.required!="Yes"),
 										validator: lValidator,
 										format:col.format,
+										readOnly: rOnly,
 										listeners: {
 											change: function(n,o,f)
 											{
@@ -2306,6 +2333,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 							hidden: false,
 							xtype: 'checkcolumn',
 							centered:true,
+							readOnly: rOnly,
 							//renderer: validRenderer,
 							width: thisColWidth,
 							dataIndex: col.columnName,
@@ -2402,6 +2430,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 										allowBlank: (col.required!="Yes"),
 										validator: lValidator,
 										forceSelection: true,
+										readOnly: rOnly,
 										store: lookups[col.columnName],
 										lookupDef: cLookupDef,
 										displayField: cLookupDef.index,
@@ -2433,6 +2462,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 										xtype: col.controlType,
 										allowBlank: (col.required!="Yes"),
 										validator: lValidator,
+										readOnly: rOnly,
 										listeners: {
 											change: function(n,o,f)
 											{
@@ -2611,34 +2641,37 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 
 
 	var headerButtons =[];
-	if(thisT)
-	{
-		headerButtons.push({
-						xtype:'button',
-						text: 'Save',
-						handler: function(){
-							 //create record...
-							var u1=this.up(); //header
-							var u2=u1.up(); //grid
-							try
-							{
-								u2.editingPlugin.completeEdit();
-							}
-							catch(e){}
 
-							var onSuccessSave = function()
-							{
-								ijfUtils.hideProgress();
-								if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
-								ijf.main.setAllClean();
-								ijf.main.resetForm();
-							};
-							Ext.getBody().mask("Saving...");
-							var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,inField.form,item)};
-							window.setTimeout(saveIt,50);
-						}
-					});
-    }
+	if(!rOnly)
+	{
+			if(thisT)
+			{
+					headerButtons.push({
+							xtype:'button',
+							text: 'Save',
+							handler: function(){
+								 //create record...
+								var u1=this.up(); //header
+								var u2=u1.up(); //grid
+								try
+								{
+									u2.editingPlugin.completeEdit();
+								}
+								catch(e){}
+
+								var onSuccessSave = function()
+								{
+									ijfUtils.hideProgress();
+									if(ijf.main.saveResultMessage) ijfUtils.modalDialogMessage("Information",ijf.main.saveResultMessage);
+									ijf.main.setAllClean();
+									ijf.main.resetForm();
+								};
+								Ext.getBody().mask("Saving...");
+								var saveIt = function(){ijf.main.saveForm(onSuccessSave,null,inField.form,item)};
+								window.setTimeout(saveIt,50);
+							}
+						});
+			}
 			headerButtons.push({
 				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upSPGrdFrm_'+inField.formCell.replace(/,/g,"_")+"'><input id='"+inFormKey+'_upSpGrd_'+inField.formCell.replace(/,/g,"_")+"' type='file' name='file' onchange='ijfUtils.gridSpUploadFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\",\"" + msaIssueKey + "\");'></form>",
 				frame: false,
@@ -2656,6 +2689,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 				   jQuery(jKey).trigger('click');
 				}
 			});
+	}
 
     var gridPanel = new Ext.tree.Panel({
 		 header:{
@@ -2951,10 +2985,13 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
     //after render....
     if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](gridPanel, inFormKey,item, inField, inContainer);
 
-	gridPanel.getEl().on('contextmenu', function(e) {
-	  	    e.preventDefault();
-			treeMenu.showAt(e.clientX+window.pageXOffset,e.clientY+window.pageYOffset);
-	});
+    if(!rOnly)
+    {
+		gridPanel.getEl().on('contextmenu', function(e) {
+				e.preventDefault();
+				treeMenu.showAt(e.clientX+window.pageXOffset,e.clientY+window.pageYOffset);
+		});
+	}
 
 },
 renderAttachmentManaged:function(inFormKey,item, inField, inContainer)
@@ -4949,7 +4986,14 @@ renderIssueRelations:function(inFormKey,item, inField, inContainer)
 	});
 
 
-
+	try
+	{
+		var issueTypeForms = JSON.parse(openFormName);
+	}
+	catch(e)
+	{
+		var issueTypeForms = null;
+	}
 
 	//create list of related issues if needed....
 	var relatedIssuesHtml = "";
@@ -4957,20 +5001,65 @@ renderIssueRelations:function(inFormKey,item, inField, inContainer)
 			var relatedIssuesHtml = "";
 			ijf.currentItem.fields.issuelinks.forEach(function(a) {
 				 var addIt = true;
+
+
+				 var delLink = '<i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;';
+				 if(rOnly) delLink = "";
+
 				 if(a.inwardIssue)
 				 {
 				 	if((referenceFilter) && (a.inwardIssue.key.indexOf(referenceFilter)<0)) addIt=false;
  			 	    if(addIt)
- 			 	    	if(openFormName) relatedIssuesHtml += '<div class="relatedIssueClass"><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;<a href="javascript:ijfUtils.renderFormItem(\''+openFormName+'\',\''+a.inwardIssue.key+'\')">' + a.inwardIssue.key + " " + ijfUtils.sanitize(a.inwardIssue.fields["summary"]).substring(0,summaryLength) + '...</a><br></div>';
- 			 	    	else relatedIssuesHtml += '<div class="relatedIssueClass"><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;' + a.inwardIssue.key + " " + ijfUtils.sanitize(a.inwardIssue.fields["summary"]).substring(0,summaryLength) + '...<br></div>';
+ 			 	    	if(openFormName)
+ 			 	    	{
+
+ 			 	    		if(issueTypeForms)
+ 			 	    		{
+								//issue type must have a form to add the row...if not skip
+
+								var targetForm = null;
+								issueTypeForms.forEach(function(f){
+									if(f.issueType == a.inwardIssue.fields.issuetype.name)  targetForm = f.formName;
+								});
+
+								if(targetForm) relatedIssuesHtml += '<div class="relatedIssueClass">' + delLink + '<a href="javascript:ijfUtils.renderFormItem(\''+targetForm+'\',\''+a.inwardIssue.key+'\')">' + a.inwardIssue.key + " " + ijfUtils.sanitize(a.inwardIssue.fields["summary"]).substring(0,summaryLength) + '...</a><br></div>';
+
+							}
+							else
+							{
+	 			 	    		relatedIssuesHtml += '<div class="relatedIssueClass">' + delLink + '<a href="javascript:ijfUtils.renderFormItem(\''+openFormName+'\',\''+a.inwardIssue.key+'\')">' + a.inwardIssue.key + " " + ijfUtils.sanitize(a.inwardIssue.fields["summary"]).substring(0,summaryLength) + '...</a><br></div>';
+
+							}
+						}
+ 			 	    	else relatedIssuesHtml += '<div class="relatedIssueClass">' + delLink + a.inwardIssue.key + " " + ijfUtils.sanitize(a.inwardIssue.fields["summary"]).substring(0,summaryLength) + '...<br></div>';
 			 	 }
 
 				 if(a.outwardIssue)
 				 {
 					 if((referenceFilter) && (a.outwardIssue.key.indexOf(referenceFilter)<0)) addIt=false;
 					 if(addIt)
-					 	if(openFormName) relatedIssuesHtml += '<div class="relatedIssueClass"><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;<a href="javascript:ijfUtils.renderFormItem(\''+openFormName+'\',\''+a.outwardIssue.key+'\')">' + a.outwardIssue.key + " " + ijfUtils.sanitize(a.outwardIssue.fields["summary"]).substring(0,summaryLength) + '...</a><br></div>';
-					 	else relatedIssuesHtml += '<div class="relatedIssueClass"><i class="fa fa-times-circle" onclick="ijfUtils.jiraApi(\'DELETE\',\'/rest/api/2/issueLink/'+a.id+'\',null,null);this.parentElement.style.display=\'none\';"></i>&nbsp;&nbsp;&nbsp;' + a.outwardIssue.key + " " + ijfUtils.sanitize(a.outwardIssue.fields["summary"]).substring(0,summaryLength) + '...<br></div>';
+
+ 			 	    	if(openFormName)
+ 			 	    	{
+
+ 			 	    		if(issueTypeForms)
+ 			 	    		{
+								//issue type must have a form to add the row...if not skip
+
+								var targetForm = null;
+								issueTypeForms.forEach(function(f){
+									if(f.issueType == a.outwardIssue.fields.issuetype.name)  targetForm = f.formName;
+								});
+
+								if(targetForm) relatedIssuesHtml += '<div class="relatedIssueClass">' + delLink + '<a href="javascript:ijfUtils.renderFormItem(\''+targetForm+'\',\''+a.outwardIssue.key+'\')">' + a.outwardIssue.key + " " + ijfUtils.sanitize(a.outwardIssue.fields["summary"]).substring(0,summaryLength) + '...</a><br></div>';
+
+							}
+							else
+							{
+								relatedIssuesHtml += '<div class="relatedIssueClass">' + delLink + '<a href="javascript:ijfUtils.renderFormItem(\''+openFormName+'\',\''+a.outwardIssue.key+'\')">' + a.outwardIssue.key + " " + ijfUtils.sanitize(a.outwardIssue.fields["summary"]).substring(0,summaryLength) + '...</a><br></div>';
+							}
+						}
+					 	else relatedIssuesHtml += '<div class="relatedIssueClass">' + delLink  + a.outwardIssue.key + " " + ijfUtils.sanitize(a.outwardIssue.fields["summary"]).substring(0,summaryLength) + '...<br></div>';
 				 }
 			});
 	}

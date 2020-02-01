@@ -1154,7 +1154,9 @@ public class Craft extends HttpServlet
 				//need to protect XSS in the form of nested scripts within "data"
 				//data is POST or PUT content that will be passed on.  This data should never have script content
 				//in it's current state, data should be urlDecoded. and can be cleaned as it is
-				targetData = sanitize(targetData);
+
+				//removing because this was not the XSS issue and it causes errors with soap calls
+				//targetData = sanitize(targetData);
 
 
 
