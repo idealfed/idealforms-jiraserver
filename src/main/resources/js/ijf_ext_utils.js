@@ -200,6 +200,9 @@ renderField:function(inFormKey, item, inField, inContainer)
             case 'itemtree':
                 ijf.extUtils.renderItemTree (inFormKey,item,inField,inContainer);
                 break;
+            case 'itemfolders':
+                ijf.extUtils.renderItemFolders (inFormKey,item,inField,inContainer);
+                break;
             case 'chart-pie':
                 ijf.extUtils.renderPieChart (inFormKey,item,inField,inContainer);
                 break;
@@ -8395,6 +8398,19 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 	    var l_Style = inField.style;
 	    var l_fieldStyle = inField.fieldStyle;
 
+    var dragdrop = false;
+    var dragGroup = "gridDrag";
+    var dropGroup = "gridDrop";
+    var dragdropmessage = "Drag and drop to reorganize";
+    if (inField.fieldStyle.indexOf('dragdrop:true')>-1)
+    {
+        dragdrop = true;
+        dragGroup = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"draggroup");
+        dropGroup = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"dropgroup");
+        dragdropmessage = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"dragdropmessage");
+        dragdropsnippet = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"dragdropsnippet");
+    }
+
 
 	    if(!l_labelStyle) l_labelStyle="background:transparent";
 	    if(!l_panelStyle) l_panelStyle="background:transparent";
@@ -9715,6 +9731,18 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 			clicksToEdit: 1
         });
 	}
+    var bViewConfigPlugins = null;
+    if(dragdrop==true)
+    {
+	    bViewConfigPlugins ={
+						ptype: 'gridviewdragdrop',
+						containerScroll: true,
+						dragGroup: dragGroup,
+						dropGroup: dropGroup,
+						dragText: dragdropmessage
+					};
+    }
+
 
     var l_tbar=[];
     var lXtype="";
@@ -9722,6 +9750,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 		title: lCaption,
         store: store,
         plugins: plugins,
+        viewConfig: { plugins: bViewConfigPlugins},
         collapsible : collapsible,
         collapsed: collapsed,
         style: l_panelStyle,
@@ -9734,6 +9763,22 @@ renderItemList:function(inFormKey,item, inField, inContainer)
         selModel: {selType: 'rowmodel', mode: 'SINGLE'},
         bbar: myBbar,
         listeners: {
+            'beforedrop': function(node, data, overModel, dropPosition, dropHandlers) {
+                //dropHandlers.wait = true;
+                //debugger;
+                if(dragdropsnippet)
+                {
+					if(ijf.snippets[dragdropsnippet])
+					{
+						ijf.snippets[dragdropsnippet](node, data, overModel, dropPosition, dropHandlers);
+					}
+					else
+					{
+						dropHandlers.cancelDrop();
+					}
+				}
+				else dropHandlers.cancelDrop();
+			},
             'selectionchange':  function(selMod, record, something ){
 				//if event,
 					//see if name = form, if so, set the item to this selectoin and render form
@@ -10861,6 +10906,1651 @@ treeMenu.add({  text: 'Move Down', handler: function()  {
   	    e.preventDefault();
 		treeMenu.showAt(e.clientX+window.pageXOffset,e.clientY+window.pageYOffset);
 	});
+
+},
+renderItemlistHtml:function(inFormKey,item, inField, inContainer)
+{
+	inContainer.title = inField.toolTip;
+	var l_labelStyle = inField.labelStyle;
+	var l_panelStyle = inField.panelStyle;
+	var l_fieldStyle = inField.fieldStyle;
+	var l_Style = inField.style;
+
+	if(!l_labelStyle) l_labelStyle="background:transparent";
+	if(!l_panelStyle) l_panelStyle="background:transparent";
+	if(!l_Style) l_Style="background:transparent";
+    if(!l_Style) l_Style = l_panelStyle;
+//get type definition
+
+    inContainer.title = inField.toolTip;
+
+
+       var translateFields = ijfUtils.translateJiraFieldsToIds(inField.dataReference);
+
+	   var lds = inField.dataSource;
+
+        var tSearch = "jql="+lds+"&fields="+translateFields;
+ 	    tSearch = ijfUtils.replaceKeyValues(tSearch,item);
+		var aUrl = '/rest/api/2/search?'+tSearch;
+
+        if(inField.form.formProxy=="true")
+        {
+			aUrl=aUrl.replace(/ /g,"%20");
+ 	   		var rawList = ijfUtils.getProxyApiCallSync(aUrl, inField.form.formSet.id);
+	    }
+	    else
+	    {
+		    var rawList = ijfUtils.jiraApiSync('GET',aUrl, null);
+		}
+
+        var colMeta = [];
+        var dataItems = rawList.issues.map(function(i){
+			var retObj ={};
+			translateFields.split(",").forEach(function(f){
+				var thisField = f.trim();
+				var dVal = "unknown";
+				var jField = ijfUtils.getJiraFieldById(thisField);
+				if(i.fields.hasOwnProperty(jField.id))
+				{
+					dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
+					//perhaps build the types here...
+					colMeta[jField.id]=jField;
+				}
+				retObj[thisField]= dVal;
+			});
+			//retObj.iid=i.id;
+			retObj.iid=i.key;
+			retObj.key=i.key;
+			return retObj;
+		});
+
+
+
+	var colWidths=[];
+	var colHeaders = [];
+	if(inField.tableWidths) colWidths=inField.tableWidths.split(",");
+	if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
+
+	//create Table from Json
+    var gCols = translateFields.split(",");
+
+    var tOut = "<table id="+inFormKey+'_tbl_'+inField.formCell.replace(/,/g,"_")+" cellspacing=0 cellpadding=4 style='"+l_fieldStyle+"'><tr>";
+    var cIndex=0;
+    gCols.forEach(function(col){
+			var thisColWidth = 120;
+			if(colWidths[cIndex]) thisColWidth=colWidths[cIndex]/1;
+			var thisColHeader = col.columnName;
+			if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
+			var thStyle = "width:"+thisColWidth + ";"+l_labelStyle;
+		    tOut += "<td style='"+thStyle+"'>"+thisColHeader+"</td>";
+		    cIndex++;
+	});
+    tOut += "</tr>";
+    if(dataItems)
+    {
+		try
+		{
+			dataItems.forEach(function(r){
+			    tOut += "<tr>";
+				gCols.forEach(function(col){
+					var outVal = r[col];
+					var cMeta = colMeta[col];
+					if((cMeta) && (cMeta.schema))
+					{
+						switch(cMeta.schema.type)
+						{
+							case "date":
+								if(col.format) outVal = Ext.util.Format.dateRenderer('dd/mm/yyyy')(outVal); //moment(val).format(col.format);
+								break;
+							case "datetime":
+								if(col.format) outVal = Ext.util.Format.dateRenderer('dd/mm/yyyy')(outVal); //moment(val).format(col.format);
+								break;
+							case "numberfield":
+								if(col.format) outVal = Ext.util.Format.numberRenderer(col.format)(outVal); //moment(val).format(col.format);
+								break;
+							default:
+						}
+					}
+					tOut += "<td>"+outVal+"</td>";
+				});
+			    tOut += "</tr>";
+			});
+
+		}
+		catch(e)
+		{
+			throw('Failed to parse the grid json');
+		}
+	}
+    tOut += "</table>";
+
+
+    var outHtml = tOut;
+
+    //rendeIf logic
+    var hideField = ijfUtils.renderIfShowField("",inField);
+
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		if(inField.form.permissions.enabled) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!hideField) && (!perms.canSee))	hideField=true;
+	//end permissions
+
+    var pnl = new Ext.FormPanel({
+        labelAlign: 'left',
+        border:false,
+        hidden: hideField,
+        bodyStyle: l_Style,
+        items: {
+            html: outHtml,
+            frame: false,
+            border: false,
+            bodyStyle:  l_panelStyle,
+            xtype: "panel"}
+    });
+    //before render....
+    if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](pnl,inFormKey,item, inField, inContainer);
+    pnl.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, pnl, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](pnl, inFormKey,item, inField, inContainer);
+
+}
+,
+renderItemFolders:function(inFormKey,item, inField, inContainer)
+{
+
+    inContainer.title = inField.toolTip;
+
+    var curIndex = 0;
+
+    var lCaption = inField.caption;
+
+    var rOnly = false;
+    if (inField.fieldStyle.indexOf('readonly:true')>-1)
+    {
+        rOnly=true;
+    }
+
+
+    var hideField = ijfUtils.renderIfShowField("",inField);
+
+
+	//permissions check....has to exist...
+	if(inField.permissions.enabled)
+	{
+		var perms = ijfUtils.getPermissionObj(inField.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	else
+	{
+		if(inField.form.permissions.enabled) var perms = ijfUtils.getPermissionObj(inField.form.permissions,ijf.currentItem,ijf.main.currentUser); else var perms = ijfUtils.getPermissionObj(ijf.main.outerForm.permissions,ijf.currentItem,ijf.main.currentUser);
+	}
+	if((!rOnly) && (!perms.canEdit)) rOnly=true;
+	if((!hideField) && (!perms.canSee))	hideField=true;
+
+
+    var collapsible = true;
+    if (inField.style.indexOf('collapsible:false')>-1)
+    {
+        collapsible=false;
+    }
+    var collapsed = false;
+    if (inField.style.indexOf('collapsed:true')>-1)
+    {
+        collapsed=true;
+    }
+
+
+	    var l_labelStyle = inField.labelStyle;
+	    var l_panelStyle = inField.panelStyle;
+	    var l_Style = inField.style;
+	    var l_fieldStyle = inField.fieldStyle;
+
+
+	    if(!l_labelStyle) l_labelStyle="background:transparent";
+	    if(!l_panelStyle) l_panelStyle="background:transparent";
+	    if(!l_Style) l_Style="background:transparent";
+	    if(!l_fieldStyle) l_fieldStyle="background:transparent";
+
+
+    var dragzone = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"dragzone");
+    if(dragzone=="") dragzone = 'folderDdGroup';
+    var dropzone = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"dropzone");
+    if(dropzone=="") dropzone = 'folderDdGroup';
+
+
+
+    var hideKeys = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"hidekeys");
+    if(hideKeys=="true")
+    {
+		hideKeys=true;
+	} else hideKeys=false;
+
+    var dropsnippet = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"dropsnippet");
+
+    var showLinks = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"showlinks");
+    var showLinksLabel = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"showlinkslabel");
+    if(showLinks=="true")
+    {
+		showLinks=true;
+		if((!showLinksLabel) || (!showLinksLabel=="")) showLinksLabel = "Show Links";
+	} else showLinks=false;
+    var showLinksChecked = false;
+	if(ijf.session.hasOwnProperty("showlinks_" + inField.formCell + "_" + inField.form.name)) showLinksChecked=ijf.session["showlinks_" + inField.formCell + "_" + inField.form.name];
+
+
+    var scrollY = 0;
+	if(ijf.session.hasOwnProperty("scrollY_" + inField.formCell + "_" + inField.form.name)) scrollY=ijf.session["scrollY_" + inField.formCell + "_" + inField.form.name];
+
+    var selectedNode = null;
+	if(ijf.session.hasOwnProperty("selectedNode_" + inField.formCell + "_" + inField.form.name)) selectedNode=ijf.session["selectedNode_" + inField.formCell + "_" + inField.form.name];
+
+	if(!ijf.session.hasOwnProperty("expandStates_" + inField.formCell + "_" + inField.form.name)) ijf.session["expandStates_" + inField.formCell + "_" + inField.form.name]={};
+    var ecStates = ijf.session["expandStates_" + inField.formCell + "_" + inField.form.name];
+
+
+	var l_Width=ijfUtils.getNameValueFromStyleString(l_Style,"width");
+	if(l_Width=="")
+	{
+		l_Width='auto';
+	}
+	else
+	{
+		l_Width = l_Width.replace("px","")/1;
+	}
+
+
+	var l_Height = 'auto';
+    var l_Height=ijfUtils.getNameValueFromStyleString(l_panelStyle,"height");
+    if(l_Height=="")
+    {
+		l_Height='auto';
+	}
+	else
+	{
+    	l_Height = l_Height.replace("px","")/1;
+	}
+
+   //item list may be query, related or child
+   	   var colMeta = [];
+   	   colMeta["key"]={"id":"key","name":"key","schema":{}};
+   	   var dataItems =[];
+
+	    var translateFields = ijfUtils.translateJiraFieldsToIds(inField.dataReference);
+	    var lJql = ijfUtils.replaceKeyValues(inField.dataSource,item);
+		var tSearch = "jql="+lJql+"&fields="+translateFields+",issuelinks";
+
+		var rawList = ijfUtils.jiraApiSync('GET','/rest/api/2/search?'+tSearch, null);
+		//bail if dataItems not
+
+		var dataItems = rawList.issues.map(function(i){
+			var retObj ={};
+			translateFields.split(",").forEach(function(f){
+				var thisField = f.trim();
+				var dVal = "unknown";
+				var jField = ijfUtils.getJiraFieldById(thisField);
+				if(i.fields.hasOwnProperty(jField.id))
+				{
+					dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
+					//perhaps build the types here...
+					colMeta[jField.id]=jField;
+				}
+				retObj[thisField]= dVal;
+			});
+			//retObj.iid=i.id;
+			retObj.iid=i.key;
+			retObj.key=i.key;
+			if(hideKeys) retObj.key="";
+			retObj.parents=[];
+			retObj.parentLinkIds = [];
+			if(i.fields.issuelinks.length > 0)
+			{
+				//set an issues parent assignments
+
+				retObj.parents = i.fields.issuelinks.reduce(function(inParents,link)
+				{
+					if(link.inwardIssue)
+					{
+						inParents.push(link.inwardIssue.key);
+						retObj.parentLinkIds.push(link.id);
+					}
+					return inParents;
+				},[]);
+				if(showLinksChecked)
+				{
+					retObj.children = i.fields.issuelinks.reduce(function(inChildren,link)
+					{
+						if(link.outwardIssue)
+						{
+							//add this if it is not the folder typs, AND, show related children == true
+							if(inField.referenceFilter != link.outwardIssue.fields.issuetype.name)
+							{
+								var tKey=link.outwardIssue.key;
+								if(hideKeys) tKey = "";
+								inChildren.push({
+									"key":tKey,
+									"iid":link.outwardIssue.key,
+									"summary":link.outwardIssue.fields.summary,
+									"parentLinkId":link.id,
+									"leaf":true
+								});
+							}
+						}
+						return inChildren;
+					},[]);
+				}
+			}
+			retObj.leaf = false;  //makes all of root query folders...
+			return retObj;
+		});
+
+       //dataReference CSV contains the ordering field.  it must be the last value
+	var taskOrderKey = Object.keys(colMeta)[Object.keys(colMeta).length-1];   //ijf.jiraFieldsKeyed["taskOrder"].id;
+
+
+        //now rip through and set parent assignments,
+        dataItems.forEach(function(i){
+			if(i.parents)
+			{
+				i.parents.forEach(function(pKey){
+					dataItems.forEach(function(p){
+						if(p.iid==pKey)
+						{
+							//this is parent of i
+							i.moved=true;
+							p.leaf=false;
+							if(p.children)	p.children.push(i);
+							else p.children = [i];
+						}
+					});
+				});
+			}
+		});
+		//reduce moved
+		dataItems = dataItems.reduce(function(inArray,i){
+			if(i.moved) return inArray;
+			inArray.push(i);
+			return inArray;
+		},[]);
+
+    //add sort function to all nodes...if taskOrder is included...
+
+		dataItems.forEach(function(i){
+			i.sort = function(a,b)
+			{
+				return(a[taskOrderKey]-b[taskOrderKey]);
+			};
+		});
+
+
+   //data items are here, you now need to restructure into a tree based on Item relations...
+    if(inField.dataReference2)
+    {
+        //filter the items...
+        if(ijf.snippets.hasOwnProperty(inField.dataReference2))
+	        dataItems = ijf.snippets[inField.dataReference2](dataItems);
+    }
+
+	//calculate column widths...and headers
+	var colWidths=[];
+	var colNames = translateFields.split(","); //inField.dataReference.split(",");
+	var colHeaders = [];
+	if(inField.tableWidths) colWidths=inField.tableWidths.split(",");
+	var colHeaders = [];
+	if(inField.tableHeaders) colHeaders=inField.tableHeaders.split(",");
+	for (var i = 0; i<colNames.length;i++)
+	{
+		if(colWidths[i])
+		{
+			if(isNaN(colWidths[i]))
+			{
+				//it's a string...
+				if(colMeta[colNames[i]]) colMeta[colNames[i]].width=colWidths[i];
+			}
+			else
+			{
+				if(colMeta[colNames[i]]) colMeta[colNames[i]].width=colWidths[i]/1;
+			}
+		}
+		else
+		{
+			if(colMeta[colNames[i]]) colMeta[colNames[i]].width=100;
+		}
+
+		if(colHeaders[i])
+		{
+			if(colMeta[colNames[i]]) colMeta[colNames[i]].header=colHeaders[i];
+		}
+		else
+		{
+			if(colMeta[colNames[i]]) colMeta[colNames[i]].header=colMeta[colNames[i]].name;
+		}
+	}
+
+    var updateTreeQuiet = function(inId,inName,inValue)
+    {
+		var iKey = inId;
+		var putObj = {};
+		putObj["fields"]={};
+		putObj["fields"][inName]=inValue;
+		//how to save asynch....
+		var jData = JSON.stringify(putObj);
+		var tApi = "/rest/api/2/issue/"+iKey;
+
+		return ijfUtils.jiraApiSync("PUT",tApi,jData);
+	}
+    var updateTree = function(container,inName,inValue)
+    {
+		var iKey = container.grid.selection.data.iid;
+		var putObj = {};
+		putObj["fields"]={};
+		putObj["fields"][inName]=inValue;
+		//how to save asynch....
+		var jData = JSON.stringify(putObj);
+		var tApi = "/rest/api/2/issue/"+iKey;
+		var cRow = container.grid.selection;//container.grid.selection.data.index;
+
+        var onsuccess =  function(data,e,f) {
+                 ijfUtils.footLog("Successful data response code: " + f.status);
+                 if((f.status==200) || (f.status==201) || (f.status==204))
+                 {
+					var delayCommit = function() {
+						cRow.commit()
+					};
+					window.setTimeout(delayCommit,300);
+				 }
+				 else
+				 {
+					 ijfUtils.modalDialogMessage('Error','Sorry a network error prevented the field from saving.');
+				 }
+        };
+        var onerror = function(e) {
+				 if(e.status==201)
+                 {
+				 	var delayCommit = function() {cRow.commit()};
+					window.setTimeout(delayCommit,300);
+				 }
+                 else
+                 {
+                     ijfUtils.footLog("Failed data post: " + " "  + e.statusText);
+                     ijfUtils.modalDialogMessage('Error','Sorry a network error prevented the field from saving.');
+                 }
+	    };
+		ijfUtils.jiraApi("PUT",tApi,jData,onsuccess,onerror);
+	}
+
+
+
+    var colSettingsArray = [];
+    var gridFieldArray=[];
+    //colSettingsArray.push(new Ext.grid.RowNumberer());
+    //push iid as special first field...
+
+    //look for key, hide if not there...
+	var hideKey=true;
+    if(inField.dataReference.indexOf("key")>-1) hideKey=false;
+	var kWidth = 150;
+	if(colMeta.key) kWidth = colMeta.key.width/1;
+    gridFieldArray.push({name: "iid", type: "string"});
+    colSettingsArray.push({
+		xtype: 'treecolumn',
+        text: colMeta["key"].header,
+        dataIndex: "key",
+        hidden: hideKey,
+        //flex: 1,
+        style: l_labelStyle,
+        width: kWidth,
+        sortable: false
+    });
+	delete colMeta["key"];
+
+    var colObj={};
+
+    Object.keys(colMeta).forEach(function(k){
+		var f = colMeta[k];
+		if(f.schema.type=="date")
+		{
+			gridFieldArray.push({name: f.id, type: "date"});
+			colObj ={
+				text: f.header,
+				dataIndex: f.id,
+				xtype: 'datecolumn',
+				sortable: false,
+				width: f.width,
+				style: l_labelStyle,
+				format: 'm/d/y',
+				editor: {
+					completeOnEnter: true,
+					field: {
+						xtype: 'datefield',
+						format: 'm/d/y',
+						listeners: {
+							focusleave: function(n,o,f)
+							{
+								if(n.lastValue==n.originalValue) return;
+								var container = n.up();
+								if(!container) return;
+								updateTree(container,n.name,moment(n.lastValue).format("YYYY-MM-DD"));
+							}
+						}
+					}
+				},
+				filter: {
+				  type: 'date'
+	            }
+			};
+		}
+		else if(f.schema.type=="option")
+		{
+			//need metadata of the tree issues
+
+			var eKey = dataItems[0].iid;
+			if(!ijf.jiraEditMeta.hasOwnProperty(eKey))
+			{
+				//this must proxy as well, if the form is proxy
+				if(inField.form.formProxy=="true")
+				{
+					//proxy auth
+					ijf.jiraEditMeta[eKey] = ijfUtils.getProxyApiCallSync('/rest/api/2/issue/'+eKey+'/editmeta',thisForm.formSet.id);
+					ijfUtils.footLog('Item edit meta aquired with proxy auth');
+				}
+				else
+				{
+					//normal
+					ijf.jiraEditMeta[eKey] = ijfUtils.getJiraIssueMetaSync(eKey);
+				}
+
+				ijf.jiraEditMetaKeyed[eKey] = [];
+				Object.keys(ijf.jiraEditMeta[eKey].fields).forEach(function(f)
+				{
+					ijf.jiraEditMetaKeyed[eKey][ijf.jiraEditMeta[eKey].fields[f].name]=ijf.jiraEditMeta[eKey].fields[f];
+				});
+			}
+
+			var lookup = ijf.jiraEditMeta[eKey].fields[f.id].allowedValues.map(function(e)
+			{
+				return [e.id,e.value];
+			});
+
+			gridFieldArray.push({name: f.id, type: "string"});
+            colObj ={
+				text: f.header,
+				width: 'auto',
+				dataIndex: f.id,
+				width: f.width,
+				sortable: false,
+				filter: {
+				  type: 'list'
+	            },
+	            editor: {
+					completeOnEnter: true,
+					field: {
+						xtype:'combobox',
+						store: lookup,
+						allowBlank: true,
+						forceSelection: true,
+						displayField: 1,
+						valueField: 0,
+						listeners: {
+							focusenter: function(f,o,n)
+							{
+									var container = f.up();
+									var curVal = container.grid.selection.get(f.name);
+									f.setValue(f.store.getData().items.reduce(function(inVal,i){if(i.data.field2==curVal) inVal=i.data.field1; return inVal;},null));
+							},
+							focusleave: function(f,o,n)
+							{
+									var newVal = f.value;
+									var container = f.up();
+									if(!container) return;
+									if(container.grid.selection.get(f.name)==newVal) return;
+									var tUpdate = function(){container.grid.selection.set(f.name,f.rawValue);}
+									window.setTimeout(tUpdate,20);
+									var uVal = {"id":newVal};
+									if(!newVal) uVal=null;
+									updateTree(container,f.name,uVal);
+							}
+						}
+					}
+				}
+
+			};
+
+		}
+		else if(f.schema.type=="datetime")
+		{
+			gridFieldArray.push({name: f.id, type: "date"});
+			colObj ={
+				text: f.header,
+				dataIndex: f.id,
+				xtype: 'datecolumn',
+				sortable: false,
+				width: f.width,
+				style: l_labelStyle,
+				format: 'm/d/y',
+				filter: {
+				  type: 'date'
+	            }
+			};
+		}
+		else  if(f.schema.type=="number")
+		{
+			gridFieldArray.push({name: f.id, type: "number"});
+			var hideIt = false;
+			if(f.id==taskOrderKey) hideIt=true;
+			colObj ={
+				text: f.header,
+				width: 'auto',
+				dataIndex: f.id,
+				width: f.width,
+				style: l_labelStyle,
+				sortable: false,
+				hidden: hideIt,
+				filter: {
+				  type: fType
+	            },
+	            editor: {
+					completeOnEnter: true,
+					field: {
+						xtype:'numberfield',
+						//allowBlank: (col.required!="Yes"),
+						listeners: {
+							focusleave: function(n,o,f)
+							{
+								if(n.lastValue==n.originalValue) return;
+								var container = n.up();
+								if(!container) return;
+								updateTree(container,n.name,n.lastValue);
+							}
+						}
+					}
+				}
+
+			};
+        }
+        else if(f.schema.type=="user")
+		{
+			var editor = null;
+
+			var apiUrl = "/rest/api/2/user/picker";
+			var	fParam = "query";
+			var xtrParam = null;
+			var uRoot = 'users';
+			if(f.schema.system=="assignee")
+			{
+				apiUrl = "/rest/api/2/user/assignable/search";
+				fParam = "username";
+				xtrParam={project:inField.form.formSet.projectId};
+				uRoot = '';
+			}
+			Ext.define('JiraUserModel'+f.id, {
+				extend: 'Ext.data.Model',
+				fields: [{name:'name', type: 'string'},
+						 {name: 'displayName', type: 'string'}]
+			});
+
+			var lookup = Ext.create('Ext.data.Store', {
+				storeId: 'userDropdownId'+f.id,
+				model: 'JiraUserModel'+f.id,
+				autoLoad: false,
+				proxy: {
+					type: 'ajax',
+					url: g_root + apiUrl,
+					extraParams : xtrParam,
+					filterParam: fParam,
+					groupParam: '',
+					limitParam: '',
+					pageParam: '',
+					sortParam: '',
+					startParam: '',
+					reader: {
+						type: 'json',
+						root: uRoot
+					}
+				}
+			});
+
+			var editor = {
+				completeOnEnter: true,
+				field: {xtype: 'combobox',
+							store: lookup,
+							displayField: 'displayName',
+							valueField: 'name',
+							labelAlign: 'left',
+							value: f.id,
+							hideTrigger: true,
+							triggerAction: 'all',
+							queryMode: 'remote',
+							queryParam: fParam,
+							minChars: 2,
+							emptyText:'Start typing...',
+							selectOnFocus:true,
+							listeners: {
+								focusleave: function(f,n,o){
+									if(f.originalValue==f.value) return;
+									var newVal = f.value;
+									var container = f.up();
+									if(!container) return;
+									updateTree(container,f.name,{"name":newVal});
+								}
+							}
+
+				}
+			};
+
+			gridFieldArray.push({name: f.id, type: "string"});
+			colObj ={
+				header: f.header,
+				dataIndex: f.id,
+				sourceField: f,
+				sortable: false,
+				width: f.width,
+				style: l_labelStyle,
+				editor: editor,
+				filter: {
+				  type: 'list'
+	            }
+			};
+		}
+		else
+		{
+			var fType = 'list';
+			if(f.id=="summary") fType='string';
+			gridFieldArray.push({name: f.id, type: "string"});
+			colObj ={
+				text: f.header,
+				width: 'auto',
+				dataIndex: f.id,
+				width: f.width,
+				style: l_labelStyle,
+				sortable: false,
+				filter: {
+				  type: fType
+	            },
+	            editor: {
+					completeOnEnter: true,
+					field: {
+						xtype:'textfield',
+						//allowBlank: (col.required!="Yes"),
+						listeners: {
+							focusleave: function(n,o,f)
+							{
+								if(n.lastValue==n.originalValue) return;
+								var container = n.up();
+								if(!container) return;
+								updateTree(container,n.name,n.lastValue);
+							}
+						}
+					}
+				}
+
+			};
+        }
+
+        //set widths here?
+		ijfUtils.setColWidthForItemList(colObj);
+		colSettingsArray.push(colObj);
+	});
+
+    //preap and apply actions.
+    var actions=null;
+    var aWidth = 10;
+
+    if(!Ext.ClassManager.isCreated(inField.dataSource + inField.formCell.replace(/,/g,"")))
+    {
+        Ext.define(inField.dataSource + inField.formCell.replace(/,/g,""), {
+            extend: 'Ext.data.Model',
+            fields: gridFieldArray
+        });
+    }
+    var store = Ext.create('Ext.data.TreeStore', {
+        model: inField.dataSource + inField.formCell.replace(/,/g,""),
+        root: {
+			 	expanded:true,
+			 	children: dataItems
+			},
+		sorters: [{
+					property: taskOrderKey,
+					direction: 'ASC'}]
+	});
+	var treeMenu = new Ext.menu.Menu({ items:
+		[
+			{ text: 'Add Child Folder', handler: function()  {
+					var rId = tree.selection.data.iid
+					//add the issue with "new item" summary and insert into grid no refresh...
+
+                    if(tree.selection.data.leaf)
+                    {
+							ijfUtils.modalDialogMessage("Info","You cannot perform this action on a folder leaf.");
+							tree.unmask();
+							return;
+					}
+
+
+					var delayAdd = function()
+					{
+						var putObj = {};
+						putObj["fields"]={};
+						putObj["fields"]["summary"]="new item";
+						putObj.fields.project = {"key":inField.form.formSet.projectId};
+						putObj["fields"][taskOrderKey]=10000;
+						//Parent ID and Issue Type must be set
+						if(!inField.referenceFilter)
+						{
+							ijfUtils.modalDialogMessage("Error","Field Reference Filter must be valid issue 'subtype'");
+							tree.unmask();
+							return;
+						}
+						putObj.fields.issuetype = {"name":inField.referenceFilter};
+
+						var jData = JSON.stringify(putObj);
+						var tApi = "/rest/api/2/issue";
+						saveRes = ijfUtils.jiraApiSync("POST",tApi,jData);
+						//saveRes is the Key of the new issue if successfull,
+						//set the relationship and reload
+						try
+						{
+							if(saveRes.key)
+							{
+								var jsonString = {
+												"type": {
+													"name": "Relates"
+												   },
+												"inwardIssue": {
+													"key": rId
+												   },
+												"outwardIssue": {
+													"key": saveRes.key
+												   },
+												"comment":{
+													"body":"Linked related issue"
+												  }
+								};
+								var saveRelRes = ijfUtils.jiraApiSync("POST","/rest/api/2/issueLink",JSON.stringify(jsonString));
+								if(saveRelRes!="OK")
+								{
+									ijfUtils.modalDialogMessage("Error","Unable to establish the issue link: " + saveRes);
+									tree.unmask();
+									return;
+								}
+								var rec = Ext.create(tree.store.model);
+								rec.data.iid=saveRes.key;
+								rec.data.key=saveRes.key;
+								if(hideKeys) rec.data.key = "";
+								rec.data.text=saveRes.key;
+								rec.data.summary= "new item";
+								//refresh the grid....
+								tree.selection.appendChild(rec);
+								tree.selection.expand();
+							}
+							else
+							{
+								ijfUtils.modalDialogMessage("Error","Unable to add the issue");
+							}
+						}
+						catch(e)
+						{
+							ijfUtils.modalDialogMessage("Error","Sorry, there was an error with the add: " + e.message);
+						}
+						tree.unmask();
+					}
+                    ijf.session["scrollY_" + inField.formCell + "_" + inField.form.name] = tree.getScrollY();
+					tree.mask("Adding");
+					window.setTimeout(delayAdd,10);
+
+
+				} },
+                { text: 'Add Peer Folder', handler: function()  {
+					var rId = tree.selection.data.iid
+					//add the issue with "new item" summary and insert into grid no refresh...
+
+                    if(tree.selection.data.leaf)
+                    {
+							ijfUtils.modalDialogMessage("Info","You cannot perform this action on a folder leaf.");
+							tree.unmask();
+							return;
+					}
+					var delayAdd = function()
+					{
+
+						var putObj = {};
+						putObj["fields"]={};
+						putObj["fields"]["summary"]="new item";
+						putObj["fields"][taskOrderKey]=10000;
+						putObj.fields.project = {"key":inField.form.formSet.projectId};
+
+						//Parent ID and Issue Type must be set
+						if(!inField.referenceFilter)
+						{
+							ijfUtils.modalDialogMessage("Error","Field Reference Filter must be valid issue 'subtype'");
+							tree.unmask();
+							return;
+						}
+						putObj.fields.issuetype = {"name":inField.referenceFilter};
+
+						var jData = JSON.stringify(putObj);
+						var tApi = "/rest/api/2/issue";
+						saveRes = ijfUtils.jiraApiSync("POST",tApi,jData);
+						//saveRes is the Key of the new issue if successfull,
+						//set the relationship and reload
+						var pNode = tree.selection.parentNode;
+						try
+						{
+							if(saveRes.key)
+							{
+								//if parant NOT Root.  Set the parent to the current selection parent....
+								if(pNode.data.text!="Root")
+								{
+									var jsonString = {
+													"type": {
+														"name": "Relates"
+													   },
+													"inwardIssue": {
+														"key": pNode.data.iid
+													   },
+													"outwardIssue": {
+														"key": saveRes.key
+													   },
+													"comment":{
+														"body":"Linked related issue"
+													  }
+									};
+									var saveRelRes = ijfUtils.jiraApiSync("POST","/rest/api/2/issueLink",JSON.stringify(jsonString));
+									if(saveRelRes!="OK")
+									{
+										ijfUtils.modalDialogMessage("Error","Unable to establish the issue link: " + saveRes);
+										tree.unmask();
+										return;
+									}
+								}
+							   var resetForm = function(){   ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);};
+							   window.setTimeout(resetForm,50);
+							}
+							else
+							{
+								ijfUtils.modalDialogMessage("Error","Unable to add the issue");
+							}
+						}
+						catch(e)
+						{
+							ijfUtils.modalDialogMessage("Error","Sorry, there was an error with the add: " + e.message);
+						}
+						//tree.unmask();
+					}
+                    ijf.session["scrollY_" + inField.formCell + "_" + inField.form.name] = tree.getScrollY();
+					tree.mask("Adding");
+					window.setTimeout(delayAdd,10);
+
+				} },
+                { text: 'Add Root Folder', handler: function()  {
+
+
+					var delayAdd = function()
+					{
+						//add the issue with "new item" summary and insert into grid no refresh...
+						var putObj = {};
+						putObj["fields"]={};
+						putObj["fields"]["summary"]="new item";
+						if(taskOrderKey!="key") putObj["fields"][taskOrderKey]=10000;
+						putObj.fields.project = {"key":inField.form.formSet.projectId};
+						//Parent ID and Issue Type must be set
+						if(!inField.referenceFilter)
+						{
+							ijfUtils.modalDialogMessage("Error","Field Reference Filter must be valid issue 'subtype'");
+							tree.unmask();
+							return;
+						}
+						putObj.fields.issuetype = {"name":inField.referenceFilter};
+
+						var jData = JSON.stringify(putObj);
+						var tApi = "/rest/api/2/issue";
+						saveRes = ijfUtils.jiraApiSync("POST",tApi,jData);
+						//saveRes is the Key of the new issue if successfull,
+						if(saveRes.key)
+						{
+							//reload the current form....
+						   var resetForm = function(){   ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);};
+						   window.setTimeout(resetForm,50);
+						}
+						else
+						{
+							ijfUtils.modalDialogMessage("Error","Sorry, there was an error with the add: " + saveRes);
+						}
+						//tree.unmask();
+					}
+					ijf.session["scrollY_" + inField.formCell + "_" + inField.form.name] = tree.getScrollY();
+					tree.mask("Adding");
+					window.setTimeout(delayAdd,10);
+				} },
+ 				{text: 'Delete Folder', handler: function()  {
+					var rId = tree.selection.data.iid
+                    ijf.session["scrollY_" + inField.formCell + "_" + inField.form.name] = tree.getScrollY();
+                    if(tree.selection.data.leaf)
+                    {
+						    //break this link...
+						var delayDel = function()
+					    {
+							deleteParentLinks([tree.selection.data.parentLinkId]);
+							ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);
+							return;
+						}
+						tree.mask("Removing Link");
+					    window.setTimeout(delayDel,10);
+					    return;
+					}
+					var delFunc = function()
+					{
+						var delayDel = function()
+					    {
+							var delKeys = [];
+							var getKeys = function(inNode){
+									if((inNode.data.iid) && (!inNode.data.leaf)) delKeys.push(inNode.data.iid);
+									inNode.childNodes.forEach(function(n){getKeys(n)});
+							};
+							getKeys(tree.selection);
+							delKeys.reverse();
+							var deleteOk = true;
+							try
+							{
+								delKeys.forEach(function(k)
+								{
+									var tApi = "/rest/api/2/issue/"+k;
+									var delRes = ijfUtils.jiraApiSync("DELETE",tApi,null);
+									if(delRes!="OK") deleteOk=false;
+								});
+							}
+							catch(e)
+							{
+								deleteOk=false;
+								console.log(e);
+							}
+
+							if(!deleteOk)
+							{
+								ijfUtils.modalDialogMessage("Error","Unable to delete all the issues, please refresh your browser and try again.");
+							}
+							else
+							{
+								ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);
+							}
+							//tree.unmask();
+
+						}
+						tree.mask("Deleting");
+					    window.setTimeout(delayDel,10);
+
+				    }
+				    ijfUtils.modalDialog("Warning","You are about to permanently remove this item and it's children, continue?",delFunc);
+				} }
+		]});
+
+   //alter if edit exists
+	if(inField.tableDblClick)
+	{
+		treeMenu.add(
+   			{ text: 'Open Item', handler: function()  {
+   					var rId = tree.selection.data.iid
+   					ijf.main.gItemSectionGridIndex = rId;
+   					var tEvent = tree.ijfForm.tableDblClick;
+   					tEvent=tEvent.replace("popform:","");
+   					if(ijf.fw.forms.hasOwnProperty(tEvent))
+   					{
+   						var action = {};
+   						action.form = tEvent;
+   						action.type = "open item";
+   						action.itemId = rId;
+   						action.inField = inField;
+   						ijf.extUtils.renderPopupForm(inFormKey, item, action)
+   						return;
+   					}
+				} });
+     }
+
+
+//add a new link inward is the parent...
+    var setParentLink = function(inData,inParentKey)
+    {
+		try
+		{
+			var jsonString = {
+							"type": {
+								"name": "Relates"
+							   },
+							"inwardIssue": {
+								"key": inParentKey
+							   },
+							"outwardIssue": {
+								"key": inData.iid
+							   },
+							"comment":{
+								"body":"Linked related issue"
+							  }
+			};
+			var saveRes = ijfUtils.jiraApiSync("POST","/rest/api/2/issueLink",JSON.stringify(jsonString));
+			if(saveRes!="OK") return false;
+
+			//sadly, this does not provide the linkId of what was just created...you need to get
+			//the inData.key issue links and set parentKeys and parentLinkIds
+			var thisIssue = ijfUtils.getJiraIssueSync(inData.iid);
+			inData.parents = [];
+			inData.parentLinkIds = [];
+            if(thisIssue.fields.issuelinks.length > 0)
+			{
+				//set an issues parent assignments
+
+				inData.parents = thisIssue.fields.issuelinks.reduce(function(inParents,link)
+				{
+					if(link.inwardIssue)
+					{
+						inParents.push(link.inwardIssue.key);
+						inData.parentLinkIds.push(link.id);
+					}
+					return inParents;
+				},[]);
+			}
+			return true;
+		}
+		catch(e)
+		{
+			return false;
+		}
+	}
+
+
+    var deleteParentLinks = function(inLinks)
+    {
+		var successfulDelete = true;
+		inLinks.forEach(function(linkId)
+		{
+			if(!successfulDelete) return;
+			var saveRes = ijfUtils.jiraApiSync('DELETE','/rest/api/2/issueLink/'+linkId,null);
+			if(saveRes!="OK") successfulDelete=false;
+		});
+		return successfulDelete;
+	};
+
+    var rippleUp = function(rootKey,inNode,inValue)
+    {
+			if(!inNode) return true;
+			var nextValue = inValue;
+            if(inNode.data.iid!=rootKey)
+            {
+				//set the taskOrder
+				//console.log(inNode.data.iid + "  setting to " + inValue);
+
+				var res = updateTreeQuiet(inNode.data.iid,taskOrderKey,inValue);
+				if(res!="OK")
+				{
+					return false;
+				}
+				nextValue=nextValue-1;
+			} //else console.log(inNode.data.iid + "  skipping ");
+            return rippleUp(rootKey,inNode.previousSibling,nextValue)
+	}
+    var rippleDown = function(rootKey,inNode,inValue)
+    {
+			if(!inNode) return true;
+			var nextValue = inValue;
+            if(inNode.data.iid!=rootKey)
+            {
+				//set the taskOrder
+				//console.log(inNode.data.iid + "  setting to " + inValue);
+				var res = updateTreeQuiet(inNode.data.iid,taskOrderKey,inValue);
+				if(res!="OK")
+				{
+					return false;
+				}
+				nextValue=nextValue+1;
+			} //else console.log(inNode.data.iid + "  skipping ");
+            return rippleDown(rootKey,inNode.nextSibling,nextValue)
+	}
+
+    var moveNode = function(node, data, overModel, dropPosition, dropHandlers,eOpts) {
+
+        //look to see if parent changed, if so, change parent....
+        if(overModel.parentNode.data.iid!=data.records[0].data.parents[0])
+        {
+			//parent changed...if root, set to null.  else, set to the value of key
+			if(overModel.parentNode.data.iid)
+			{
+				//set to key, which means...delete the existing parent link and add a new one...
+				if(!deleteParentLinks(data.records[0].data.parentLinkIds))
+				{
+					ijfUtils.modalDialogMessage("Error","Unable to remove the issue links, please refresh your browser and try again.");
+					tree.unmask();
+					return;
+				};
+				data.records[0].data.parentLinkIds=[];
+				data.records[0].data.parents=[];
+
+				//add a new link inward is the parent...
+				if(!setParentLink(data.records[0].data,overModel.parentNode.data.iid))
+				{
+					ijfUtils.modalDialogMessage("Error","Unable to establish the issue link, please refresh your browser and try again.");
+					tree.unmask();
+					return;
+				}
+				console.log(data.records[0].data.iid + " Change parent to " + overModel.parentNode.data.iid);
+
+			}
+			else
+			{
+				//set to null
+				console.log(data.records[0].data.iid + " Changing parent to null");
+				//set to key, which means...delete the existing parent link and add a new one...
+				if(!deleteParentLinks(data.records[0].data.parentLinkIds))
+				{
+					ijfUtils.modalDialogMessage("Error","Unable to remove the issue links, please refresh your browser and try again.");
+					tree.unmask();
+					return;
+				};
+				data.records[0].data.parentLinkIds=[];
+				data.records[0].data.parents=[];
+			}
+		}
+
+		//process before.....
+		if(dropPosition=="before")
+		{
+			//data.item.taskOrder must = node.taskORder - 1
+			//then recurse up the children and make sure each one is less than prior one
+
+
+            var newTaskOrder = overModel.data[taskOrderKey]/1-1;
+            console.log(data.records[0].data.iid + " setting to " + newTaskOrder);
+            var res = updateTreeQuiet(data.records[0].data.iid,taskOrderKey,newTaskOrder);
+            newTaskOrder=newTaskOrder-1;
+
+            if(!rippleUp(data.records[0].data.iid, overModel.previousSibling, newTaskOrder))
+            {
+	 		     //error occured...
+				ijfUtils.modalDialogMessage("Error","Sorry but the reorder did not save properly, please refresh your browser and try again.");
+			}
+            tree.unmask();
+
+		}else if(dropPosition=="after")
+		{
+			//data.item.taskOrder must = node.taskORder - 1
+			//then recurse up the children and make sure each one is less than prior one
+            var newTaskOrder = overModel.data[taskOrderKey]/1+1;
+            console.log(data.records[0].data.iid + " setting to " + newTaskOrder);
+            var res = updateTreeQuiet(data.records[0].data.iid,taskOrderKey,newTaskOrder);
+            newTaskOrder=newTaskOrder+1;
+
+            if(!rippleDown(data.records[0].data.iid, overModel.nextSibling, newTaskOrder))
+            {
+				//error occured...
+				ijfUtils.modalDialogMessage("Error","Sorry but the reorder did not save properly, please refresh your browser and try again.");
+			}
+
+			tree.unmask();
+		} else if(dropPosition=="appendx")
+		{
+			//data.item.taskOrder must = node.taskORder - 1
+			//then recurse up the children and make sure each one is less than prior one
+            var newTaskOrder = overModel.data[taskOrderKey]/1+1;
+            console.log(data.records[0].data.iid + " setting to " + newTaskOrder);
+            var res = updateTreeQuiet(data.records[0].data.iid,taskOrderKey,newTaskOrder);
+            newTaskOrder=newTaskOrder+1;
+
+            if(!rippleDown(data.records[0].data.iid, overModel.nextSibling, newTaskOrder))
+            {
+				//error occured...
+				ijfUtils.modalDialogMessage("Error","Sorry but the reorder did not save properly, please refresh your browser and try again.");
+			}
+
+			tree.unmask();
+		} else
+		{
+			//wierd state, no drop position, this means...it's being dropped as a child a parent it was under, at the top of the
+			//new tree
+			if(overModel.data.iid)
+			{
+				//set to key, which means...delete the existing parent link and add a new one...
+				if(!deleteParentLinks(data.records[0].data.parentLinkIds))
+				{
+					ijfUtils.modalDialogMessage("Error","Unable to remove the issue links, please refresh your browser and try again.");
+					tree.unmask();
+					return;
+				};
+				data.records[0].data.parentLinkIds=[];
+				data.records[0].data.parents=[];
+
+				//add a new link inward is the parent...
+				if(!setParentLink(data.records[0].data,overModel.data.iid))
+				{
+					ijfUtils.modalDialogMessage("Error","Unable to establish the issue link, please refresh your browser and try again.");
+					tree.unmask();
+					return;
+				}
+				console.log(data.records[0].data.key + " Change parent to " + overModel.parentNode.data.iid);
+				tree.unmask();
+			}
+			else
+			{
+				tree.unmask();
+                ijfUtils.modalDialogMessage("Error","Sorry but the reorder did not save properly, please refresh your browser and try again.");
+			}
+		}
+
+	};
+
+
+	var tPlugins = null;
+	var tViewConfigPlugins=null;
+	if(!rOnly)
+	{
+		tPlugins = [{
+						ptype: 'cellediting',
+						clicksToEdit: 2
+			},'gridfilters'];
+
+		 tViewConfigPlugins ={
+						ptype: 'treeviewdragdrop',
+						containerScroll: true,
+						dragGroup: dragzone,
+						dropGroup: dropzone,
+						dragText: 'Drag and drop to reorganize'
+					};
+	}
+
+
+
+	var headerButtons =[];
+
+	if(showLinks)
+	{
+		headerButtons.push({
+				xtype:'checkboxfield',
+				boxLabel:showLinksLabel,
+				value: showLinksChecked,
+				handler: function(f,c){
+				   ijf.session["showlinks_" + inField.formCell + "_" + inField.form.name] = c;
+				   ijf.session["scrollY_" + inField.formCell + "_" + inField.form.name] = 0;  //reset scroll position
+
+				   var delayIt=function()
+				   {
+					   ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);
+				   }
+				   tree.mask("Loading");
+				   window.setTimeout(delayIt,1000);
+				}
+			});
+	}
+
+	headerButtons.push({
+				xtype:'button',
+				text:"Expand All",
+				scope: this,
+				handler: function(){
+				   tree.expandAll();
+
+				   Object.keys(ecStates).forEach(function(n){ecStates[n]=true;});
+
+				}
+			});
+	headerButtons.push({
+				xtype:'button',
+				text:"Collapse All",
+				scope: this,
+				handler: function(){
+				   tree.collapseAll();
+				   Object.keys(ecStates).forEach(function(n){ecStates[n]=false;});
+
+				}
+			});
+
+
+
+
+    var tree= new Ext.tree.Panel({
+        store: store,
+		 header:{
+				titlePosition: 0,
+				items: headerButtons
+		},
+        style: l_panelStyle,
+        title: lCaption,
+        height: l_Height,
+        //maxHeight: 600,
+        useArrows: true,
+        width: "100%",
+        ijfForm: inField,
+       	id: inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_"),
+        rootVisible: false,
+        columns: colSettingsArray,
+        ijfForm: inField,
+		plugins: tPlugins,
+        viewConfig: {
+		        plugins: tViewConfigPlugins
+        },
+		listeners: {
+			'beforeitemexpand' ( inNode, eOpts )
+			{
+				if((inNode.data) && (inNode.data.iid)) ecStates[inNode.data.iid]=true;
+			},
+			'beforeitemcollapse' ( inNode, eOpts )
+			{
+				if((inNode.data) && (inNode.data.iid)) ecStates[inNode.data.iid]=false;
+			},
+			'beforedrop': function(node, data, overModel, dropPosition, dropHandlers) {
+                //dropHandlers.wait = true;
+                //debugger;
+
+				if(dropsnippet)
+				{
+					try
+					{
+						dropHandlers.wait = true;
+					    if(!ijf.snippets[dropsnippet](node, data, overModel, dropPosition, dropHandlers,tree))
+					    {
+							return;
+						}
+					}
+					catch(e)
+					{
+						ijfUtils.modalDialogMessage("Error","Failed to run the drop snippet");
+						dropHandlers.cancelDrop();
+						return;
+					}
+				}
+
+				if(data.records[0].data.leaf)
+				{
+					//TODO: need to change this to removing the linked item
+ 					    dropHandlers.cancelDrop();
+						ijfUtils.modalDialogMessage("Info","You cannot perform a move on a folder leaf.");
+						tree.unmask();
+						return;
+				}
+
+                tree.mask("Moving...");
+   				dropHandlers.processDrop();
+   				var delayMove = function()
+   				{
+					try
+					{
+						moveNode(node, data, overModel, dropPosition, dropHandlers);
+					}
+					catch(e)
+					{
+						dropHandlers.cancelDrop();
+						tree.unmask();
+						ijfUtils.modalDialogMessage("Error","Sorry but the reorder did not save properly, please refresh your browser and try again.");
+					}
+				};
+				window.setTimeout(delayMove,10);
+
+				/*
+				dropHandlers.wait = true;
+				Ext.MessageBox.confirm('Drop', 'Are you sure', function(btn){
+					if (btn === 'yes') {
+						dropHandlers.processDrop();
+					} else {
+						dropHandlers.cancelDrop();
+					}
+				});
+				*/
+			},
+            'selectionchange':  function(selMod, record, something ){
+				//if event,
+					//see if name = form, if so, set the item to this selectoin and render form
+					//look for event by name, then run if there...
+				if((record) && (record[0])) ijf.session["selectedNode_" + inField.formCell + "_" + inField.form.name] = record[0].data.iid;
+				else ijf.session["selectedNode_" + inField.formCell + "_" + inField.form.name] = null;
+
+                ijf.session["scrollY_" + inField.formCell + "_" + inField.form.name] = tree.getScrollY();
+
+			    if((!record[0]) || (!record[0].data) || !(record[0].data.iid)) return;
+                ijf.main.gItemSectionGridIndex = record[0].data.iid;
+				var tEvent = this.ijfForm.event;
+				if(ijf.fw.forms.hasOwnProperty(tEvent))
+				{
+					ijf.currentItem=null;
+                    ijf.main.itemId= record[0].data.iid;
+                    window.g_formId=tEvent;
+                    ijf.main.processSetup("ijfContent");
+					return;
+				}
+				//look for snippet...
+				if(ijf.snippets.hasOwnProperty(tEvent))
+				{
+					ijf.snippets[tEvent](record[0].data.iid,record, something,this);
+					return;
+				}
+            },
+			'beforeitemdblclick': function(selMod, record, something ){
+
+                ijf.session["scrollY_" + inField.formCell + "_" + inField.form.name] = tree.getScrollY();
+
+                ijf.main.gItemSectionGridIndex = record.data.iid;
+				var tEvent = this.ijfForm.tableDblClick;
+				if(ijf.fw.forms.hasOwnProperty(tEvent))
+				{
+					ijf.currentItem=null;
+                    ijf.main.itemId= record.data.iid;
+                    window.g_formId=tEvent;
+                    ijf.main.processSetup("ijfContent");
+					return;
+				}
+
+				//look for snippet...
+				if(ijf.snippets.hasOwnProperty(tEvent))
+				{
+					ijf.snippets[tEvent](record.data.iid,this);
+					return;
+				}
+				//look for popform: xxx and pop the form
+				tEvent=tEvent.replace("popform:","");
+				if(ijf.fw.forms.hasOwnProperty(tEvent))
+				{
+ 				    var action = {};
+					action.form = tEvent;
+					action.type = "open item";
+					action.itemId = record.data.iid;
+					action.inField = inField;
+                    ijf.extUtils.renderPopupForm(inFormKey, item, action)
+					return;
+				}
+			}
+		}
+    });
+
+    var layout = new Ext.Panel({
+        collapsible: false,
+        collapsed: false,
+        hidden: hideField,
+        width: l_Width,
+        layoutConfig: {
+            columns: 1
+        },
+        bodyStyle: l_Style,
+        items: [tree]
+    });
+
+	//before render....
+	if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](layout, inFormKey,item, inField, inContainer);
+
+    layout.render(inContainer);
+    var thisControl = new itemControl(inFormKey+'_fld_'+inField.formCell, inField, item, layout, inContainer);
+    ijf.main.controlSet[thisControl.id]=thisControl;
+    //after render....
+    if(ijf.snippets.hasOwnProperty(inField["afterRender"])) ijf.snippets[inField["afterRender"]](layout, inFormKey,item, inField, inContainer);
+
+    //tree.expandAll();
+
+    //ecStates has paths to expand
+    function setNodeExpand(inNode)
+    {
+		if(inNode.id!="root")
+		{
+			if((inNode.data) && (inNode.data.iid))
+				if(ecStates.hasOwnProperty(inNode.data.iid))
+					if(ecStates[inNode.data.iid]) inNode.expand();
+		}
+		if(inNode.childNodes)
+		{
+			inNode.childNodes.forEach(function(n)
+			{
+				setNodeExpand(n);
+			});
+		}
+	}
+	setNodeExpand(tree.getRootNode());
+
+
+    Object.keys(ecStates).forEach(function(p){tree.expandPath(p)});
+
+	if(selectedNode)
+	{
+		tree.suspendEvents();
+	    tree.setScrollY(scrollY);
+	    var newSelection = tree.getStore().findRecord("iid",selectedNode)
+	    if(newSelection) tree.setSelection(newSelection);
+	    tree.resumeEvents(false);
+	}
+
+
+    //lastly disable context menu for this element
+    if(!rOnly)
+	{
+		tree.getEl().on('contextmenu', function(e) {
+
+
+
+			e.preventDefault();
+
+			treeMenu.items.items.forEach(function(m){
+				m.setVisible(false);
+			});
+
+			if((e.record) && (e.record.data.leaf))
+			{
+				treeMenu.items.items["3"].setVisible(true);
+				treeMenu.items.items["3"].setText("Remove Link");
+			}
+			else if(!e.record)
+			{
+				treeMenu.items.items["2"].setVisible(true);
+			}
+			else
+			{
+				treeMenu.items.items.forEach(function(m){
+					m.setVisible(true);
+				});
+				treeMenu.items.items["3"].setText("Delete Folder");
+			}
+
+			treeMenu.showAt(e.clientX+window.pageXOffset,e.clientY+window.pageYOffset);
+		});
+	}
 
 },
 renderItemlistHtml:function(inFormKey,item, inField, inContainer)

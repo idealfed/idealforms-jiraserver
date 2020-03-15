@@ -30,6 +30,9 @@ helpLink:function(inLabel, inCaller)
 	switch(cType)
 	{
 		//field styles
+		case "itemfolders":
+			    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+itemfolders");
+		break;
 		case "issue relator":
 				    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+issue+relator");
 		break;
@@ -240,20 +243,28 @@ helpLink:function(inLabel, inCaller)
 editJson:function (fieldId)
 {
 	if(!fieldId) return;
-try
-{
+	var isJson = true;
     var inField = Ext.getCmp(fieldId);
 
     var fValue = inField.getValue();
     var jsonText = "";
+try
+{
+
     if(fValue)
     {
           var jsonVal = JSON.parse(fValue);
           jsonText = JSON.stringify(jsonVal,null,4);
 	  }
+	  else
+	  {
+		  jsonText = "";
+	  }
 }
 catch(e)
 {
+
+	/*
 	var runError = function()
 	{
 	  ijfUtils.modalDialogMessage("Error","Field is not valid JSON or unable to get field");
@@ -261,10 +272,13 @@ catch(e)
     }
     window.setTimeout(runError,200);
     return;
+    */
+     isJson = false;
+    jsonText = fValue.replace(/;/g,";\n");
 }
     ijf.admin.dWin = new Ext.Window({
         layout: 'vbox',
-        title: "JSON editor",
+        title: "JSON and TEXT editor",
         width: 900,
         height:850,
         closable: true,
@@ -289,16 +303,26 @@ catch(e)
             text:'OK',
             handler: function(f,i,n){
 
-				try
+
+				if(isJson)
 				{
-					var newJson = JSON.parse(jsonText);
-					inField.setValue(JSON.stringify(newJson));
-					ijf.admin.dWin.close();
+					try
+					{
+						var newJson = JSON.parse(jsonText);
+						inField.setValue(JSON.stringify(newJson));
+						ijf.admin.dWin.close();
+					}
+					catch(e)
+					{
+						ijfUtils.modalDialogMessage("Error","Cannot parse JSON");
+						return;
+					}
 				}
-				catch(e)
+				else
 				{
-					ijfUtils.modalDialogMessage("Error","Cannot parse JSON");
-					return;
+					jsonText = jsonText.replace(/\n/g,"");
+					inField.setValue(jsonText);
+					ijf.admin.dWin.close();
 				}
             }},
             {
@@ -1542,7 +1566,7 @@ addEditForm:function (sRow)
 		});
 
 
-		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentSPmanaged","attachmentlisttree","attachmentSPtree","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","GRIDHTML","grouppicker","grouppickermulti","html","htmldata","htmleditor","historylist","iframe","issue relator","itemlist","itemlistHTML","itemtree","muiAppBar","muiButton","muiCardList","muiCommentList","muiCommentSuperList","muiDatebox","muiDrawer","muiFormButtons","muiGrid","muiHtml","muiHistoryList","muiIcon","muiRadio","muiSelect","muiTextarea","muiTextbox","multiselect","navigatetoform","Reference Editor","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
+		var lookup = ["attachmentlist","attachmentlistgrid","attachmentmanaged","attachmentSPmanaged","attachmentlisttree","attachmentSPtree","attachmentupload","button","chart-bar","chart-pie","checkbox","commentlist","datebox","dropdown","dropdownwithpicker","formbuttons","formbuttonsforpopup","GRID","GRIDHTML","grouppicker","grouppickermulti","html","htmldata","htmleditor","historylist","iframe","issue relator","itemfolders","itemlist","itemlistHTML","itemtree","muiAppBar","muiButton","muiCardList","muiCommentList","muiCommentSuperList","muiDatebox","muiDrawer","muiFormButtons","muiGrid","muiHtml","muiHistoryList","muiIcon","muiRadio","muiSelect","muiTextarea","muiTextbox","multiselect","navigatetoform","Reference Editor","subform","openurl","openpopform","radio","reportbutton","tabmenu","textarea","textbox","userpicker","userpickermulti","workflowbuttons"];
 
 	    var  sectionLookup = [];
 
