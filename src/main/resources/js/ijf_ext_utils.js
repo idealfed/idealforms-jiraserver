@@ -7238,6 +7238,7 @@ renderRadiogroup:function(inFormKey,item, inField, inContainer)
         bodyStyle: l_Style,
         style: l_Style,
         items:[{xtype: 'radiogroup',
+            hidden: hideField,
 			labelAlign: 'left',
 			labelStyle: l_fieldStyle, //was panel style
 			style: l_panelStyle,
@@ -8402,6 +8403,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
     var dragGroup = "gridDrag";
     var dropGroup = "gridDrop";
     var dragdropmessage = "Drag and drop to reorganize";
+    var dragdropsnippet = null;
     if (inField.fieldStyle.indexOf('dragdrop:true')>-1)
     {
         dragdrop = true;
@@ -11239,6 +11241,7 @@ renderItemFolders:function(inFormKey,item, inField, inContainer)
 									"iid":link.outwardIssue.key,
 									"summary":link.outwardIssue.fields.summary,
 									"parentLinkId":link.id,
+									"parentKey":i.key,
 									"leaf":true
 								});
 							}
@@ -11789,6 +11792,11 @@ renderItemFolders:function(inFormKey,item, inField, inContainer)
 								//refresh the grid....
 								tree.selection.appendChild(rec);
 								tree.selection.expand();
+
+								//select the new record....
+								tree.suspendEvents();
+								tree.setSelection(rec);
+							    tree.resumeEvents(false);
 							}
 							else
 							{
@@ -11870,6 +11878,9 @@ renderItemFolders:function(inFormKey,item, inField, inContainer)
 										return;
 									}
 								}
+
+								//set selected
+								ijf.session["selectedNode_" + inField.formCell + "_" + inField.form.name] = saveRes.key;
 							   var resetForm = function(){   ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);};
 							   window.setTimeout(resetForm,50);
 							}
@@ -11916,6 +11927,8 @@ renderItemFolders:function(inFormKey,item, inField, inContainer)
 						if(saveRes.key)
 						{
 							//reload the current form....
+						    //set selected
+						   ijf.session["selectedNode_" + inField.formCell + "_" + inField.form.name] = saveRes.key;
 						   var resetForm = function(){   ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);};
 						   window.setTimeout(resetForm,50);
 						}
@@ -11932,12 +11945,25 @@ renderItemFolders:function(inFormKey,item, inField, inContainer)
  				{text: 'Delete Folder', handler: function()  {
 					var rId = tree.selection.data.iid
                     ijf.session["scrollY_" + inField.formCell + "_" + inField.form.name] = tree.getScrollY();
+
                     if(tree.selection.data.leaf)
                     {
+						//the query must be changed due to the removal of the linkedIssueIn, or change to it's parent....
+						var parentKey = tree.selection.data.parentKey;
 						    //break this link...
 						var delayDel = function()
 					    {
 							deleteParentLinks([tree.selection.data.parentLinkId]);
+							//set the selection to be it's parent...
+							if(parentKey)
+							{
+                             ijf.session["selectedNode_" + inField.formCell + "_" + inField.form.name] = parentKey;
+						    }
+						    else
+						    {
+							 ijf.session["selectedNode_" + inField.formCell + "_" + inField.form.name] = null;
+							}
+
 							ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);
 							return;
 						}
@@ -11945,6 +11971,7 @@ renderItemFolders:function(inFormKey,item, inField, inContainer)
 					    window.setTimeout(delayDel,10);
 					    return;
 					}
+					var parentKey = tree.selection.data.parents[0];
 					var delFunc = function()
 					{
 						var delayDel = function()
@@ -11978,6 +12005,17 @@ renderItemFolders:function(inFormKey,item, inField, inContainer)
 							}
 							else
 							{
+
+								if(parentKey)
+								{
+								 ijf.session["selectedNode_" + inField.formCell + "_" + inField.form.name] = parentKey;
+								 //inField.dataSource = inField.dataSource.replace(/and issue in linkedIssues\(.*?\)/gi,"and issue in linkedIssues("+parentKey +")");
+								}
+								else
+								{
+  							     ijf.session["selectedNode_" + inField.formCell + "_" + inField.form.name] = null;
+								}
+
 								ijf.main.renderForm("ijfContent", ijf.main.outerForm.name, false, ijf.currentItem);
 							}
 							//tree.unmask();
@@ -12332,11 +12370,11 @@ renderItemFolders:function(inFormKey,item, inField, inContainer)
 		        plugins: tViewConfigPlugins
         },
 		listeners: {
-			'beforeitemexpand' ( inNode, eOpts )
+			'beforeitemexpand':function(inNode, eOpts )
 			{
 				if((inNode.data) && (inNode.data.iid)) ecStates[inNode.data.iid]=true;
 			},
-			'beforeitemcollapse' ( inNode, eOpts )
+			'beforeitemcollapse':function(inNode, eOpts )
 			{
 				if((inNode.data) && (inNode.data.iid)) ecStates[inNode.data.iid]=false;
 			},
@@ -12364,7 +12402,6 @@ renderItemFolders:function(inFormKey,item, inField, inContainer)
 
 				if(data.records[0].data.leaf)
 				{
-					//TODO: need to change this to removing the linked item
  					    dropHandlers.cancelDrop();
 						ijfUtils.modalDialogMessage("Info","You cannot perform a move on a folder leaf.");
 						tree.unmask();
@@ -12936,6 +12973,20 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
     if(!l_Style) l_Style="background:transparent";
     if(!l_fieldStyle) l_fieldStyle="background:white";
 	//if(rOnly) l_fieldStyle="background:lightgray";
+
+    var dragdrop = false;
+    var dragGroup = "gridDrag";
+    var dropGroup = "gridDrop";
+    var dragdropmessage = "Drag and drop to reorganize";
+    var dragdropsnippet = null;
+    if (inField.fieldStyle.indexOf('dragdrop:true')>-1)
+    {
+        dragdrop = true;
+        dragGroup = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"draggroup");
+        dropGroup = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"dropgroup");
+        dragdropmessage = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"dragdropmessage");
+        dragdropsnippet = ijfUtils.getNameValueFromStyleString(l_fieldStyle,"dragdropsnippet");
+    }
 
     var ocf =  ijfUtils.getEvent(inField);
 
@@ -13632,6 +13683,28 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 			}
 		};
 	}
+
+	if(dragdrop)
+	{
+		if(!listenerSettings) listenerSettings={};
+
+		listenerSettings["beforedrop"] = function(node, data, overModel, dropPosition, dropHandlers) {
+
+                if(dragdropsnippet)
+                {
+					if(ijf.snippets[dragdropsnippet])
+					{
+						ijf.snippets[dragdropsnippet](node, data, overModel, dropPosition, dropHandlers, gridPanel);
+					}
+					else
+					{
+						dropHandlers.cancelDrop();
+					}
+				}
+				else dropHandlers.cancelDrop();
+			}
+	}
+
 
     if(!renderHeaders) headerButtons=null;
     var gridPanel = new Ext.grid.GridPanel({
