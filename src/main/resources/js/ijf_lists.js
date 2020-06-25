@@ -4055,8 +4055,7 @@ addEditType:function (inTypeId,isReportView)
                     this.validate();
                 },
                 change: function(f,n,o){
-
-                        thisT.description = n;
+						if(n) thisT.description = n.replace(/\n/g," ");
                     }
                 }
             },

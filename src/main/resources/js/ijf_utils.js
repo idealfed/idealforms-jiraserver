@@ -4123,7 +4123,7 @@ sharepointFilenameOk:function(inFileName)
 {
   var fSplit = inFileName.split(".");
   if(fSplit.length>2) return false; //has a . in name
-  var invalidChars = ",~\"#%&*:<>?/\\{|}";
+  var invalidChars = "',~\"#%&*:<>?/\\{|}";
   for(var i=0;i<invalidChars.length;i++)
   {
       if(fSplit[0].indexOf(invalidChars[i])>-1) return false;
@@ -4143,7 +4143,7 @@ sharepointFilenameClean:function(inFileName)
   }
 
   //var invalidChars = ",~\"#%&*:<>?/\\{|}";
-  var invalidChars = [",","~","\\\"","\\#","\\%","\\&","\\*","\\:","\\<","\\>","\\?","/","\\\\","{","\\|","}"];
+  var invalidChars = ["'",",","~","\\\"","\\#","\\%","\\&","\\*","\\:","\\<","\\>","\\?","/","\\\\","{","\\|","}"];
   for(var i=0;i<invalidChars.length;i++)
   {
 	  fNameNoPeriods = fNameNoPeriods.replace(new RegExp(invalidChars[i], 'g'), "_");

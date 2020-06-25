@@ -8326,6 +8326,13 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 				}]
 			});
 		}
+	//allow for override of cleanHtml
+	if(inField.dataReference2)
+	{
+		if(ijf.snippets[inField.dataReference2])
+		simple.items.items[0].cleanHtml = ijf.snippets[inField.dataReference2]
+	}
+
     //before render....
     if(ijf.snippets.hasOwnProperty(inField["beforeRender"])) ijf.snippets[inField["beforeRender"]](simple,inFormKey,item, inField, inContainer);
 
@@ -9785,7 +9792,14 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				//if event,
 					//see if name = form, if so, set the item to this selectoin and render form
 					//look for event by name, then run if there...
-                ijf.main.gItemSectionGridIndex = record[0].data.iid;
+				try
+				{
+                	ijf.main.gItemSectionGridIndex = record[0].data.iid;
+				}
+				catch(e)
+				{
+					return;
+				}
 				var tEvent = this.ijfForm.event;
 				if(ijf.fw.forms.hasOwnProperty(tEvent))
 				{
@@ -11294,11 +11308,28 @@ renderItemFolders:function(inFormKey,item, inField, inContainer)
 
 
    //data items are here, you now need to restructure into a tree based on Item relations...
+   //splitting dataReference2 with json in case we need to override onDelete...onFilter
+    var onDeleteFolder = null;
+    var onFilterFolders = null;
     if(inField.dataReference2)
     {
-        //filter the items...
-        if(ijf.snippets.hasOwnProperty(inField.dataReference2))
-	        dataItems = ijf.snippets[inField.dataReference2](dataItems);
+		try
+		{
+			var dr2 = JSON.parse(inField.dataReference2);
+			onDeleteFolder=dr2.onDelete;
+			onFilterFolders=dr2.onFilter;
+			if(onFilterFolders)
+				if(ijf.snippets.hasOwnProperty(onFilterFolders))
+	   	            dataItems = ijf.snippets[onFilterFolders](dataItems);
+		}
+		catch(je)
+		{
+			//it's not json so just look for default filtering
+            //filter the items...
+            if(ijf.snippets.hasOwnProperty(inField.dataReference2))
+   	            dataItems = ijf.snippets[inField.dataReference2](dataItems);
+
+		}
     }
 
 	//calculate column widths...and headers
@@ -11945,6 +11976,14 @@ renderItemFolders:function(inFormKey,item, inField, inContainer)
  				{text: 'Delete Folder', handler: function()  {
 					var rId = tree.selection.data.iid
                     ijf.session["scrollY_" + inField.formCell + "_" + inField.form.name] = tree.getScrollY();
+
+					//look for an override of delete folder,then do it if needed...
+					//pattern is if return is true, continue, if not do not continue....
+					if(onDeleteFolder)
+					{
+				         if(ijf.snippets.hasOwnProperty(onDeleteFolder))
+	   	            		if(!ijf.snippets[onDeleteFolder](rId)) return;
+					}
 
                     if(tree.selection.data.leaf)
                     {
@@ -13863,6 +13902,11 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
     {
         collapsed=true;
     }
+    //check if user indicated if the Paste Table         //DAYNE UPDATES
+    var pasteTable = false;
+    if(l_fieldStyle.indexOf('pasteTable:true')>-1){
+        pasteTable=true;
+    }
 
 	var features = null;
     if (l_fieldStyle.indexOf('sums:true')>-1)
@@ -14091,6 +14135,115 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
 				   jQuery(jKey).trigger('click');
 				}
 			});
+
+		if(pasteTable){
+			headerButtons.push({
+			xtype:'button',
+			text:"Paste Table",
+			scope: this,
+			//hidden: false,
+			handler: function(){
+				//----------------------------------------//
+				var saveGrid = function(gridStore){
+					//get type definition
+					var thisT = {};
+					for(var tF in ijf.fw.CustomTypes){
+					  if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+					  if(ijf.fw.CustomTypes[tF].name==inField.dataSource) thisT=ijf.fw.CustomTypes[tF];
+					}
+
+					if(!thisT)	throw("Invalid type name: " + inField.dataSource);
+					//save values..
+					var gridData = gridStore.getData();
+					var dataArray = gridData.items.map(function(r){return r.data;});
+					//sanitize grid
+					dataArray = dataArray.map(function(r){delete r.id; return Object.keys(r).map(function(c){return r[c]}).join("\t")}).join("\n");
+
+					thisT.settings = JSON.stringify(dataArray);
+					var jOut = {
+						customTypeId: thisT.id,
+						name: thisT.name,
+						description: thisT.description,
+						customType: thisT.customType,
+						fieldName: thisT.fieldName,
+						settings: JSON.stringify(thisT.settings)
+					};
+					var jdata = JSON.stringify(jOut);
+					var sStat = ijfUtils.saveJiraFormSync(jdata,"saveCustomType");
+					if(isNaN(sStat)){
+					 ijfUtils.modalDialogMessage("Save Error","Sorry, something went wrong with the save: " + sStat);
+					}else{
+					 gridData.items.forEach(function(r){r.commit()});
+					}
+				}
+				//----------------------------------------//
+				var resetPromptBox = function(){
+					var promptBox = Ext.Msg;
+					promptBox.buttonText={
+					yes: 'Yes',
+					no: 'No'
+					};
+				}
+				//----------------------------------------//
+				var ParseUserData = function(Data){
+					var array = Data.split("\n");
+					var tableArray = [];
+					array.forEach(function(r){
+						if(r != ""){
+							tableArray.push(r.split("\t"));
+							//ArofAr[0].join(",")
+						}
+					})
+					return tableArray;
+				}
+				//----------------------------------------//
+				var promptBox = Ext.Msg;
+				promptBox.buttonText={
+					yes: 'Append data',
+					no: 'Paste over current data'
+				};
+				//----------------------------------------//
+				//call back functions
+				var callBack = function(button) {
+					if(button == "yes"){ //append
+						var ArofAr = ParseUserData(document.getElementById('inputText').value);
+						//add this data
+						gridStore.add(ArofAr);
+						//save this data
+						saveGrid(gridStore);
+					}else if(button == "no"){   //pasteover
+						var ArofAr = ParseUserData(document.getElementById('inputText').value);
+						//remove current data
+						gridStore.getData().each(function(r){
+										gridStore.remove(r);
+								});
+						//set ArofAr to table
+						gridStore.loadData(ArofAr);
+						//save this data
+						saveGrid(gridStore);
+					}else if(button == "cancel"){ //cancel buttons
+
+					}
+					//at the end of all of this
+					resetPromptBox();
+					}
+				/********************/
+				//give a text area for user
+				var getTD = function() {
+					Ext.Msg.show({
+						title: 'Paste Table Data Below',
+						msg: '<textarea rows="25" cols="78" id="inputText"></textarea>',
+						buttons: Ext.Msg.YESNOCANCEL,
+						width: 1200,
+						height: 1200,
+						fn: callBack
+						}, {}, 4);
+				}
+				/********************/
+				getTD();
+			} //end of handler function
+		  });
+		}
 
     var gridPanel = new Ext.grid.GridPanel({
 		 title: lCaption,

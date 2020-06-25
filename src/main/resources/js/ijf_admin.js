@@ -31,209 +31,203 @@ helpLink:function(inLabel, inCaller)
 	{
 		//field styles
 		case "itemfolders":
-			    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+itemfolders");
+			    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+issue+folders");
 		break;
 		case "issue relator":
-				    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+issue+relator");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+issue+relator");
 		break;
 		case "muiAppBar":
-				    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiAppBar");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiAppBar");
 		break;
 		case "muiButton":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiButton");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiButton");
 		break;
 		case "muiCardList":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiCardList");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiCardList");
 		break;
 		case "muiCommentList":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiCommentList");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiCommentList");
 		break;
 		case "muiCommentSuperList":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiCommentSuperList");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiCommentSuperList");
 		break;
 		case "muiDatebox":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiDatebox");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiDatebox");
 		break;
 		case "muiDrawer":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiDrawer");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiDrawer");
 		break;
 		case "muiGrid":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiGrid");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiGrid");
 		break;
 		case "muiHistoryList":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiHistoryList");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiHistoryList");
 		break;
 		case "muiHtml":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiHtml");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiHtml");
 		break;
 		case "muiIcon":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiIcon");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiIcon");
 		break;
 		case "muiRadio":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiRadio");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiRadio");
 		break;
 		case "muiSelect":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiSelect");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiSelect");
 		break;
 		case "muiTextbox":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiTextbox");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiTextbox");
 		break;
 		case "muiTextarea":
-						    window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiTextarea");
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiTextarea");
 		break;
-		case "Reference Editor":
-				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-37#" + inLabel);
+		case "Reference Editor":	    
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Reference+Editor");
 		break;
 		case "attachmentlisttree":
-				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-36#" + inLabel);
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+attachmentlisttree");
 		break;
 		case "itemlistHTML":
-				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-35#" + inLabel);
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+itemlistHTML");
 		break;
 		case "GRIDHTML":
-				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-34#" + inLabel);
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+GRIDHTML");
 		break;
 		case "historylist":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-33#" + inLabel);
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+historylist");
 		break;
 		case "attachmentlistgrid":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-32#" + inLabel);
+			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+attachmentlistgrid");
 		break;
 		case "reportbutton":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-31#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+reportbutton");
 		break;
 		case "GRID":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-30#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+GRID");
 		break;
 		case "itemtree":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-29#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+itemtree");
 		break;
 		case "textbox":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-1#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+textbox");
 		break;
 		case "attachmentlist":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-25#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+attachmentlist");
 		break;
 		case "attachmentmanaged":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-28#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+attachmentmanaged");
 		break;
 		case "attachmentupload":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-3#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+attachmentupload");
 		break;
-			case "button":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-4#" + inLabel);
+		case "button":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+button");
 		break;
-			case "checkbox":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-5#" + inLabel);
+		case "checkbox":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+checkbox");
 		break;
-			case "commentlist":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-6#" + inLabel);
+		case "commentlist":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+commentlist");
 		break;
-			case "datebox":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-7#" + inLabel);
+		case "datebox":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+datebox");
 		break;
-			case "dropdown":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-8#" + inLabel);
+		case "dropdown":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+dropdown");
 		break;
-			case "dropdownwithpicker":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-9#" + inLabel);
+		case "dropdownwithpicker":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+dropdownwithpicker");
 		break;
-			case "html":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-10#" + inLabel);
+		case "html":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+html");
 		break;
-			case "iframe":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-11#" + inLabel);
+		case "iframe":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+iframe");
 		break;
-			case "itemlist":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-12#" + inLabel);
+		case "itemlist":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+itemlist");
 		break;
-			case "formbuttons":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-13#" + inLabel);
+		case "formbuttons":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+formbuttons");
 		break;
-			case "formbuttonsforpopup":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-14#" + inLabel);
+		case "formbuttonsforpopup":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+formbuttonsforpopup");
 		break;
-			case "multiselect":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-15#" + inLabel);
+		case "multiselect":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+multiselect");
 		break;
-			case "navigatetoform":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-16#" + inLabel);
+		case "navigatetoform":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+navigatetoform");
 		break;
-			case "subform":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-17#" + inLabel);
+		case "subform":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+subform");
 		break;
-			case "openurl":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-18#" + inLabel);
+		case "openurl":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+openurl");
 		break;
-			case "openpopform":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-19#" + inLabel);
+		case "openpopform":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+openpopform");
 		break;
-			case "radio":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-20#" + inLabel);
+		case "radio":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+radio");
 		break;
-			case "tabmenu":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-21#" + inLabel);
+		case "tabmenu":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+tabmenu");
 		break;
-			case "textarea":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-22#" + inLabel);
+		case "textarea":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+textarea");
 		break;
-			case "userpicker":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-23#" + inLabel);
+		case "userpicker":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+userpicker");
 		break;
-			case "chart-pie":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-26#" + inLabel);
+		case "chart-pie":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+chart-pie");
 		break;
-			case "chart-bar":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Detail&itemId=FCD-27#" + inLabel);
+		case "chart-bar":
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+chart-bar");
 		break;
 		//layout settings
 		case "rowcount":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "columncount":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "columnspans":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "rowspans":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "columnwidths":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "headleft":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "headercenter":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "headerright":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "outerstyle":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "innerstyle":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "headerstyle":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "tabtitle":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "onload":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
-		break;
-		case "onload":
-		    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
-		break;
-		case "onload":
-				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		case "additionalSave":
-				    window.open("http://jira.idealfed.com/plugins/servlet/iforms?formId=Settings%20Layout&itemId=FCD-24#" + inLabel);
+		    	window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Layout+Setting+Options");
 		break;
 		default:
 			window.open("http://www.idealfed.com/controlReference.html");
