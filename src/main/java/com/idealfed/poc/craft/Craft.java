@@ -147,7 +147,7 @@ public class Craft extends HttpServlet
 
 //section to comment or uncomment license
 
-
+/*
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -169,7 +169,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-
+*/
 
 //end comment section
 
@@ -199,7 +199,8 @@ public class Craft extends HttpServlet
     	if(themeFlag==null) themeFlag="";
     	String groupName = request.getParameter("groupName");
     	if(groupName==null) groupName="";
-
+    	String modeName = request.getParameter("mode");
+    	if(modeName==null) modeName="";
 
 		//XSS cleans
     	remote=sanitize(remote);
@@ -215,7 +216,7 @@ public class Craft extends HttpServlet
 //comment for unlicensed running
 //determine if Admin call or a Craft call, either way, require Administrator....
 
-
+/*
         if(iwfAction.equals("noAction"))
         {
 			if ((craftFlag.equals("true")) || (formId.equals("")))
@@ -236,7 +237,7 @@ public class Craft extends HttpServlet
 				}
 			}
 	    }
-
+*/
 
 //end comment section
 
@@ -280,11 +281,15 @@ public class Craft extends HttpServlet
 		}
 		outTemplate+=".vm";
 
+		if(modeName=="")
+		{
+			modeName="splash.vm";
+		}
+
 		if(themeFlag.equals("crisp"))
 		{
 			outTemplate="maincrisp.vm";
 		}
-
 
     	//you need to know if this is an anonymous call, if so, it can run....
     	//need to get the form....
