@@ -3087,7 +3087,9 @@ replaceWordChars:function(text) {
 		retText=retText.replace("#{userid}",ijf.main.currentUser.id);
         retText=retText.replace("#{datetime}",moment().format('LL'));
 
-		if(!item) return retText;
+	    retText = this.switchSessionAtts(retText,item,noSanitize);
+	    retText = this.switchSnippetAtts(retText,item,noSanitize);
+
 		if(!item) return retText;
 
 		if((!retText)||(retText=="") || (!item)) return "";
@@ -3099,8 +3101,7 @@ replaceWordChars:function(text) {
 		retText = retText.replace(/\#\{key\}/g,item.key);
 		retText = retText.replace(/\#\{summary\}/g,item.fields.summary);
 		retText = retText.replace(/\#\{status\}/g,item.fields.status.name);
-	    retText = this.switchSessionAtts(retText,item,noSanitize);
-	    retText = this.switchSnippetAtts(retText,item,noSanitize);
+
 	    retText = this.switchAtts(retText,item,noSanitize);
 		return retText;
 	},

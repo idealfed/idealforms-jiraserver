@@ -3192,6 +3192,9 @@ addEditCustomTypeReference:function (inTypeId)
 					{
 						ijfUtils.modalDialogMessage("Save Error","Sorry, something went wrong with the save: " + sStat);
 					}
+					else{
+						ijf.lists.dWin2.close();
+					}
 					//else
 					//{
 					//	ijfUtils.modalDialogMessage("Information","Saved");

@@ -718,7 +718,14 @@ itemControl.prototype.prepForSave=function(saveQueueBatch)
  				this.newVal =  tv;
 				break;
 			case 'number':
-				this.newVal = this.control.items.items[0].getValue()/1;
+				//this.newVal = this.control.items.items[0].getValue()/1;
+				//DAYNE update
+				if(this.field.controlType.substring(0,3)=="mui"){
+            				this.newVal = this.control.state.value/1;
+  				}else{
+      					this.newVal = this.control.items.items[0].getValue()/1;
+				}
+
 				break;
 			case 'string':
 				//std text value

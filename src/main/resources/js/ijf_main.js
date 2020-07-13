@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "5.2.25";
+    window.g_version = "6.0.1";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);
@@ -230,6 +230,11 @@ function processSetup(inContainerId)
 		else if(window.location.search.indexOf("mode=admin")>-1)
 		{
 			ijf.lists.renderGroupList_Borderlayout(inContainerId);
+		}
+		else if(window.location.search.indexOf("mode=library")>-1)
+		{
+		   var tElement = document.getElementById("ijfContent");
+		   tElement.innerHTML='<iframe src="https://www.idealfed.com/formsLibrary/" style="margin-left: -5px;width: 1010px; height: 600px; border: 0"></iframe>';
 		}
 		else
 		{

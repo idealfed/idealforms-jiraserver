@@ -81,7 +81,7 @@ helpLink:function(inLabel, inCaller)
 		case "muiTextarea":
 			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+muiTextarea");
 		break;
-		case "Reference Editor":	    
+		case "Reference Editor":
 			window.open("http://confluence.idealfed.com/display/IFD/Ideal+Forms+-+Reference+Editor");
 		break;
 		case "attachmentlisttree":
@@ -339,7 +339,7 @@ catch(e)
 addEditForm:function (sRow)
 {
 	if(!sRow) return;
-
+	var originalSnippet = sRow.data.snippet;
 
     ijf.admin.dWin = new Ext.Window({
         layout: 'vbox',
@@ -430,6 +430,7 @@ addEditForm:function (sRow)
             {
                 text:'Cancel',
                 handler: function(){
+					sRow.data.snippet = originalSnippet;
                     ijf.admin.dWin.close();
                 }}
         ],

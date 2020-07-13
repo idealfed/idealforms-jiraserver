@@ -147,7 +147,7 @@ public class Craft extends HttpServlet
 
 //section to comment or uncomment license
 
-/*
+
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -169,7 +169,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-*/
+
 
 //end comment section
 
@@ -216,7 +216,7 @@ public class Craft extends HttpServlet
 //comment for unlicensed running
 //determine if Admin call or a Craft call, either way, require Administrator....
 
-/*
+
         if(iwfAction.equals("noAction"))
         {
 			if ((craftFlag.equals("true")) || (formId.equals("")))
@@ -237,7 +237,7 @@ public class Craft extends HttpServlet
 				}
 			}
 	    }
-*/
+
 
 //end comment section
 
@@ -281,9 +281,14 @@ public class Craft extends HttpServlet
 		}
 		outTemplate+=".vm";
 
-		if(modeName=="")
+		if((modeName=="") && (formId==""))
 		{
-			modeName="splash.vm";
+			outTemplate="splash.vm";
+		}
+
+		if((modeName!="") && (formId==""))
+		{
+			outTemplate="admin.vm";
 		}
 
 		if(themeFlag.equals("crisp"))
@@ -715,7 +720,7 @@ public class Craft extends HttpServlet
 
 	    		for (CustomType ct : ao.find(CustomType.class))
 	            {
-	                w.printf(getCustomTypeJson(ct));
+					if(ct!=null) w.printf(getCustomTypeJson(ct));
 	            }
 	    		w.printf("{}]}");
 
@@ -741,7 +746,7 @@ public class Craft extends HttpServlet
     		//pull the config from AO and return...
     		final PrintWriter w = response.getWriter();
     		w.printf("{\"status\":\"OK\",\"resultSet\":[");
-    		for (Version v : ao.find(Version.class, Query.select().order("ID DESC")))
+    		for (Version v : ao.find(Version.class, Query.select().limit(10).order("ID DESC")))
             {
                 w.printf("{\"id\":\""+v.getID()+"\",\"created\":\""+v.getDate()+"\",\"author\":\""+v.getAuthor()+"\"},");
             }
@@ -895,46 +900,72 @@ public class Craft extends HttpServlet
 
 	private String getCustomTypeJson(CustomType ct)
 	{
-		StringBuilder sb = new StringBuilder();
-		sb.append("{\"id\":\"" + ct.getID() + "\",");
-		sb.append("\"name\":\"" + ct.getName() + "\",");
-		sb.append("\"description\":\"" + ct.getDescription() + "\",");
-		sb.append("\"customType\":\"" + ct.getCustomType() + "\",");
-		sb.append("\"fieldName\":\"" + ct.getFieldName() + "\",");
-
-		String cType = ct.getCustomType();
-		if(cType.equals("FILE"))
+		String cId = "";
+		String cName = "";
+		try
 		{
-					sb.append("\"settings\":\"\"[]\"\"},");
-		}
-		else
-		{
-					sb.append("\"settings\":\"" + ct.getSettings() + "\"},");
-		}
+			cId = Integer.toString(ct.getID());
+			cName = ct.getName();
 
-		return sb.toString();
+			StringBuilder sb = new StringBuilder();
+			sb.append("{\"id\":\"" + ct.getID() + "\",");
+			sb.append("\"name\":\"" + ct.getName() + "\",");
+			sb.append("\"description\":\"" + ct.getDescription() + "\",");
+			sb.append("\"customType\":\"" + ct.getCustomType() + "\",");
+			sb.append("\"fieldName\":\"" + ct.getFieldName() + "\",");
+
+			String cType = ct.getCustomType();
+			if(cType.equals("FILE"))
+			{
+						sb.append("\"settings\":\"\"[]\"\"},");
+			}
+			else
+			{
+						sb.append("\"settings\":\"" + ct.getSettings() + "\"},");
+			}
+
+			return sb.toString();
+		}
+		catch(Exception e)
+		{
+ 		    plog.error("Failed to load custom type: " + cName + " " + e.getMessage());
+			return "";
+		}
 	}
 
 	private String getCustomTypeConfig(CustomType ct)
 	{
-		StringBuilder sb = new StringBuilder();
-		sb.append("{\"id\":\"" + ct.getID() + "\",");
-		sb.append("\"name\":\"" + ct.getName() + "\",");
-		sb.append("\"description\":\"" + ct.getDescription() + "\",");
-		sb.append("\"customType\":\"" + ct.getCustomType() + "\",");
-		sb.append("\"fieldName\":\"" + ct.getFieldName() + "\"");
-
-		String cType = ct.getCustomType();
-		if(cType.equals("FILE"))
+		String cId = "";
+		String cName = "";
+		try
 		{
-					sb.append(",\"settings\":\"\"[]\"\"},");
-		}
-		else
-		{
-					sb.append("},");
-		}
+			cId = Integer.toString(ct.getID());
+			cName = ct.getName();
 
-		return sb.toString();
+			StringBuilder sb = new StringBuilder();
+			sb.append("{\"id\":\"" + ct.getID() + "\",");
+			sb.append("\"name\":\"" + ct.getName() + "\",");
+			sb.append("\"description\":\"" + ct.getDescription() + "\",");
+			sb.append("\"customType\":\"" + ct.getCustomType() + "\",");
+			sb.append("\"fieldName\":\"" + ct.getFieldName() + "\"");
+
+			String cType = ct.getCustomType();
+			if(cType.equals("FILE"))
+			{
+						sb.append(",\"settings\":\"\"[]\"\"},");
+			}
+			else
+			{
+						sb.append("},");
+			}
+
+			return sb.toString();
+		}
+		catch(Exception e)
+		{
+			plog.error("Failed to load custom type: " + cName + " " + e.getMessage());
+			return "";
+		}
 	}
 
 	private String getAoFormSetJson(FormSet fs)
@@ -1366,25 +1397,46 @@ public class Craft extends HttpServlet
 				{
 					//formSet must exist by ID and we need it....
 					//OK, now get the object by ID
-
-					ct =  ao.create(CustomType.class);
+					String ctName = inType.getString("name");
+					if(ctName!=null)
+					{
+						ct =  ao.create(CustomType.class);
+						ct.setName(inType.getString("name"));
+						ct.setDescription(inType.getString("description"));
+						ct.setCustomType(inType.getString("customType"));
+						ct.setFieldName(inType.getString("fieldName"));
+						ct.setSettings(inType.getString("settings"));
+						ct.save();
+						final PrintWriter w = res.getWriter();
+						w.printf("{\"status\":\"OK\",\"result\":\""+ct.getID()+"\"}");
+						w.close();
+						return;
+					}
+					else
+					{
+						final PrintWriter w = res.getWriter();
+						w.printf("{\"status\":\"Error\",\"result\":\"Name was null on attempted save\"}");
+						w.close();
+						return;
+					}
 				}
 				else
 				{
 					//OK, now get the object by ID
 					ct = ao.get(CustomType.class, ctId);
+					ct.setName(inType.getString("name"));
+					ct.setDescription(inType.getString("description"));
+					ct.setCustomType(inType.getString("customType"));
+					ct.setFieldName(inType.getString("fieldName"));
+					ct.setSettings(inType.getString("settings"));
+					ct.save();
+					final PrintWriter w = res.getWriter();
+					w.printf("{\"status\":\"OK\",\"result\":\""+ct.getID()+"\"}");
+					w.close();
+					return;
 				}
 
-				ct.setName(inType.getString("name"));
-				ct.setDescription(inType.getString("description"));
-				ct.setCustomType(inType.getString("customType"));
-				ct.setFieldName(inType.getString("fieldName"));
-				ct.setSettings(inType.getString("settings"));
-				ct.save();
-				final PrintWriter w = res.getWriter();
-				w.printf("{\"status\":\"OK\",\"result\":\""+ct.getID()+"\"}");
-				w.close();
-				return;
+
 
 			}
 			catch(JSONException e)
