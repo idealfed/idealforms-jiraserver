@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "6.0.1";
+    window.g_version = "6.0.2";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);

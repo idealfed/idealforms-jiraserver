@@ -147,7 +147,7 @@ public class Craft extends HttpServlet
 
 //section to comment or uncomment license
 
-
+/*
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -169,7 +169,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-
+*/
 
 //end comment section
 
@@ -216,7 +216,7 @@ public class Craft extends HttpServlet
 //comment for unlicensed running
 //determine if Admin call or a Craft call, either way, require Administrator....
 
-
+/*
         if(iwfAction.equals("noAction"))
         {
 			if ((craftFlag.equals("true")) || (formId.equals("")))
@@ -237,7 +237,7 @@ public class Craft extends HttpServlet
 				}
 			}
 	    }
-
+*/
 
 //end comment section
 
@@ -626,8 +626,11 @@ public class Craft extends HttpServlet
 
     	if(iwfAction.equals("copyIssueAttachments"))
     	{
+
 			try
 			{
+
+
 				StringBuilder retS = new StringBuilder();
 				String attString = request.getParameter("attachments");
 				String targetIssue = request.getParameter("toIssueKey");
@@ -636,12 +639,23 @@ public class Craft extends HttpServlet
 
 				ApplicationUser au = userManager2.getUserByName(username);
 				Attachment attachment=null;
+				plog.info("About to copy a jira attachments " +attString + " to " + targetIssue + " under username " + username);
+
 				for(int i=0;i<attArray.length;i++)
 				{
 					try
 					{
 						attachment = attachmentManager.getAttachment(Long.parseLong(attArray[i]));
+
+						plog.info("Verifying type attachment: " + attachment.getClass().toString());
+						plog.info("Verifying type user: " + au.getClass().toString());
+						plog.info("Verifying type attMng: " + attachmentManager.getClass().toString());
+
+plog.info("Copying file " + attachment.getFilename() + " by " + au.getUsername() + " to issue " + targetIssue);
+
+
 						attachmentManager.copyAttachment(attachment, au, targetIssue);
+						//attachmentManager.copyAttachment(att,currentUser,"TPO-2");
                         retS.append(attArray[i] + " copied\n");
 					}
 					catch(Exception ae)
@@ -746,7 +760,7 @@ public class Craft extends HttpServlet
     		//pull the config from AO and return...
     		final PrintWriter w = response.getWriter();
     		w.printf("{\"status\":\"OK\",\"resultSet\":[");
-    		for (Version v : ao.find(Version.class, Query.select().limit(10).order("ID DESC")))
+    		for (Version v : ao.find(Version.class, Query.select().limit(25).order("ID DESC")))
             {
                 w.printf("{\"id\":\""+v.getID()+"\",\"created\":\""+v.getDate()+"\",\"author\":\""+v.getAuthor()+"\"},");
             }
@@ -768,24 +782,34 @@ public class Craft extends HttpServlet
     	}
     	else if(iwfAction.equals("getCustomType"))
     	{
-        	String customTypeId = request.getParameter("customTypeId");
-			int ctId = new Integer(customTypeId).intValue();
-				//formSet must exist by ID and we need it....
-				//OK, now get the object by ID
-			CustomType ct = ao.get(CustomType.class, ctId);
+			try
+			{
+				String customTypeId = request.getParameter("customTypeId");
+				int ctId = new Integer(customTypeId).intValue();
+					//formSet must exist by ID and we need it....
+					//OK, now get the object by ID
+				CustomType ct = ao.get(CustomType.class, ctId);
 
-			StringBuilder sb = new StringBuilder();
-			sb.append("{\"id\":\"" + ct.getID() + "\",");
-			sb.append("\"name\":\"" + ct.getName() + "\",");
-			sb.append("\"description\":\"" + ct.getDescription() + "\",");
-			sb.append("\"customType\":\"" + ct.getCustomType() + "\",");
-			sb.append("\"fieldName\":\"" + ct.getFieldName() + "\",");
-			sb.append("\"settings\":\"" + ct.getSettings() + "\"}");
+				StringBuilder sb = new StringBuilder();
+				sb.append("{\"id\":\"" + ct.getID() + "\",");
+				sb.append("\"name\":\"" + ct.getName() + "\",");
+				sb.append("\"description\":\"" + ct.getDescription() + "\",");
+				sb.append("\"customType\":\"" + ct.getCustomType() + "\",");
+				sb.append("\"fieldName\":\"" + ct.getFieldName() + "\",");
+				sb.append("\"settings\":\"" + ct.getSettings() + "\"}");
 
-        	final PrintWriter w = response.getWriter();
-        	w.printf(sb.toString());
-    		w.close();
-    		return;
+				final PrintWriter w = response.getWriter();
+				w.printf(sb.toString());
+				w.close();
+				return;
+		    }
+		    catch(Exception cte)
+		    {
+				final PrintWriter w = response.getWriter();
+				w.printf("Error retrieving custom type");
+				w.close();
+				return;
+			}
     	}
     	else if(iwfAction.equals("clearConfig"))
     	{
@@ -1825,7 +1849,7 @@ plog.debug("Configurations cleaned");
     	{
     		try
     		{
-
+                plog.error("IJF beginning set config...");
     			//backup the existing configuration first
     			StringBuffer cConfig = new StringBuffer();
     			cConfig.append("{\"status\":\"OK\",\"resultSet\":[");
@@ -1847,6 +1871,9 @@ plog.debug("Configurations cleaned");
         		v.save();
         		cleanVersions(50);
 
+
+                plog.error("IJF clearing config...");
+
     			//clear current configuration
     			boolean loaded = false;
         		for (FormSet fs : ao.find(FormSet.class))
@@ -1867,6 +1894,9 @@ plog.debug("Configurations cleaned");
 					ao.delete(ct);
 				}
 
+
+
+               plog.error("IJF prepping load...");
                 //ijfConfig ie EITHER an array in which case it is the formSets, or an Object, which has two arrays:
                 //  formSets and customTypes
 	    		JSONObject jo = new JSONObject(inJson);
@@ -1883,6 +1913,7 @@ plog.debug("Configurations cleaned");
 				}
 
 	    		//JSONArray rs = jo.getJSONArray("ijfConfig");
+               plog.error("IJF loading config forms...");
 
 	    		JSONObject jsonFs;
 	    		JSONArray jsonForms;
@@ -1930,6 +1961,8 @@ plog.debug("Configurations cleaned");
 		        		s.save();
 		    		}
 	    		}
+
+             plog.error("IJF loading config types...");
 
 				//handle custom types....
 	    		//custom type configuration
