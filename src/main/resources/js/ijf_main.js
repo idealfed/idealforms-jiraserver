@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "6.0.2";
+    window.g_version = "6.0.6";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);
@@ -254,7 +254,11 @@ function processSetup(inContainerId)
 		}
 	}
 
-
+    //new concept to allow a form to load even if no item...
+    if(ijf.session["passTwoForInvalidKey"]){
+		ijf.main.itemId='';
+		ijf.session["passTwoForInvalidKey"]=false;
+	}
 
 
     if (ijf.main.itemId=='')
@@ -350,7 +354,9 @@ function loadItem(inContainerId)
 				 ijfUtils.modalDialogMessage("Error","Unable to load issue: " + ijf.main.itemId + "<br>" + tItem);
 		    }
 		}
-		ijf.currentItem = {};
+		ijf.session["passTwoForInvalidKey"]=true;
+  	    ijf.main.processSetup(inContainerId);
+		//ijf.currentItem = {};
 	}
 }
 
@@ -602,7 +608,27 @@ function renderForm(inContainerId, inFormId, isNested, item, afterRender)
 
         if(thisForm.settings.hasOwnProperty("tabTitle"))
         {
-            document.title = thisForm.settings["tabTitle"];
+
+			//look for snippet and use if exists...
+			if(ijf.snippets.hasOwnProperty(thisForm.settings["tabTitle"]))
+			{
+				tTitle="IJF";
+				try
+				{
+
+					var tTitle = ijf.snippets[thisForm.settings["tabTitle"]]();
+				}
+				catch(e)
+				{
+					//go quiet
+				}
+	            document.title = tTitle;
+			}
+			else
+			{
+	            document.title = thisForm.settings["tabTitle"];
+			}
+
         }
 
         ijfUtils.renderHeader(inContainerId,thisForm,formItem);

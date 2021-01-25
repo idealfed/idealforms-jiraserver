@@ -941,7 +941,16 @@ renderAttchmentListGrid:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-    	l_Width = l_Width.replace("px","")/1;
+		//adding concept of % in the width setting....
+		if(l_Width.indexOf("%")<0)
+		{
+			//treat as number...
+			l_Width = l_Width.replace("px","");
+
+			if(isNaN(l_Width)) l_Width=600;  //hard code to 600
+			else l_Width = l_Width/1;
+
+		}
 	}
 
     var listColumns = [];
@@ -1248,7 +1257,16 @@ renderAttachmentListTree:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-    	l_Width = l_Width.replace("px","")/1;
+		//adding concept of % in the width setting....
+		if(l_Width.indexOf("%")<0)
+		{
+			//treat as number...
+			l_Width = l_Width.replace("px","");
+
+			if(isNaN(l_Width)) l_Width=600;  //hard code to 600
+			else l_Width = l_Width/1;
+
+		}
 	}
 
     var colWidths=[];
@@ -2049,7 +2067,16 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-    	l_Width = l_Width.replace("px","")/1;
+		//adding concept of % in the width setting....
+		if(l_Width.indexOf("%")<0)
+		{
+			//treat as number...
+			l_Width = l_Width.replace("px","");
+
+			if(isNaN(l_Width)) l_Width=600;  //hard code to 600
+			else l_Width = l_Width/1;
+
+		}
 	}
 
     var colWidths=[];
@@ -2707,7 +2734,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 		 height: l_Height,
         store: gridStore,
          rootVisible: false,
-        width:l_Width,
+        width: l_Width,
         plugins: ['gridfilters',{
 			ptype: 'cellediting',
 			clicksToEdit: 1
@@ -3075,7 +3102,16 @@ renderAttachmentManaged:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		if(l_Width.indexOf("px")>-1) l_Width = l_Width.replace("px","")/1;
+		//adding concept of % in the width setting....
+		if(l_Width.indexOf("%")<0)
+		{
+			//treat as number...
+			l_Width = l_Width.replace("px","");
+
+			if(isNaN(l_Width)) l_Width=600;  //hard code to 600
+			else l_Width = l_Width/1;
+
+		}
 	}
 
 
@@ -3552,7 +3588,16 @@ renderAttachmentSPManaged:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		if(l_Width.indexOf("px")>-1) l_Width = l_Width.replace("px","")/1;
+		//adding concept of % in the width setting....
+		if(l_Width.indexOf("%")<0)
+		{
+			//treat as number...
+			l_Width = l_Width.replace("px","");
+
+			if(isNaN(l_Width)) l_Width=600;  //hard code to 600
+			else l_Width = l_Width/1;
+
+		}
 	}
 
 
@@ -8219,7 +8264,16 @@ renderCheckbox:function(inFormKey,item, inField, inContainer)
 		}
 		else
 		{
-			l_Width = l_Width.replace("px","")/1;
+			//adding concept of % in the width setting....
+			if(l_Width.indexOf("%")<0)
+			{
+				//treat as number...
+				l_Width = l_Width.replace("px","");
+
+				if(isNaN(l_Width)) l_Width=600;  //hard code to 600
+				else l_Width = l_Width/1;
+
+			}
 		}
 
 
@@ -11179,7 +11233,16 @@ renderItemFolders:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-		l_Width = l_Width.replace("px","")/1;
+		//adding concept of % in the width setting....
+		if(l_Width.indexOf("%")<0)
+		{
+			//treat as number...
+			l_Width = l_Width.replace("px","");
+
+			if(isNaN(l_Width)) l_Width=600;  //hard code to 600
+			else l_Width = l_Width/1;
+
+		}
 	}
 
 
@@ -13111,7 +13174,16 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-    	l_Width = l_Width.replace("px","")/1;
+		//adding concept of % in the width setting....
+		if(l_Width.indexOf("%")<0)
+		{
+			//treat as number...
+			l_Width = l_Width.replace("px","");
+
+			if(isNaN(l_Width)) l_Width=600;  //hard code to 600
+			else l_Width = l_Width/1;
+
+		}
 	}
 
 	var colWidths=[];
@@ -13941,7 +14013,16 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
 	}
 	else
 	{
-    	l_Width = l_Width.replace("px","")/1;
+		//adding concept of % in the width setting....
+		if(l_Width.indexOf("%")<0)
+		{
+			//treat as number...
+			l_Width = l_Width.replace("px","");
+
+			if(isNaN(l_Width)) l_Width=600;  //hard code to 600
+			else l_Width = l_Width/1;
+
+		}
 	}
 
 	var colWidths=[];

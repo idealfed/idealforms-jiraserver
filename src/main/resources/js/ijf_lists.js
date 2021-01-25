@@ -1222,6 +1222,15 @@ renderItemList_Borderlayout:function(inContainerId)
 		});
 	});
 
+
+
+	//adding sort on the form groups....
+	retJson = retJson.sort(function(a, b)
+		{
+			return a.text<b.text ? -1 : a.text>b.text ? 1 : 0;
+		});
+
+
     var tree = new Ext.tree.Panel({
         xtype: 'check-tree',
         height: 100,
