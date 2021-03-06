@@ -609,6 +609,11 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		{
 			var fieldStyle = {}
 		}
+		try {
+			var labelStyle = JSON.parse(inField.labelStyle);
+		} catch (e) {
+			var labelStyle = {};
+		}
 
 		if (style.hidden)
 		{
@@ -786,6 +791,13 @@ renderTextbox(inFormKey,item, inField, inContainer)
 								</InputAdornment>);
 						}
 					}
+
+					//
+					var tProps = JSON.parse(JSON.stringify(fieldStyle.inputProps));
+					tProps.endAdornment=retProps.endAdornment;
+					tProps.startAdornment=retProps.startAdornment;
+					retProps=tProps;
+
 			}
 			return retProps;
 		  }
@@ -793,8 +805,9 @@ renderTextbox(inFormKey,item, inField, inContainer)
 		  getInputLabelProps()
 		  {
 			var retProps = null;
-			if(fieldStyle.inputLabelProps)
+			if(labelStyle)
 			{
+				/*
 				if(fieldStyle.inputLabelProps.shrink)
 				{
 					if(!retProps) retProps={};
@@ -806,6 +819,8 @@ renderTextbox(inFormKey,item, inField, inContainer)
 					if(!retProps) retProps={};
 					retProps.disableAnimation = fieldStyle.inputLabelProps.disableAnimation;
 				}
+				*/
+				retProps = labelStyle;
 			}
 			return retProps;
 		  }
@@ -2718,6 +2733,17 @@ renderSelect(inFormKey,item, inField, inContainer)
 		{
 			var fieldStyle = {}
 		}
+		try
+		{
+			var labelStyle = JSON.parse(inField.labelStyle);
+		}
+		catch(e)
+		{
+			var labelStyle = {}
+		}
+
+
+
 
 
 		var hideField = ijfUtils.renderIfShowField(data,inField);
@@ -2925,7 +2951,7 @@ renderSelect(inFormKey,item, inField, inContainer)
 			  getCaption()
 			  {
 				  //<MuiInputLabel htmlFor={"value-helper"+inField.formCell}>{lCaption}</MuiInputLabel>
-				  if(lCaption) return (<MuiInputLabel>{lCaption}</MuiInputLabel>)
+				  if(lCaption) return (<MuiInputLabel style={labelStyle}>{lCaption}</MuiInputLabel>)
 				  return
 			  }
 		  render() {
@@ -3230,7 +3256,10 @@ renderSelect(inFormKey,item, inField, inContainer)
 			  getMenu()
 			  {
 				  if(!this.state.lookup) return;
-				  return this.state.lookup.map(function(r){return (<MuiFormControlLabel value={r[0]} control={<MuiRadio style={panelStyle} color="primary"/>} label={r[1]} />)});
+				  return this.state.lookup.map(function(r)
+				  {
+					  return (<MuiFormControlLabel value={r[0]} classes={labelStyle} control={<MuiRadio style={panelStyle} color="primary"/>} label={r[1]} />)
+				  });
 			  }
 
 			  getTip()

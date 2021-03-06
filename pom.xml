@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.idealfed.poc</groupId>
     <artifactId>idealforms</artifactId>
-    <version>6.0.6-STABLE</version>
+    <version>6.0.8-STABLE</version>
     <organization>
         <name>Ideal Federal LLC</name>
         <url>http://www.idealfed.com</url>
@@ -162,7 +162,7 @@
 							<version>${testkit.version}</version>
 						</pluginArtifact>
 					</pluginArtifacts>
-					-->
+					-->	
                     <instructions>
 
                         <Atlassian-Plugin-Key>${atlassian.plugin.key}</Atlassian-Plugin-Key>

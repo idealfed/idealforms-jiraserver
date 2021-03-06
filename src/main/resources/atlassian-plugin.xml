@@ -40,6 +40,8 @@
         
     <resource type="download" name="jquery-1.11.2.min.js" location="/js/jquery-1.11.2.min.js"/>
     <resource type="download" name="ext-all.js" location="/js/ext-all.js"/>
+    <resource type="download" name="ext-all_7.js" location="/js/ext-all.js"/>
+    
     <resource type="download" name="FileSaver.min.js" location="/js/FileSaver.min.js"/>
     <resource type="download" name="moment.js" location="/js/moment.js"/>
     <resource type="download" name="charts.js" location="/js/charts.js"/>    
@@ -107,7 +109,10 @@
   <component-import key="groupManager" interface="com.atlassian.jira.security.groups.GroupManager" filter=""/>  
   <component-import key="loginUriProvider" interface="com.atlassian.sal.api.auth.LoginUriProvider" filter=""/>
   <component-import key="pluginSettingsFactory" interface="com.atlassian.sal.api.pluginsettings.PluginSettingsFactory" filter=""/>
-  <component-import key="attachmentManaqger" interface="com.atlassian.jira.issue.AttachmentManager" filter=""/>
+  <component-import key="attachmentManager" interface="com.atlassian.jira.issue.AttachmentManager" filter=""/>
+  <component-import key="jiraAuthenticationContext" interface="com.atlassian.jira.security.JiraAuthenticationContext" filter=""/>
+  
+  
   
 </atlassian-plugin>
 

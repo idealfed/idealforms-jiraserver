@@ -66,6 +66,7 @@ import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.issue.AttachmentManager;
 import com.atlassian.jira.issue.attachment.Attachment;
 import com.atlassian.jira.util.AttachmentUtils;
+import com.atlassian.jira.security.JiraAuthenticationContext;
 
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.upm.api.license.PluginLicenseManager;
@@ -90,9 +91,10 @@ public class Craft extends HttpServlet
 	private final PluginSettingsFactory pluginSettingsFactory;
     private static final Logger plog = LogManager.getLogger("atlassian.plugin");
     private final ActiveObjects ao;
+    private final JiraAuthenticationContext jiraAuthenticationContext;
 
-
-	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, com.atlassian.jira.user.util.UserManager userManager2, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory, AttachmentManager attachmentManager) {
+	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, com.atlassian.jira.user.util.UserManager userManager2, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory, AttachmentManager attachmentManager,JiraAuthenticationContext jiraAuthenticationContext) {
+		this.jiraAuthenticationContext = jiraAuthenticationContext;
 		this.attachmentManager = attachmentManager;
         this.pluginLicenseManager = pluginLicenseManager;
 		this.userManager = userManager;
@@ -193,6 +195,8 @@ public class Craft extends HttpServlet
     	if(groupName==null) groupName="";
     	String modeName = request.getParameter("mode");
     	if(modeName==null) modeName="";
+    	String extVer = request.getParameter("extv");
+    	if(extVer==null) extVer="";
 
 		//XSS cleans
     	remote=sanitize(remote);
@@ -236,6 +240,7 @@ public class Craft extends HttpServlet
 
 
     	String outTemplate = "main";
+		if(extVer.equals("7")) outTemplate="main_7";
     	if (craftFlag.equals("true"))
     	{
     		outTemplate="craft";
@@ -280,12 +285,16 @@ public class Craft extends HttpServlet
 
 		if((modeName!="") && (formId==""))
 		{
-			outTemplate="admin.vm";
+			if(!remote.equals(""))
+				outTemplate="admin_remote.vm";
+			else
+				outTemplate="admin.vm";
 		}
 
 		if(themeFlag.equals("crisp"))
 		{
 			outTemplate="maincrisp.vm";
+			if(extVer.equals("7")) outTemplate="maincrisp_7";
 		}
 
     	//you need to know if this is an anonymous call, if so, it can run....
@@ -602,7 +611,7 @@ public class Craft extends HttpServlet
 				String attArray[] = attString.split(",");
 				boolean goodAtts = true;
 
-				ApplicationUser au = userManager2.getUserByName(username);
+				ApplicationUser au =  jiraAuthenticationContext.getUser();// userManager2.getUserByName(username);
 				Attachment attachment=null;
 				plog.info("About to copy a jira attachments " +attString + " to " + targetIssue + " under username " + username);
 
@@ -615,11 +624,9 @@ public class Craft extends HttpServlet
 						plog.info("Verifying type attachment: " + attachment.getClass().toString());
 						plog.info("Verifying type user: " + au.getClass().toString());
 						plog.info("Verifying type attMng: " + attachmentManager.getClass().toString());
+                        plog.info("Copying file " + attachment.getFilename() + " by " + au.getUsername() + " to issue " + targetIssue);
 
-plog.info("Copying file " + attachment.getFilename() + " by " + au.getUsername() + " to issue " + targetIssue);
-
-
-						attachmentManager.copyAttachment(attachment, au, targetIssue);
+						Object cpRes = attachmentManager.copyAttachment(attachment, au, targetIssue);
 						//attachmentManager.copyAttachment(att,currentUser,"TPO-2");
                         retS.append(attArray[i] + " copied\n");
 					}

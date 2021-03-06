@@ -4074,7 +4074,6 @@ addEditType:function (inTypeId,isReportView)
 			{
 				xtype: 'combobox',
 				labelAlign: 'left',
-				forceSelection: true,
 				store: typeLookup,
 				forceSelection: true,
 				labelWidth: 100,
@@ -4098,9 +4097,8 @@ addEditType:function (inTypeId,isReportView)
 			{
 				xtype: 'combobox',
 				labelAlign: 'left',
-				forceSelection: true,
+				forceSelection: false,
 				store: fieldLookup,
-				forceSelection: true,
 				labelWidth: 100,
 				margin: '4 0 0 10',
 				fieldLabel: "JIRA Field",
@@ -4110,12 +4108,12 @@ addEditType:function (inTypeId,isReportView)
 				width: 400,
 				value: thisT.fieldName,
 				listeners: {
-									afterrender: function(f)
-									                {
-									                    this.validate();
-				                    },
-									change: function(f, n, o){
-										thisT.fieldName = n;
+					afterrender: function(f)
+									{
+										this.validate();
+					},
+					change: function(f, n, o){
+						thisT.fieldName = n;
 					}}
 			},
         ],
