@@ -2501,11 +2501,11 @@ addEditForm:function (sRow)
 								var cloudToken =  "&jwt=" +token;
 								if(ijf.admin.cwfAdmin_form.testIssue)
 								{
-									var tUrl = g_root + '/run?itemId='+ijf.admin.cwfAdmin_form.testIssue+'&formId='+ijf.admin.cwfAdmin_form.name + cloudToken;
+									var tUrl = g_root + '/plugins/servlet/iforms?itemId='+ijf.admin.cwfAdmin_form.testIssue+'&formId='+ijf.admin.cwfAdmin_form.name;
 								}
 								else
 								{
-									var tUrl = g_root + '/run?formId='+ijf.admin.cwfAdmin_form.name + cloudToken;
+									var tUrl = g_root + '/plugins/servlet/iforms?formId='+ijf.admin.cwfAdmin_form.name;
 								}
 								window.open(tUrl);
 							}},
