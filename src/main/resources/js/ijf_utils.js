@@ -4149,7 +4149,7 @@ sharepointFilenameClean:function(inFileName)
   {
 	  fNameNoPeriods = fNameNoPeriods.replace(new RegExp(invalidChars[i], 'g'), "_");
   }
-
+  fNameNoPeriods = fNameNoPeriods.trim();
   if(fNameSuffix) return fNameNoPeriods + "." + fNameSuffix;
   return fNameNoPeriods;
 }
