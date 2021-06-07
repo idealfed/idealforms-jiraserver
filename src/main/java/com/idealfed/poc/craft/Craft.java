@@ -1352,6 +1352,7 @@ public class Craft extends HttpServlet
 				 //no changes yet
 				   for(int i=0;i<targets.length;i++)
 				   {
+ 	 				    plog.info("Sending email to: " + targets[i]);
 					    email.setTo(targets[i]);
   					    mailServer.send(email);
 						//SMTPMailServer  mailServer = MailFactory.getServerManager().getDefaultSMTPMailServer();
