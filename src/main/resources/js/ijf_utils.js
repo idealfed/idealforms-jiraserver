@@ -1782,7 +1782,10 @@ gridSpUploadFile: function(event, inGridId, inControlId, inIssueId)
 	};
 	var thisFileName = input.files[0].name;
 	thisFileName = ijfUtils.sharepointFilenameClean(thisFileName);
-	reader.readAsArrayBuffer(input.files[0]);
+	//reader.readAsArrayBuffer(input.files[0]);
+	//need to create a new file with the cleaned name
+	var NEWFile = new File([input.files[0]],thisFileName,{type: input.files[0].type}); //UPDATE
+	reader.readAsArrayBuffer(NEWFile);
 
 },
 writeCustomType:function(inCustomType)
@@ -4144,7 +4147,8 @@ sharepointFilenameClean:function(inFileName)
   }
 
   //var invalidChars = ",~\"#%&*:<>?/\\{|}";
-  var invalidChars = ["'",",","~","\\\"","\\#","\\%","\\&","\\*","\\:","\\<","\\>","\\?","/","\\\\","{","\\|","}"];
+  //var invalidChars = ["'",",","~","\\\"","\\#","\\%","\\&","\\*","\\:","\\<","\\>","\\?","/","\\\\","{","\\|","}"];
+  var invalidChars = [" ","'",",","~","\\\"","\\#","\\%","\\&","\\*","\\:","\\<","\\>","\\?","/","\\\\","{","\\|","}"]; ///UPDATE
   for(var i=0;i<invalidChars.length;i++)
   {
 	  fNameNoPeriods = fNameNoPeriods.replace(new RegExp(invalidChars[i], 'g'), "_");
