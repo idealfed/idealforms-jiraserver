@@ -2704,7 +2704,7 @@ renderAttachmentSPTree:function(inFormKey,item, inField, inContainer)
 						});
 			}
 			headerButtons.push({
-				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upSPGrdFrm_'+inField.formCell.replace(/,/g,"_")+"'><input id='"+inFormKey+'_upSpGrd_'+inField.formCell.replace(/,/g,"_")+"' type='file' name='file' onchange='ijfUtils.gridSpUploadFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\",\"" + msaIssueKey + "\");'></form>",
+				html:  "<form enctype='multipart/form-data' id='"+inFormKey+'_upSPGrdFrm_'+inField.formCell.replace(/,/g,"_")+"'><input id='"+inFormKey+'_upSpGrd_'+inField.formCell.replace(/,/g,"_")+"' type='file' name='file' onchange='ijfUtils.gridSpUploadFile(event,\""+inFormKey+'_ctr_'+inField.formCell.replace(/,/g,"_")+"\",\""+inFormKey+'_fld_'+inField.formCell+"\",\"" + msaIssueKey + "\");' multiple></form>",
 				frame: false,
 				hidden: true,
 				border: false,

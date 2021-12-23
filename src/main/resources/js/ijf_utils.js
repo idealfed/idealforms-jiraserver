@@ -1739,54 +1739,69 @@ gridUploadCsvFile: function(event, inGridId, inControlId, dontSetDirty)
 },
 gridSpUploadFile: function(event, inGridId, inControlId, inIssueId)
 {
-
 	//you are going to UPLOAD a file to sharepoint here.....
-
     ijfUtils.showProgress();
 
 	var grid = Ext.getCmp(inGridId);
 	if(!grid){ijfUtils.footLog("failed to get to grid with " + inGridId); return;}
 	var input = event.target;
-	var reader = new FileReader();
-	reader.onload = function(){
-	  var binFile = reader.result;
-	  var base64 = ijfUtils.Base64Binary.arrayBufferToBase64(binFile);
 
-	  var params = [];
-	  params.push(window.location.hostname.split(".")[0]);
-	  params.push(inIssueId);
-	  params.push(thisFileName);
-	  params.push(base64);
+    var uploadStack = [];
+	var errored = false;
+    var processFile=function(inFile)
+    {
+		if(errored) return;
+		var thisFile=inFile;
+		var reader = new FileReader();
+		reader.onload = function(){
+		  var binFile = reader.result;
+		  var base64 = ijfUtils.Base64Binary.arrayBufferToBase64(binFile);
 
-	  var fSave = ijfUtils.runSharepointMethod("UploadOrUpdateAttachment",params.join(","));
-	  ijfUtils.hideProgress();
-	  if(fSave.status=="error")
-	  {
-		  ijfUtils.modalDialogMessage("Error saving",fSave.message);
-	  }
-	  else if(fSave.status=="success")
-	  {
-		  //perform simple save here...it will skip if nothing to save...i think
-		  if(ijf.main.allControlsClean())
-			  ijf.main.resetForm();
+		  var params = [];
+		  params.push(window.location.hostname.split(".")[0]);
+		  params.push(inIssueId);
+		  params.push(thisFileName);
+		  params.push(base64);
+
+		  var fSave = ijfUtils.runSharepointMethod("UploadOrUpdateAttachment",params.join(","));
+
+		  if(fSave.status=="error")
+		  {
+	  		  ijfUtils.hideProgress();
+			  errored=true;
+			  ijfUtils.modalDialogMessage("Error saving",fSave.message);
+		  }
+		  else if(fSave.status=="success")
+		  {
+			  delete uploadStack[thisFile.name]
+			  //perform simple save here...it will skip if nothing to save...i think
+			  if(Object.keys(uploadStack).length<1)
+			  {
+		  		  ijfUtils.hideProgress();
+				  //this is the last file and this works if synchronous...need to see how it works
+				  if(ijf.main.allControlsClean())
+					  ijf.main.resetForm();
+				  else
+					  ijfUtils.simpleSave();
+			  }
+		  }
 		  else
-			  ijfUtils.simpleSave();
-
-	  }
-	  else
-	  {
-		  ijfUtils.modalDialogMessage("Error saving",fSave);
-	  }
-	  //now upload the file to Sharepoint.....
-
+		  {
+              ijfUtils.hideProgress();
+			  errored=true;
+			  ijfUtils.modalDialogMessage("Error saving",fSave);
+		  }
+		  //now upload the file to Sharepoint.....
+		};
+		var thisFileName = thisFile.name;
+		thisFileName = ijfUtils.sharepointFilenameClean(thisFileName);
+		var NEWFile = new File([thisFile],thisFileName,{type: thisFile.type});
+		reader.readAsArrayBuffer(NEWFile);
+	}
+    for(var i=0;i<input.files.length;i++) {
+		uploadStack[input.files[i].name]="processing";
+		processFile(input.files[i]);
 	};
-	var thisFileName = input.files[0].name;
-	thisFileName = ijfUtils.sharepointFilenameClean(thisFileName);
-	//reader.readAsArrayBuffer(input.files[0]);
-	//need to create a new file with the cleaned name
-	var NEWFile = new File([input.files[0]],thisFileName,{type: input.files[0].type}); //UPDATE
-	reader.readAsArrayBuffer(NEWFile);
-
 },
 writeCustomType:function(inCustomType)
 {

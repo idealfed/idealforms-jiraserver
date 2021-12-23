@@ -45,12 +45,18 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "6.0.8";
+    window.g_version = "6.0.16";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);
 
     console.log("Initializing IJF version: " + window.g_version);
+
+	if("$ijfUsername"==g_username)
+	{
+		document.getElementById("ijfOuterContainer").innerHTML="<br/><h2><center>Please log into this system prior to accessing this resource.</center></h2>";
+		return;
+	}
     //prevent double initializing....
     //if(ijf.initialized)
     //{

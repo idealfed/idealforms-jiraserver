@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.idealfed.poc</groupId>
     <artifactId>idealforms</artifactId>
-    <version>6.0.14-STABLE</version>
+    <version>6.0.16-STABLE</version>
     <organization>
         <name>Ideal Federal LLC</name>
         <url>http://www.idealfed.com</url>
@@ -162,24 +162,25 @@
 							<version>${testkit.version}</version>
 						</pluginArtifact>
 					</pluginArtifacts>
-					-->	
-                    <instructions>
+  -->    
+                     <instructions>
 
                         <Atlassian-Plugin-Key>${atlassian.plugin.key}</Atlassian-Plugin-Key>
 
-                        <!-- Add package to export here -->
 
                         <Export-Package></Export-Package>
 
-                        <!-- Add package import here -->
 
                         <Import-Package>com.sun.mail.imap, com.sun.mail.smtp, com.sun.mail.pop3,*;version="0";resolution:=optional</Import-Package>
 
-                        <!-- Ensure plugin is spring powered -->
 
                         <Spring-Context>*</Spring-Context>
 
                     </instructions>					
+						
+
+
+                    
                 </configuration>
             </plugin>
             <plugin>
