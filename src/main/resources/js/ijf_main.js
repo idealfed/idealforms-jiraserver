@@ -45,7 +45,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "6.0.16";
+    window.g_version = "7.0.0";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);
@@ -54,8 +54,16 @@ function init(inConfigVersion)
 
 	if("$ijfUsername"==g_username)
 	{
-		document.getElementById("ijfOuterContainer").innerHTML="<br/><h2><center>Please log into this system prior to accessing this resource.</center></h2>";
-		return;
+		if(g_formId=="miniMaxLogin")
+		{
+			g_username="unknown";
+		}
+		else
+		{
+			//document.getElementById("ijfOuterContainer").innerHTML="<br/><h2><center>Please log into this system prior to accessing this resource.</center></h2>";
+	        window.location.href='/plugins/servlet/iforms?formId=miniMaxLogin&callback='+encodeURIComponent(window.location.pathname)+encodeURIComponent(window.location.search);
+ 		    return;
+		}
 	}
     //prevent double initializing....
     //if(ijf.initialized)

@@ -8927,7 +8927,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 		});
 
 	   //if editing, construct the edit meta for the row returned
-	   if(editing)
+	   if((editing) && (rawList.issues.length>0))
 	   {
 			var eKey = rawList.issues[0].key;
 			if(!ijf.jiraEditMeta.hasOwnProperty(eKey))
@@ -9528,6 +9528,10 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 									dVal = ijfUtils.handleJiraFieldType(jField,i.fields[jField.id],true);
 									//perhaps build the types here...
 									colMeta[jField.id]=jField;
+								}
+								if(thisField=="parent")
+								{
+									dVal=i.fields.parent;
 								}
 								retObj[thisField]= dVal;
 							});
