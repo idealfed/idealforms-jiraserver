@@ -141,7 +141,7 @@ public class Craft extends HttpServlet
 
 //section to comment or uncomment license
 
-		if (pluginLicenseManager.getLicense().isDefined())
+		/*if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
 		   if (license.getError().isDefined())
@@ -161,7 +161,7 @@ public class Craft extends HttpServlet
             w.println("Sorry, it appears your Ideal Forms for JIRA License is missing, please update your license key.");
             w.close();
             return;
-		}
+		}*/
 
 //end comment section
 
@@ -211,7 +211,7 @@ public class Craft extends HttpServlet
 //determine if Admin call or a Craft call, either way, require Administrator....
 
 
-        if(iwfAction.equals("noAction"))
+/*       if(iwfAction.equals("noAction"))
         {
 			if ((craftFlag.equals("true")) || (formId.equals("")))
 			{
@@ -230,7 +230,7 @@ public class Craft extends HttpServlet
 						return;
 				}
 			}
-	    }
+	    }*/
 
 
 //end comment section
