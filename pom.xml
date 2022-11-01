@@ -194,7 +194,7 @@
                         <Export-Package></Export-Package>
 
 
-                        <Import-Package>com.sun.mail.imap, com.sun.mail.smtp, com.sun.mail.pop3,*;version="0";resolution:=optional</Import-Package>
+                        <Import-Package>com.sun.mail.imap;resolution:=optional, com.sun.mail.smtp;resolution:=optional, com.sun.mail.pop3;resolution:=optional,*;version="0";resolution:=optional</Import-Package>
 
 
                         <Spring-Context>*</Spring-Context>
