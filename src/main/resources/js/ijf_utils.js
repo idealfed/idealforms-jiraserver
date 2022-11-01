@@ -1444,30 +1444,37 @@ messageHandler:function(event)
      */
         ijfUtils.footLog("Received message from: " + event.origin);
 
-        //post ack
-        event.source.postMessage("received",event.origin);
+		//set attention
+		let i = 0;
+		const show = ['******************',document.title];
 
-        //set attention
-        var i = 0;
-        var show = ['******************',document.title];
-        function stop(){
-            clearInterval(focusTimer);
-            document.title = show[1];
-        }
+		var focusTimer = setInterval(function(){
+			document.title = show[i++ % 2];
+			window.focus();
+		},500);
+
+		function stop(){
+			clearInterval(focusTimer);
+			document.title = show[1];
+		}
+
+		//post ack
+		if( event.data && event.data === "received") {
+			stop();
+		} else {
+			event.source.postMessage("received", event.origin);
+		}
+
         onfocus = function() {
             stop();
             onfocus=null;
         }
-        var focusTimer = setInterval(function(){
-            document.title = show[i++ % 2];
-            window.focus();
-        },500);
 
 
         if(!event.data.action)
         {
             ijfUtils.footLog("No action provided");
-            return;
+            stop();
         }
         switch(event.data.action) {
             case 'showItemForm':
