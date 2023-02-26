@@ -1400,13 +1400,16 @@ loadIssueTypeDetails:function(projectKey)
 		//each will be keyed fields by issue type...
 		ijf.jiraAddMeta[projectKey] = [];
 		ijf.jiraAddMetaKeyed[projectKey] = [];
-		var rawMeta = ijfUtils.jiraApiSync("GET",'/rest/api/2/issue/createmeta',"expand=projects.issuetypes.fields&projectKeys="+projectKey);
-		rawMeta.projects[0].issuetypes.forEach(function(it){
+		var rawMeta = ijfUtils.jiraApiSync("GET",'/rest/api/2/issue/createmeta/'+projectKey+'/issuetypes',"expand=projects.issuetypes.fields");
+		rawMeta.values.forEach(function(it){
 
-			ijf.jiraAddMeta[projectKey][it.name]=it.fields;
+			var itId = it.id;
+			var fieldData = ijfUtils.jiraApiSync("GET",'/rest/api/2/issue/createmeta/'+projectKey+'/issuetypes/'+itId, "");
+
+			ijf.jiraAddMeta[projectKey][it.name]=it.values;
+
 			var fieldsKeyed = [];
-			Object.keys(it.fields).forEach(function(fk){
-				var f = it.fields[fk];
+			fieldData.values.forEach(function(f){
 				fieldsKeyed[f.name]=f;
 			});
 			ijf.jiraAddMetaKeyed[projectKey][it.name]=fieldsKeyed;
