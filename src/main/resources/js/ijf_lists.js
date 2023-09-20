@@ -2558,6 +2558,25 @@ addEditFormSet:function (inFrmId)
 						thisF.settings["adminEmail"] = n;
 					}
 				}
+            },
+			{
+				xtype: 'textfield',
+				labelAlign: 'left',
+				fieldLabel: 'Gbl On Load',
+				labelWidth: 100,
+				labelStyle: "color:darkblue",
+				margin: '4 0 0 10',
+				width: 400,
+				value: thisF.settings["onLoad"],
+				listeners: {
+				afterrender: function(f)
+				{
+					this.validate();
+				},
+				change: function(f,n,o){
+						thisF.settings["onLoad"] = n;
+					}
+				}
             }
         ],
         buttons:[{

@@ -71,6 +71,7 @@ import com.atlassian.jira.security.JiraAuthenticationContext;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.upm.api.license.PluginLicenseManager;
 import com.atlassian.upm.api.license.entity.PluginLicense;
+import com.atlassian.jira.config.properties.ApplicationProperties;
 import com.google.common.collect.Maps;
 import com.idealfed.jiraforms.ao.*;
 
@@ -92,8 +93,9 @@ public class Craft extends HttpServlet
     private static final Logger plog = LogManager.getLogger("atlassian.plugin");
     private final ActiveObjects ao;
     private final JiraAuthenticationContext jiraAuthenticationContext;
+	private final ApplicationProperties applicationProperties;
 
-	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, com.atlassian.jira.user.util.UserManager userManager2, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory, AttachmentManager attachmentManager,JiraAuthenticationContext jiraAuthenticationContext) {
+	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, com.atlassian.jira.user.util.UserManager userManager2, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory, AttachmentManager attachmentManager,JiraAuthenticationContext jiraAuthenticationContext, ApplicationProperties applicationProperties) {
 		this.jiraAuthenticationContext = jiraAuthenticationContext;
 		this.attachmentManager = attachmentManager;
         this.pluginLicenseManager = pluginLicenseManager;
@@ -103,6 +105,7 @@ public class Craft extends HttpServlet
 		this.loginUriProvider = loginUriProvider;
 		this.templateRenderer = templateRenderer;
 		this.pluginSettingsFactory = pluginSettingsFactory;
+		this.applicationProperties = applicationProperties;
 		this.ao = checkNotNull(ao);
 	}
 
@@ -168,6 +171,8 @@ public class Craft extends HttpServlet
 
 		String contextPath = request.getRequestURI();
 		contextPath = contextPath.replace("/plugins/servlet/iforms","");
+		//trying a contextPath of / to see if this works for a bug
+		//String contextPath = applicationProperties.getBaseUrl(UrlMode.RELATIVE);
 
 
     	String iwfAction = request.getParameter("ijfAction");
@@ -1285,6 +1290,16 @@ public class Craft extends HttpServlet
 			String html = req.getParameter("html");
 			String attString = req.getParameter("attachments");
 			String targets[] = toAddresses.split(",");
+			
+			if(applicationProperties.getOption("jira.mail.send.disabled")==true)
+			{
+				plog.info("IdealForms: Attempt to email skipped because jira email disabled");
+				final PrintWriter w = res.getWriter();
+				w.print("JIRA Email is disabled");
+				w.close();
+				return;
+			}
+
 			try
 			{
 				 SMTPMailServer  mailServer = MailFactory.getServerManager().getDefaultSMTPMailServer();

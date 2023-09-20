@@ -9573,7 +9573,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 					"url": encodeURI(aUrl.replace(/ /g,"%20")),
 					"formSetId":inField.form.formSet.id
 				}
-				aUrl=g_root + "/plugins/servlet/iforms";
+				aUrl= "/plugins/servlet/iforms";
 				//?ijfAction=proxyApiCall&formSetId="+inField.form.formSet.id+"&url="+encodeURI(aUrl);
 			}
 
@@ -9582,7 +9582,7 @@ renderItemList:function(inFormKey,item, inField, inContainer)
 				pageSize: itemsPerPage,
 				proxy: {
 						type: 'ajax',
-						url: aUrl,
+						url: g_root + aUrl,
 						extraParams: xtraParams,
 						reader: {
 							type: 'json',

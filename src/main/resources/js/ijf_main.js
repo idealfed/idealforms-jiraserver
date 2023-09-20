@@ -32,6 +32,7 @@ var gSaveItemAttributes=false;
 var gSaveFormCallback = null;
 var gPopupFormHandle = null;
 var gRec = null;
+var datacache = null;
 
 
 var gNavigateOnChange = "Unsaved data exists on this page...<br><br>Are you sure you want to navigate away?<br><br> OK=navigate away<br> Cancel=return to editing.";
@@ -45,13 +46,12 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "7.0.7";
+    window.g_version = "7.0.15";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);
 
     console.log("Initializing IJF version: " + window.g_version);
-
 
     //prevent double initializing....
     //if(ijf.initialized)
@@ -61,7 +61,7 @@ function init(inConfigVersion)
 	//}
 
 	ijf.initialized=true;
-
+    ijf.main.spcache = null;
 
     ijfUtils.showProgress();
 
@@ -114,11 +114,24 @@ function init(inConfigVersion)
 				//substituted null values for    "~"
 				cleanDoubleDouble = cleanDoubleDouble.replace("\"~\"","\"\"");
 
-        	    ijf.fw.setup(JSON.parse(cleanDoubleDouble));
+        	    ijf.fw.setup(JSON.parse(cleanDoubleDouble));	
+				//auto run onLoad
+				if(ijf.fw.formSets[0].settings["onLoad"])
+				{
+					onLoadGlobal = ijf.fw.formSets[0].settings["onLoad"];
+					try
+					{
+						ijf.snippets[onLoadGlobal]();
+					}
+					catch
+					{
+						console.log("Failed to initialize global onLoad: " + onLoadGlobal);
+					}
+				}				
 			}
 			catch(e)
 			{
-    	        ijfUtils.footLog("Config failed to parsee: " + e.message);
+    	        ijfUtils.footLog("Config failed to parse: " + e.message);
     	        ijfUtils.hideProgress();
     	        ijfUtils.modalDialogMessage("Fatal","Unable to get the configuration.  Don't panic, the system maintains 20 prior snapshots from which to recover.  Click the 'History' button, apply a config and download and upload.");
 				ijfUtils.renderAdminButtons('ijfContent');
@@ -206,7 +219,6 @@ function processSetup(inContainerId)
     //ijfUtils.clearExt();
     ijfUtils.clearAll();
 
-    ijf.jiraMeta=null;
 
     //hook to allow non-item based forms, ie reports
     if (ijf.main.itemId=="0")
@@ -367,6 +379,7 @@ function loadItem(inContainerId)
 
 function renderForm(inContainerId, inFormId, isNested, item, afterRender)
 {
+
 
 	if(!isNested)
 	{

@@ -445,13 +445,16 @@ var ijfUtils = {
    jiraApiSync:function(inMethod, inApi, inData){
 
      	var retVal="tbd";
+        var target = inApi;
+        if(inApi.indexOf(g_root)<0) target = g_root + inApi;
+		
 
      	jQuery.ajax({
 			     headers: {Accept: "application/json"},
                  async: false,
                  type: inMethod,
                  contentType:"application/json; charset=utf-8",
-                 url: g_root + inApi,
+                 url: target,
                  data: inData,
                  timeout: 60000,
              success: function(data,e,f) {
@@ -494,13 +497,14 @@ var ijfUtils = {
 		return retVal;
    },
    jiraApi:function(inMethod,inApi, inData, onSuccess, onError){
-
+        var target = inApi;
+        if(inApi.indexOf(g_root)<0) target = g_root + inApi;
      	var retVal="tbd";
      	jQuery.ajax({
                  async: true,
                  type: inMethod,
                  contentType:"application/json; charset=utf-8",
-                 url: g_root + inApi,
+                 url: target,
                  data: inData,
                  timeout: 60000,
              success: onSuccess,
@@ -509,6 +513,16 @@ var ijfUtils = {
 },
 getSharepointIssueFiles: function(inIssueId)
 {
+	if(ijf.session.spAttachmentCache)
+	{
+		if(ijf.session.spAttachmentCache.hasOwnProperty(inIssueId))
+		{
+			return ijf.session.spAttachmentCache[inIssueId];
+		}
+
+	}
+
+	
 	var resMessage = "";
 	//save the form, update the message at bottom....
 	var params = [];
@@ -535,8 +549,9 @@ getSharepointIssueFiles: function(inIssueId)
 					resMessage = "Failed to run " + e.message;
 				}
 			});
-
-
+             //cache it
+            if(!ijf.session.spAttachmentCache) ijf.session.spAttachmentCache = {};
+			ijf.session.spAttachmentCache[inIssueId] = resMessage;
     }
     catch(e)
     {
@@ -547,6 +562,7 @@ getSharepointIssueFiles: function(inIssueId)
 },
 getSharepointIssueFileVersions: function(inIssueId,inFileName)
 {
+
 	var resMessage = "";
 	//save the form, update the message at bottom....
 	var params = [];
@@ -583,6 +599,7 @@ getSharepointIssueFileVersions: function(inIssueId,inFileName)
 },
 copySpFilesToJira: function(inFileNames,inIssueId)
 {
+    ijf.session.spAttachmentCache = null;
 	var resMessage = "";
 	//save the form, update the message at bottom....
 	var siteName = window.location.hostname.split(".")[0];
@@ -621,6 +638,7 @@ copySpFilesToJira: function(inFileNames,inIssueId)
 copyJiraFilesToSp: function(inFileIds,inIssueId)
 {
 	var resMessage = "";
+    ijf.session.spAttachmentCache = null;
 	//save the form, update the message at bottom....
 	var siteName = window.location.hostname.split(".")[0];
 	try
@@ -657,6 +675,7 @@ copyJiraFilesToSp: function(inFileIds,inIssueId)
 },
 undoSpCheckout: function(inRawFile,inIssueId)
 {
+    ijf.session.spAttachmentCache = null;
 	var resMessage = "";
 	//save the form, update the message at bottom....
 	var params = [];
@@ -697,6 +716,7 @@ undoSpCheckout: function(inRawFile,inIssueId)
 },
 checkOutSpFile: function(inRawFile,inIssueId)
 {
+    ijf.session.spAttachmentCache = null;
 	var resMessage = "";
 	//save the form, update the message at bottom....
 	var params = [];
@@ -737,6 +757,7 @@ checkOutSpFile: function(inRawFile,inIssueId)
 },
 checkInSpFile: function(inRawFile,inIssueId,inComment)
 {
+    ijf.session.spAttachmentCache = null;
 	var resMessage = "";
 	//save the form, update the message at bottom....
 	var params = [];
@@ -778,6 +799,7 @@ checkInSpFile: function(inRawFile,inIssueId,inComment)
 },
 deleteSpFile: function(inRawFile,inIssueId)
 {
+    ijf.session.spAttachmentCache = null;
 	var resMessage = "";
 	//save the form, update the message at bottom....
 	var params = [];
@@ -860,6 +882,7 @@ getSpFileData:function(inIssueId, att) {
         return resultObj;
     },
 renameSpFile:function(inIssueId, oldFileName, newFileName) {
+    ijf.session.spAttachmentCache = null;
         var resMessage = "";
         var resultObj;
         //save the form, update the message at bottom....
@@ -905,6 +928,7 @@ renameSpFile:function(inIssueId, oldFileName, newFileName) {
 uploadSpFile: function(inIssueId, inFileName, inBase64)
 {
 	//you are going to UPLOAD a file to sharepoint here.....
+    ijf.session.spAttachmentCache = null;
 
 	  var params = [];
 	  params.push(window.location.hostname.split(".")[0]);
@@ -947,6 +971,7 @@ uploadSpFile: function(inIssueId, inFileName, inBase64)
 },
 runSharepointMethod: function(inMethod,inData)
 {
+	ijf.session.spAttachmentCache = null;
 	var resMessage = "";
 	//save the form, update the message at bottom....
 	try
@@ -1400,11 +1425,11 @@ loadIssueTypeDetails:function(projectKey)
 		//each will be keyed fields by issue type...
 		ijf.jiraAddMeta[projectKey] = [];
 		ijf.jiraAddMetaKeyed[projectKey] = [];
-		var rawMeta = ijfUtils.jiraApiSync("GET",'/rest/api/2/issue/createmeta/'+projectKey+'/issuetypes',"expand=projects.issuetypes.fields");
+		var rawMeta = ijfUtils.jiraApiSync("GET",'/rest/api/2/issue/createmeta/'+projectKey+'/issuetypes',"maxResults=1000&expand=projects.issuetypes.fields");
 		rawMeta.values.forEach(function(it){
 
 			var itId = it.id;
-			var fieldData = ijfUtils.jiraApiSync("GET",'/rest/api/2/issue/createmeta/'+projectKey+'/issuetypes/'+itId, "");
+			var fieldData = ijfUtils.jiraApiSync("GET",'/rest/api/2/issue/createmeta/'+projectKey+'/issuetypes/'+itId, "maxResults=1000");
 
 			ijf.jiraAddMeta[projectKey][it.name]=it.values;
 
@@ -1750,6 +1775,8 @@ gridUploadCsvFile: function(event, inGridId, inControlId, dontSetDirty)
 gridSpUploadFile: function(event, inGridId, inControlId, inIssueId)
 {
 	//you are going to UPLOAD a file to sharepoint here.....
+    ijf.session.spAttachmentCache = null;
+
     ijfUtils.showProgress();
 
 	var grid = Ext.getCmp(inGridId);
@@ -2183,7 +2210,8 @@ getConfigJson:function(inFormSet)
 },
 clearAll:function()
 {
-     ijfUtils.clearExt();
+
+    ijfUtils.clearExt();
 
     jQuery('#ijfHead').html('');
     jQuery('#ijfContent').html('');
@@ -4174,6 +4202,7 @@ sharepointFilenameClean:function(inFileName)
   //var invalidChars = ",~\"#%&*:<>?/\\{|}";
   //var invalidChars = ["'",",","~","\\\"","\\#","\\%","\\&","\\*","\\:","\\<","\\>","\\?","/","\\\\","{","\\|","}"];
   var invalidChars = [" ","'",",","~","\\\"","\\#","\\%","\\&","\\*","\\:","\\<","\\>","\\?","/","\\\\","{","\\|","}"]; ///UPDATE
+  //8/23 removed space from list
   for(var i=0;i<invalidChars.length;i++)
   {
 	  fNameNoPeriods = fNameNoPeriods.replace(new RegExp(invalidChars[i], 'g'), "_");
