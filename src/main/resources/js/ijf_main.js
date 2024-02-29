@@ -46,7 +46,7 @@ function init(inConfigVersion)
 	/*
 	   Set g_version for this version of the JS
 	*/
-    window.g_version = "7.0.15";
+    window.g_version = "7.0.18";
 
     //initiallize message handling
     jQuery.receiveMessage(ijfUtils.messageHandler);
@@ -121,13 +121,27 @@ function init(inConfigVersion)
 					onLoadGlobal = ijf.fw.formSets[0].settings["onLoad"];
 					try
 					{
-						ijf.snippets[onLoadGlobal]();
+						window.setTimeout(ijf.snippets[onLoadGlobal], 10000);
 					}
 					catch
 					{
 						console.log("Failed to initialize global onLoad: " + onLoadGlobal);
 					}
-				}				
+				}		
+
+				//Look for banner and display if exists
+				var thisT = null;
+                for(var tF in ijf.fw.CustomTypes){
+					if(!ijf.fw.CustomTypes.hasOwnProperty(tF)) return;
+					if(ijf.fw.CustomTypes[tF].name=="Maintenance Banner") thisT=ijf.fw.CustomTypes[tF];
+				}
+				if((thisT) && (ijf.main.debug != 'true'))
+				{
+					var bannerHtml = ijfUtils.getReferenceDataRaw("Maintenance Banner");
+					ijfUtils.hideProgress();
+				    ijfUtils.renderBanner('ijfContent',bannerHtml.map(function(r){return r[0];}).join("\n"));
+					return;
+				}
 			}
 			catch(e)
 			{

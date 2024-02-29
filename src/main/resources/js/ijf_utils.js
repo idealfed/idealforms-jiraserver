@@ -1726,6 +1726,19 @@ renderAdminButtons:function(inContainerId)
         pnl.render(document.getElementById("ijfManage"));
     }
 },
+renderBanner:function(inContainerId, inBannerHtml)
+{
+        var pnl = new Ext.FormPanel({
+			layout:'vbox',
+            items: [{
+                html: inBannerHtml,
+                frame: false,
+                border: false,
+                xtype: "panel"}
+                ]
+        });
+        pnl.render(document.getElementById(inContainerId));
+},
 gridUploadCsvFile: function(event, inGridId, inControlId, dontSetDirty)
 {
 	var grid = Ext.getCmp(inGridId);

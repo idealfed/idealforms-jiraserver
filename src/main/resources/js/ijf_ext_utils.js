@@ -13452,7 +13452,7 @@ renderGridPanel:function(inFormKey,item, inField, inContainer)
 							{
 								var parentIds = cLookupDef.parents;
 								var cFilters = parentIds.reduce(function(inFilter,p){
-										inFilter.push({"property":p.dataIndex.toString(), "value":"tbd", "columnName":p.columnName});
+										inFilter.push({"property":p.dataIndex.toString(), "value":"tbd", "columnName":p.columnName, "exactMatch":true});
 										return inFilter;
 									},[]);
 								cListener["beforeQuery"] = function(query) {
