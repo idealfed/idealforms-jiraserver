@@ -68,6 +68,9 @@ import com.atlassian.jira.issue.attachment.Attachment;
 import com.atlassian.jira.util.AttachmentUtils;
 import com.atlassian.jira.security.JiraAuthenticationContext;
 
+import com.atlassian.jira.project.Project;
+import com.atlassian.jira.project.ProjectManager;
+
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.upm.api.license.PluginLicenseManager;
 import com.atlassian.upm.api.license.entity.PluginLicense;
@@ -94,8 +97,9 @@ public class Craft extends HttpServlet
     private final ActiveObjects ao;
     private final JiraAuthenticationContext jiraAuthenticationContext;
 	private final ApplicationProperties applicationProperties;
+	private final ProjectManager projectManager;
 
-	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, com.atlassian.jira.user.util.UserManager userManager2, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory, AttachmentManager attachmentManager,JiraAuthenticationContext jiraAuthenticationContext, ApplicationProperties applicationProperties) {
+	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, com.atlassian.jira.user.util.UserManager userManager2, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory, AttachmentManager attachmentManager,JiraAuthenticationContext jiraAuthenticationContext, ApplicationProperties applicationProperties,ProjectManager projectManager) {
 		this.jiraAuthenticationContext = jiraAuthenticationContext;
 		this.attachmentManager = attachmentManager;
         this.pluginLicenseManager = pluginLicenseManager;
@@ -106,6 +110,7 @@ public class Craft extends HttpServlet
 		this.templateRenderer = templateRenderer;
 		this.pluginSettingsFactory = pluginSettingsFactory;
 		this.applicationProperties = applicationProperties;
+		this.projectManager = projectManager;
 		this.ao = checkNotNull(ao);
 	}
 
@@ -1279,9 +1284,6 @@ public class Craft extends HttpServlet
 		}
 
 
-
-
-
 		if(iwfAction.equals("sendMail"))
 		{
 			String toAddresses = req.getParameter("targets");
@@ -1290,6 +1292,7 @@ public class Craft extends HttpServlet
 			String html = req.getParameter("html");
 			String attString = req.getParameter("attachments");
 			String targets[] = toAddresses.split(",");
+			String projectKey = req.getParameter("projectkey");
 			
 			if(applicationProperties.getOption("jira.mail.send.disabled")==true)
 			{
@@ -1302,12 +1305,19 @@ public class Craft extends HttpServlet
 
 			try
 			{
+				//5-2024New logic for setting from address...
+				 if(projectKey==null) projectKey="noprojectkeyprovided";
+				 Project thisProj = projectManager.getProjectObjByKey(projectKey);
+				 String fromEmail = null;
+				 if(thisProj != null) fromEmail=thisProj.getEmail();
+					 
 				 SMTPMailServer  mailServer = MailFactory.getServerManager().getDefaultSMTPMailServer();
 				 Email email = null;
  		    	 if(attString==null)
  		    	 {
 					 //no attachments
 					 email = new Email("tbd@tbd.com").setSubject(subject).setBody(body);
+					 if(fromEmail != null) email.setFrom(fromEmail);
 					 email.setMimeType("text/html");
 					 if (html.equals("true")) email.setMimeType("text/html");
 				 }
@@ -1346,6 +1356,9 @@ public class Craft extends HttpServlet
 
 
 					 email = new Email("tbd@tbd.com");
+					 
+					 if(fromEmail != null) email.setFrom(fromEmail);
+					 					 
 					 email.setSubject(subject);
 					 email.setMimeType("text/html");
 					 if (html.equals("true")) email.setMimeType("text/html");

@@ -119,7 +119,7 @@
   <component-import key="attachmentManager" interface="com.atlassian.jira.issue.AttachmentManager" filter=""/>
   <component-import key="jiraAuthenticationContext" interface="com.atlassian.jira.security.JiraAuthenticationContext" filter=""/>
   <component-import key="applicationProperties" interface="com.atlassian.jira.config.properties.ApplicationProperties" filter=""/>
-  
+  <component-import key="projectManager" interface="com.atlassian.jira.project.ProjectManager" filter=""/>
   
   
 </atlassian-plugin>

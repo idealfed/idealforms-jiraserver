@@ -12921,7 +12921,7 @@ renderGridHtml:function(inFormKey,item, inField, inContainer)
 			var thisColHeader = col.columnName;
 			if(colHeaders[cIndex]) thisColHeader=colHeaders[cIndex];
 			var thStyle = "width:"+thisColWidth + ";"+l_labelStyle;
-		    tOut += "<td style='"+thStyle+"'>"+thisColHeader+"</td>";
+		    tOut += "<td style='"+l_Style+"'>"+thisColHeader+"</td>";
 		    cIndex++;
 	});
     tOut += "</tr>";
@@ -12944,7 +12944,7 @@ renderGridHtml:function(inFormKey,item, inField, inContainer)
 							break;
 						default:
 					}
-					tOut += "<td>"+outVal+"</td>";
+					tOut += "<td style='"+thStyle+"'>"+outVal+"</td>";
 				});
 			    tOut += "</tr>";
 			});
@@ -14291,8 +14291,18 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
 					scope: this,
 					handler: function(){
 						var outStr = "";
-						gridStore.ijfCols
+						var first = true;
+						//gridStore.ijfCols
 						gridStore.getData().each(function(r){
+							
+							if(first){
+								gridStore.ijfCols.forEach(function(c){									
+									outStr+="\"" + gridStore.parentGridPanel.columns[c].text + "\","
+								});
+								outStr+="\n";
+								first=false;
+							}
+							
 							gridStore.ijfCols.forEach(function(c){
 								if(r.data.hasOwnProperty(c))
 								{

@@ -288,6 +288,16 @@ var ijfUtils = {
 			return retVal;
 		},
      sendEmail:function(inTargets,inSubject,inBody,inHtml,inSuccess,inError,inAttachments){
+		var localProjectKey = "noprojectkeyincontext"; 
+		try
+        {
+             localProjectKey = ijf.currentItem.key.split("-")[0]; 
+        }
+        catch(e)
+        {
+             localProjectKey = "noprojectkeyincontext"; 
+		}			
+		 
 		jQuery.ajax({
 				async: true,
 				type: 'POST',
@@ -298,7 +308,8 @@ var ijfUtils = {
 					body: inBody,
 					html: inHtml, //true or false
 					action: 'sendMail',
-					attachments: inAttachments
+					attachments: inAttachments,
+					projectkey: localProjectKey
 				},
 				timeout: 60000,
 				success: inSuccess,
@@ -306,6 +317,15 @@ var ijfUtils = {
 			});
 		},
      sendEmailSync:function(inTargets,inSubject,inBody,inHtml,inAttachments){
+		var localProjectKey = "noprojectkeyincontext"; 
+		try
+        {
+             localProjectKey = ijf.currentItem.key.split("-")[0]; 
+        }
+        catch(e)
+        {
+             localProjectKey = "noprojectkeyincontext"; 
+		}			 
 		var retVal = "";
 		jQuery.ajax({
 				async: false,
@@ -317,7 +337,8 @@ var ijfUtils = {
 					body: inBody,
 					html: inHtml, //true or false
 					action: 'sendMail',
-					attachments: inAttachments
+					attachments: inAttachments,
+					projectkey: localProjectKey
 				},
 				timeout: 60000,
 				success: function(data) {
@@ -1744,6 +1765,14 @@ gridUploadCsvFile: function(event, inGridId, inControlId, dontSetDirty)
 	var grid = Ext.getCmp(inGridId);
 	if(!grid){ijfUtils.footLog("failed to get to grid with " + inGridId); return;}
 	var input = event.target;
+	
+    if(input.value.indexOf(".txt")<0) {
+		if(input.value.indexOf(".csv")<0){
+			alert("Sorry, please use csv or txt files"); 
+			return;
+		}
+	}
+	
 	var reader = new FileReader();
 	reader.onload = function(){
 	  var text = reader.result;
