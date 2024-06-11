@@ -1,6 +1,7 @@
 package com.idealfed.poc.craft;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.ArrayUtils;
 
@@ -79,26 +80,41 @@ import com.google.common.collect.Maps;
 import com.idealfed.jiraforms.ao.*;
 
 import net.java.ao.Query;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class Craft extends HttpServlet
 {
 
-    //@ComponentImport
+
+    @ComponentImport
     private final PluginLicenseManager pluginLicenseManager;
 
+	@ComponentImport
 	private final AttachmentManager attachmentManager;
+	@ComponentImport
 	private final UserManager userManager;
 	private final com.atlassian.jira.user.util.UserManager userManager2;
+	@ComponentImport
 	private final GroupManager groupManager;
+	@ComponentImport
 	private final LoginUriProvider loginUriProvider;
+	@ComponentImport
 	private final TemplateRenderer templateRenderer;
+	@ComponentImport
 	private final PluginSettingsFactory pluginSettingsFactory;
     private static final Logger plog = LogManager.getLogger("atlassian.plugin");
-    private final ActiveObjects ao;
-    private final JiraAuthenticationContext jiraAuthenticationContext;
+	@ComponentImport
+	private final ActiveObjects ao;
+	@ComponentImport
+	private final JiraAuthenticationContext jiraAuthenticationContext;
+	@ComponentImport
 	private final ApplicationProperties applicationProperties;
+	@ComponentImport
 	private final ProjectManager projectManager;
 
+	@Autowired
 	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, com.atlassian.jira.user.util.UserManager userManager2, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory, AttachmentManager attachmentManager,JiraAuthenticationContext jiraAuthenticationContext, ApplicationProperties applicationProperties,ProjectManager projectManager) {
 		this.jiraAuthenticationContext = jiraAuthenticationContext;
 		this.attachmentManager = attachmentManager;

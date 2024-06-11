@@ -105,11 +105,11 @@
   </web-item-->
     
   <!-- import from the product container -->
-  <component-import key="ao" name="Active Objects service" interface="com.atlassian.activeobjects.external.ActiveObjects">
+  <!--<component-import key="ao" name="Active Objects service" interface="com.atlassian.activeobjects.external.ActiveObjects">
           <description>Component to access Active Objects functionality from the plugin</description>
-  </component-import>
+  </component-import>-->
   <!--component-import key="applicationProperties" interface="com.atlassian.sal.api.ApplicationProperties"/-->
-  <component-import key="pluginLicenseManager" interface="com.atlassian.upm.api.license.PluginLicenseManager" filter=""/>  
+  <!--<component-import key="pluginLicenseManager" interface="com.atlassian.upm.api.license.PluginLicenseManager" filter=""/>
   <component-import key="templateRenderer" interface="com.atlassian.templaterenderer.TemplateRenderer" filter=""/>
   <component-import key="userManager" interface="com.atlassian.sal.api.user.UserManager" filter=""/>
   <component-import key="userManager2" interface="com.atlassian.jira.user.util.UserManager" filter=""/>  
@@ -119,7 +119,7 @@
   <component-import key="attachmentManager" interface="com.atlassian.jira.issue.AttachmentManager" filter=""/>
   <component-import key="jiraAuthenticationContext" interface="com.atlassian.jira.security.JiraAuthenticationContext" filter=""/>
   <component-import key="applicationProperties" interface="com.atlassian.jira.config.properties.ApplicationProperties" filter=""/>
-  <component-import key="projectManager" interface="com.atlassian.jira.project.ProjectManager" filter=""/>
+  <component-import key="projectManager" interface="com.atlassian.jira.project.ProjectManager" filter=""/>-->
   
   
 </atlassian-plugin>
