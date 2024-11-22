@@ -1755,6 +1755,8 @@ plog.debug("Configurations cleaned");
 		        	 ao.delete(s);
 		        }
 				ao.delete(f);
+				//TODO:  need to delete all forms as well.  dangerous but can work
+				//if the backups are more stable
 
 	    		final PrintWriter w = res.getWriter();
 	    		w.printf("{\"status\":\"OK\"}");
