@@ -14,6 +14,7 @@ import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.Map;
@@ -345,6 +346,10 @@ public class Craft extends HttpServlet
 		{
 			try
 			{
+				boolean followRedirects = false;
+				if ( request.getParameterMap().containsKey("followRedirects") ) {
+					followRedirects = Boolean.parseBoolean(request.getParameter("followRedirects"));
+				}
 				String targetUrl = java.net.URLDecoder.decode(request.getParameter("url"));
 
 				if(checkUrlWhitelist(targetUrl)==false)
@@ -360,8 +365,8 @@ public class Craft extends HttpServlet
 
 
 				URL url = new URL(targetUrl);
-				HttpURLConnection.setFollowRedirects(false);
 				HttpURLConnection con = (HttpURLConnection) url.openConnection();
+				con.setInstanceFollowRedirects(followRedirects);
 				con.setRequestMethod("GET");
 
 				int status = con.getResponseCode();
