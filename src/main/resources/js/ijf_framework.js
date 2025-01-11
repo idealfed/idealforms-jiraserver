@@ -51,6 +51,13 @@ setup:function (setup)
 		  	thisCt.name = ct.name;
 		  	thisCt.description = ct.description;
 		  	thisCt.customType = ct.customType;
+
+ 			//audit fields     
+            thisCt.createdBy = ct.createdBy;
+            thisCt.createdDate = ct.createdDate;
+            thisCt.updatedBy = ct.updatedBy;
+            thisCt.updatedDate = ct.updatedDate;
+
 		  	thisCt.fieldName = ct.fieldName;
 		  	thisCt.settings = ct.settings;
 		  inArray.push(thisCt);
@@ -79,6 +86,13 @@ setup:function (setup)
 			thisfs.projectName = sf.projectName;
 			thisfs.projectId = sf.projectId;
 			thisfs.snippets = sf.snippets;
+
+            //audit fields     
+            thisfs.createdBy = sf.createdBy;
+            thisfs.createdDate = sf.createdDate;
+            thisfs.updatedBy = sf.updatedBy;
+            thisfs.updatedDate = sf.updatedDate;
+
 			if(sf.hasOwnProperty("settings")) thisfs.rawSettings = JSON.parse(sf.settings);
 			thisfs.settings=[];
 			if(!thisfs.rawSettings) thisfs.rawSettings=[];
@@ -111,6 +125,12 @@ setup:function (setup)
 					if(!s.formCell) return;
 					thisF.fields[s.formCell]=s;
 				});
+
+                //audit fields    
+                thisF.createdBy = f.createdBy;
+                thisF.createdDate = f.createdDate;
+                thisF.updatedBy = f.updatedBy;
+                thisF.updatedDate = f.updatedDate;
 
 				ijf.formList.push([thisF.id,thisF.name,thisF.formType, this.projectName,this.name]);
 				ijf.fw.forms[thisF.name]=thisF;

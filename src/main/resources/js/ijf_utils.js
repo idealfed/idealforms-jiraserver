@@ -1726,6 +1726,8 @@ renderAdminButtons:function(inContainerId)
         //Craft section, if debug or if in craft mode...
 		var fileLoad = "View Save History(last 20): <input type='button' value='Save History' onclick='ijfUtils.showSaveHistory()'><br>";
 		fileLoad += "Upload Entire Config File: <input type='file' accept='text/plain' onchange='ijfUtils.readConfigFile(event)'><br>";
+		fileLoad += "Upload and overwrite one Form Group: <input type='file' accept='text/plain' onchange='ijfUtils.readGroupConfigFile(event)'><br>";
+		fileLoad += "Upload and overwrite one Custom Type: <input type='file' accept='text/plain' onchange='ijfUtils.readTypeConfigFile(event)'><br>";
 		fileLoad += "Download Entire Config to a File: <input type='button' value='Download' onclick='ijfUtils.writeConfigFile()'>";
         var pnl = new Ext.FormPanel({
 			layout:'vbox',
@@ -1896,6 +1898,10 @@ getCustomTypeJson:function(inCustomType)
 			description: inCustomType.description,
 			customType: inCustomType.customType,
 			fieldName: inCustomType.fieldName,
+			createdBy: inCustomType.createdBy,
+			createdDate: inCustomType.createdDate,
+			updatedBy: inCustomType.updatedBy,
+			updatedDate: inCustomType.updatedDate,
 			settings: JSON.stringify(inCustomType.settings)};
 	return JSON.stringify(outType);
 },
@@ -2182,10 +2188,18 @@ getConfigJson:function(inFormSet)
 			projectName: fs.projectName,
 			projectId: fs.projectId,
 			settings: JSON.stringify(JSON.stringify(settingsOut)),
+			createdBy: fs.createdBy,
+			createdDate: fs.createdDate,
+			updatedBy: fs.updatedBy,
+			updatedDate: fs.updatedDate,						
 			snippets: fs.snippets.map(function(s){
 					return {
 								name: s.name,
-								snippet: JSON.stringify(s.snippet)
+								snippet: JSON.stringify(s.snippet),
+								createdBy: s.createdBy,
+								createdDate: s.createdDate,
+								updatedBy: s.updatedBy,
+								updatedDate: s.updatedDate									
 							};
 			}),
 			forms: fs.forms.reduce(function(outForms,thisForm){
@@ -2211,7 +2225,11 @@ getConfigJson:function(inFormSet)
 						formAnon: thisForm.formAnon,
 						name: thisForm.name,
 						fields: JSON.stringify(JSON.stringify(fieldsOut)),
-						formSettings: JSON.stringify(JSON.stringify(settingsOut))
+						formSettings: JSON.stringify(JSON.stringify(settingsOut)),
+						createdBy: thisForm.createdBy,
+						createdDate: thisForm.createdDate,
+						updatedBy: thisForm.updatedBy,
+						updatedDate: thisForm.updatedDate						
 					};
 					outForms.push(jOut);
 					return outForms;
@@ -2234,6 +2252,10 @@ getConfigJson:function(inFormSet)
 							description: ctype.description,
 							customType: ctype.customType,
 							fieldName: ctype.fieldName,
+							createdBy: ctype.createdBy,
+							createdDate: ctype.createdDate,
+							updatedBy: ctype.updatedBy,
+							updatedDate: ctype.updatedDate,							
 							settings: JSON.stringify(ctype.settings)
 				};
 				outCustomTypes.push(ctOut);

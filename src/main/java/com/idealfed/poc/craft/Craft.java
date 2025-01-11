@@ -29,6 +29,7 @@ import java.io.InputStreamReader;
 import java.io.File;
 import java.util.concurrent.*;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -677,7 +678,6 @@ public class Craft extends HttpServlet
 
     	if(iwfAction.equals("getFormConfig"))
     	{
-
         		//we need to get the form -> formSet
         		FormSet fs = null;
         		for (Form f : ao.find(Form.class))
@@ -690,6 +690,7 @@ public class Craft extends HttpServlet
 	    		if(fs!=null)   w.printf(getAoFormSetJson(fs));
 	    		w.printf("{}],\"customTypes\":[");
 
+				//todo, filter this list to only those custom types linked to the formset
 	    		for (CustomType ct : ao.find(CustomType.class))
 	            {
 	                w.printf(getCustomTypeConfig(ct));
@@ -699,7 +700,6 @@ public class Craft extends HttpServlet
 
 	    		w.close();
 	    		return;
-
 		}
 
 
@@ -921,6 +921,13 @@ public class Craft extends HttpServlet
 			sb.append("\"name\":\"" + ct.getName() + "\",");
 			sb.append("\"description\":\"" + ct.getDescription() + "\",");
 			sb.append("\"customType\":\"" + ct.getCustomType() + "\",");
+
+			//audit fields
+			sb.append("\"createdBy\":\"" + ct.getCreatedBy() + "\",");
+			sb.append("\"createdDate\":\"" + ct.getCreatedDate() + "\",");
+			sb.append("\"updatedBy\":\"" + ct.getUpdatedBy() + "\",");
+			sb.append("\"updatedDate\":\"" + ct.getUpdatedDate() + "\",");
+
 			sb.append("\"fieldName\":\"" + ct.getFieldName() + "\",");
 
 			String cType = ct.getCustomType();
@@ -956,6 +963,13 @@ public class Craft extends HttpServlet
 			sb.append("\"name\":\"" + ct.getName() + "\",");
 			sb.append("\"description\":\"" + ct.getDescription() + "\",");
 			sb.append("\"customType\":\"" + ct.getCustomType() + "\",");
+
+			//audit fields
+			sb.append("\"createdBy\":\"" + ct.getCreatedBy() + "\",");
+			sb.append("\"createdDate\":\"" + ct.getCreatedDate() + "\",");
+			sb.append("\"updatedBy\":\"" + ct.getUpdatedBy() + "\",");
+			sb.append("\"updatedDate\":\"" + ct.getUpdatedDate() + "\",");
+
 			sb.append("\"fieldName\":\"" + ct.getFieldName() + "\"");
 
 			String cType = ct.getCustomType();
@@ -976,7 +990,6 @@ public class Craft extends HttpServlet
 			return "";
 		}
 	}
-
 	private String getAoFormSetJson(FormSet fs)
 	{
 		StringBuilder sb = new StringBuilder();
@@ -984,6 +997,13 @@ public class Craft extends HttpServlet
 		sb.append("\"name\":\"" + fs.getName() + "\",");
 		sb.append("\"projectName\":\"" + fs.getProjectName() + "\",");
 		sb.append("\"projectId\":\"" + fs.getProjectId() + "\",");
+
+		//audit fields
+		sb.append("\"createdBy\":\"" + fs.getCreatedBy() + "\",");
+		sb.append("\"createdDate\":\"" + fs.getCreatedDate() + "\",");
+		sb.append("\"updatedBy\":\"" + fs.getUpdatedBy() + "\",");
+		sb.append("\"updatedDate\":\"" + fs.getUpdatedDate() + "\",");
+
 		String sfSettings = fs.getSettings();
 		sfSettings = sfSettings.replaceFirst("(?<=proxyPassword\\\\\",\\\\\"value\\\\\":\\\\\")(.*?)(?=\\\\\",\\\\\"comment)","hidden");
 		sb.append("\"settings\":\"" + sfSettings + "\",");
@@ -1014,6 +1034,13 @@ public class Craft extends HttpServlet
 		sb.append("\"formProxy\":\"" + f.getFormProxy() + "\",");
 		sb.append("\"issueType\":\"" + f.getIssueType() + "\",");
 		sb.append("\"formType\":\"" + f.getFormType() + "\",");
+
+		//audit fields
+		sb.append("\"createdBy\":\"" + f.getCreatedBy() + "\",");
+		sb.append("\"createdDate\":\"" + f.getCreatedDate() + "\",");
+		sb.append("\"updatedBy\":\"" + f.getUpdatedBy() + "\",");
+		sb.append("\"updatedDate\":\"" + f.getUpdatedDate() + "\",");
+
 		sb.append("\"settings\":\"" + f.getSettings() + "\",");
 		sb.append("\"fields\":\"" + f.getFields() + "\"},");
 		return sb.toString();
@@ -1027,6 +1054,13 @@ public class Craft extends HttpServlet
 		StringBuilder sb = new StringBuilder();
 		sb.append("{\"id\":\"" + s.getID() + "\",");
 		sb.append("\"name\":\"" + s.getName() + "\",");
+
+		//audit fields
+		sb.append("\"createdBy\":\"" + s.getCreatedBy() + "\",");
+		sb.append("\"createdDate\":\"" + s.getCreatedDate() + "\",");
+		sb.append("\"updatedBy\":\"" + s.getUpdatedBy() + "\",");
+		sb.append("\"updatedDate\":\"" + s.getUpdatedDate() + "\",");
+
 		sb.append("\"snippet\":\"" + s.getSnippet() + "\"},");
 		return sb.toString();
 	  }
@@ -1434,6 +1468,13 @@ public class Craft extends HttpServlet
 						ct.setCustomType(inType.getString("customType"));
 						ct.setFieldName(inType.getString("fieldName"));
 						ct.setSettings(inType.getString("settings"));
+
+						//audit fields
+						ct.setCreatedBy(username);
+						ct.setCreatedDate(new Date());
+						ct.setUpdatedBy(username);
+						ct.setUpdatedDate(new Date());						
+
 						ct.save();
 						final PrintWriter w = res.getWriter();
 						w.printf("{\"status\":\"OK\",\"result\":\""+ct.getID()+"\"}");
@@ -1457,6 +1498,11 @@ public class Craft extends HttpServlet
 					ct.setCustomType(inType.getString("customType"));
 					ct.setFieldName(inType.getString("fieldName"));
 					ct.setSettings(inType.getString("settings"));
+
+					//audit fields
+					ct.setUpdatedBy(username);
+					ct.setUpdatedDate(new Date());	
+
 					ct.save();
 					final PrintWriter w = res.getWriter();
 					w.printf("{\"status\":\"OK\",\"result\":\""+ct.getID()+"\"}");
@@ -1512,12 +1558,20 @@ public class Craft extends HttpServlet
 					//OK, now get the object by ID
 					f = ao.create(Form.class);
 		        	f.setFormSet(fs);
+					//audit fields
+					f.setCreatedBy(username);
+					f.setCreatedDate(new Date());
+					f.setUpdatedBy(username);
+					f.setUpdatedDate(new Date());	
+
 				}
 				else
 				{
 					//OK, now get the object by ID
 					f = ao.get(Form.class, formId);
 					f.setFormSet(fs);
+					f.setUpdatedBy(username);
+					f.setUpdatedDate(new Date());						
 				}
 
 	    		f.setName(inForm.getString("formName"));
@@ -1590,11 +1644,19 @@ plog.debug("Configurations cleaned");
 					if(fs==null) throw new JSONException("Failed to get formset");
 					f = ao.create(Form.class);
 		        	f.setFormSet(fs);
+					//audit fields
+					f.setCreatedBy(username);
+					f.setCreatedDate(new Date());
+					f.setUpdatedBy(username);
+					f.setUpdatedDate(new Date());	
+
 				}
 				else
 				{
 					//OK, now get the object by ID
 					f = ao.get(Form.class, formId);
+					f.setUpdatedBy(username);
+					f.setUpdatedDate(new Date());						
 				}
 
 	    		f.setName(inForm.getString("formName"));
@@ -1660,19 +1722,25 @@ plog.debug("Configurations cleaned");
 
 				FormSet f;
 
-
 				int fsId = new Integer(inForm.getString("formSetId")).intValue();
 				if(fsId==0)
 				{
 					//formSet must exist by ID and we need it....
 					//OK, now get the object by ID
-
 					f =  ao.create(FormSet.class);
+
+					//audit fields
+					f.setCreatedBy(username);
+					f.setCreatedDate(new Date());
+					f.setUpdatedBy(username);
+					f.setUpdatedDate(new Date());	
 				}
 				else
 				{
 					//OK, now get the object by ID
 					f = ao.get(FormSet.class, fsId);
+					f.setUpdatedBy(username);
+					f.setUpdatedDate(new Date());	
 				}
 
 	    		f.setName(inForm.getString("name"));
@@ -1796,11 +1864,19 @@ plog.debug("Configurations cleaned");
 					if(fs==null) throw new JSONException("Failed to get formset");
 					s = ao.create(Snippet.class);
 		        	s.setFormSet(fs);
+
+					//audit fields
+					s.setCreatedBy(username);
+					s.setCreatedDate(new Date());
+					s.setUpdatedBy(username);
+					s.setUpdatedDate(new Date());					
 				}
 				else
 				{
 					//OK, now get the object by ID
 					s = ao.get(Snippet.class, snippetId);
+					s.setUpdatedBy(username);
+					s.setUpdatedDate(new Date());					
 				}
 
 	    		s.setName(inForm.getString("name"));
@@ -1839,7 +1915,6 @@ plog.debug("Configurations cleaned");
 	    		w.printf("{\"status\":\"OK\"}");
 	    		w.close();
 	    		return;
-
     		}
     		catch(JSONException e)
     		{
@@ -1935,6 +2010,13 @@ plog.debug("Configurations cleaned");
 	        		fs.setSettings(jsonFs.getString("settings"));
 	        		fs.setProjectName(jsonFs.getString("projectName"));
 	        		fs.setProjectId(jsonFs.getString("projectId"));
+
+					//audit fields
+					fs.setCreatedBy(username);
+					fs.setCreatedDate(new Date());
+					fs.setUpdatedBy(username);
+					fs.setUpdatedDate(new Date());	
+
 	        		fs.save();
 
 		    		jsonForms = jsonFs.getJSONArray("forms");
@@ -1952,6 +2034,13 @@ plog.debug("Configurations cleaned");
 		        		frm.setFormType(jsonForm.getString("formType"));
 		        		frm.setFields(jsonForm.getString("fields"));
 		        		frm.setSettings(jsonForm.getString("formSettings"));
+
+						//audit fields
+						frm.setCreatedBy(username);
+						frm.setCreatedDate(new Date());
+						frm.setUpdatedBy(username);
+						frm.setUpdatedDate(new Date());
+
 		        		frm.save();
 		    		}
 
@@ -1964,6 +2053,13 @@ plog.debug("Configurations cleaned");
 		    			s.setFormSet(fs);
 		    			s.setName(jsonSnippet.getString("name"));
 		    			s.setSnippet(jsonSnippet.getString("snippet"));
+						
+						//audit fields
+						s.setCreatedBy(username);
+						s.setCreatedDate(new Date());
+						s.setUpdatedBy(username);
+						s.setUpdatedDate(new Date());
+
 		        		s.save();
 		    		}
 	    		}
@@ -1984,6 +2080,13 @@ plog.debug("Configurations cleaned");
 								ct.setCustomType(jsonFs.getString("customType"));
 								ct.setFieldName(jsonFs.getString("fieldName"));
 								ct.setSettings(jsonFs.getString("settings"));
+						
+								//audit fields
+								ct.setCreatedBy(username);
+								ct.setCreatedDate(new Date());
+								ct.setUpdatedBy(username);
+								ct.setUpdatedDate(new Date());
+
 	        		    ct.save();
 					}
 				}
@@ -2030,8 +2133,6 @@ plog.debug("Configurations cleaned");
         		v.setConfig(cConfig.toString());
         		v.save();
         		cleanVersions(50);
-
-        		///todo:  add clear function to remove versions > some count...
 
 				//there should only be one new fg, and it it exists we delete, and
 				//the form names within the group must not exist in the existing forms...

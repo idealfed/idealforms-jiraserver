@@ -78,6 +78,7 @@
      <entity>com.idealfed.jiraforms.ao.Snippet</entity>
      <entity>com.idealfed.jiraforms.ao.Version</entity>     
      <entity>com.idealfed.jiraforms.ao.CustomType</entity>     
+     <entity>com.idealfed.jiraforms.ao.FormSetCustomType</entity> 
    </ao>
   
  <web-section key="ijf_web_section" name="IJF Section" location="admin_plugins_menu" weight="16">

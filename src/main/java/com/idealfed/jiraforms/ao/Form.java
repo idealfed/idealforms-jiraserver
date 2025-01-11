@@ -1,5 +1,7 @@
 package com.idealfed.jiraforms.ao;
 
+import java.util.Date;
+
 import net.java.ao.Entity;
 import net.java.ao.OneToMany;
 import net.java.ao.Preload;
@@ -43,4 +45,19 @@ public interface Form extends Entity
 
 	//@OneToMany
 	//public Field[] getFields();
+
+    //auditing
+	Date getCreatedDate();
+	void setCreatedDate(Date createdDate);
+	
+	String getCreatedBy();
+	void setCreatedBy(String createdBy);
+
+	Date getUpdatedDate();
+	void setUpdatedDate(Date updatedDate);
+	
+	String getUpdatedBy();
+	void setUpdatedBy(String updatedBy);
+
+
 }

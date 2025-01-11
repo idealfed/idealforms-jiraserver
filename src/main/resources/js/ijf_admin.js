@@ -1086,6 +1086,10 @@ addEditForm:function (sRow)
 										formAnon: ijf.admin.cwfAdmin_form.formAnon,
 										issueType: ijf.admin.cwfAdmin_form.issueType,
 										name: ijf.admin.cwfAdmin_form.name,
+										createdBy: ijf.admin.cwfAdmin_form.createdBy,
+										createdDate: ijf.admin.cwfAdmin_form.createdDate,
+										updatedBy: ijf.admin.cwfAdmin_form.updatedBy,
+										updatedDate: ijf.admin.cwfAdmin_form.updatedDate,											
 										fields: JSON.stringify(JSON.stringify(fieldsOut)),
 										formSettings: JSON.stringify(JSON.stringify(settingsOut))
 										};
