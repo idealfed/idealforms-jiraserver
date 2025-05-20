@@ -234,7 +234,8 @@ public class Craft extends HttpServlet
 						w.close();
 						return;
 				}
-				if (!userManager.isSystemAdmin(username))
+				//if (!userManager.isSystemAdmin(username))
+			    if (!userManager.isAdmin(username))				
 				{
 						final PrintWriter w = response.getWriter();
 						w.printf("{\"status\":\"INVALIDSESSION\"}");
@@ -334,7 +335,8 @@ public class Craft extends HttpServlet
     		return;
     	}
 
-    	if ((craftFlag.equals("true")) && (!userManager.isSystemAdmin(username)))
+    	//if ((craftFlag.equals("true")) && (!userManager.isSystemAdmin(username)))
+    	if ((craftFlag.equals("true")) && (!userManager.isAdmin(username)))
     	{
 			if(anon==false)
 			{
@@ -798,7 +800,8 @@ public class Craft extends HttpServlet
     	}
     	else if(iwfAction.equals("clearConfig"))
     	{
-			if (!userManager.isSystemAdmin(username))
+			//if (!userManager.isSystemAdmin(username))
+			if (!userManager.isAdmin(username))
 			{
 					final PrintWriter w = response.getWriter();
 					w.printf("{\"status\":\"INVALIDSESSION\"}");
@@ -1530,7 +1533,8 @@ public class Craft extends HttpServlet
 
 
 
-    	if (!userManager.isSystemAdmin(username))
+    	//if (!userManager.isSystemAdmin(username))
+		if (!userManager.isAdmin(username))
     	{
 				final PrintWriter w = res.getWriter();
 				w.printf("{\"status\":\"INVALIDSESSION\"}");
