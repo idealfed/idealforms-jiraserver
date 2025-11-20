@@ -14214,6 +14214,14 @@ renderGridRefEditor:function(inFormKey,item, inField, inContainer)
 						text: 'Save Values',
 						scope: this,
 						handler: function(){
+
+							//clear any filter
+							try{
+								gridStore.clearFilter();
+							}
+							catch(e){
+								ijfUtils.footLog("Unable to clear type editor filters: " + e.message);
+							}
 							 //save values..
 							var gridData = gridStore.getData();
 							var dataArray = gridData.items.map(function(r){return r.data;});
