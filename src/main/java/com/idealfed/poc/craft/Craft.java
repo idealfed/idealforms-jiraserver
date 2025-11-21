@@ -46,8 +46,10 @@ import javax.servlet.http.Cookie;
 
 import javax.mail.Multipart;
 import javax.mail.internet.MimeMultipart;
+import javax.mail.util.ByteArrayDataSource;
 import javax.mail.BodyPart;
 import javax.mail.internet.MimeBodyPart;
+import javax.mail.MessagingException;
 import javax.activation.FileDataSource;
 import javax.activation.DataHandler;
 
@@ -55,6 +57,7 @@ import com.atlassian.activeobjects.external.ActiveObjects;
 import com.atlassian.mail.Email;
 import com.atlassian.mail.MailFactory;
 import com.atlassian.mail.server.SMTPMailServer;
+import com.atlassian.jira.util.io.InputStreamConsumer;
 import com.atlassian.jira.util.json.JSONArray;
 import com.atlassian.jira.util.json.JSONException;
 import com.atlassian.jira.util.json.JSONObject;
@@ -67,7 +70,7 @@ import com.atlassian.jira.security.groups.GroupManager;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.issue.AttachmentManager;
 import com.atlassian.jira.issue.attachment.Attachment;
-import com.atlassian.jira.util.AttachmentUtils;
+//import com.atlassian.jira.util.AttachmentUtils;
 import com.atlassian.jira.security.JiraAuthenticationContext;
 
 import com.atlassian.jira.project.Project;
@@ -1387,12 +1390,47 @@ public class Craft extends HttpServlet
 							goodAtts=false;
 							continue;
 						}
-						attachedFile  = AttachmentUtils.getAttachmentFile(attachment);
-						attachedFilename = attachment.getFilename();
-						source = new FileDataSource(attachedFile);
-						attachBody = new MimeBodyPart();
-						attachBody.setDataHandler(new DataHandler(source));
-						attachBody.setFileName(attachedFilename);
+						//attachedFile  = AttachmentUtils.getAttachmentFile(attachment);
+						//attachedFilename = attachment.getFilename();
+						//source = new FileDataSource(attachedFile);
+						//attachBody = new MimeBodyPart();
+						//attachBody.setDataHandler(new DataHandler(source));
+						//attachBody.setFileName(attachedFilename);
+						final Attachment thisAttachment = attachment;
+						try{
+							attachBody = attachmentManager.streamAttachmentContent(
+									thisAttachment,
+									new InputStreamConsumer<MimeBodyPart>() {
+										@Override
+										public MimeBodyPart withInputStream(InputStream inputStream) throws IOException {
+											try
+											{
+												String contentType = thisAttachment.getMimetype() != null
+														? thisAttachment.getMimetype()
+														: "application/octet-stream";
+
+												ByteArrayDataSource ds = new ByteArrayDataSource(inputStream, contentType);
+
+												MimeBodyPart part = new MimeBodyPart();
+												part.setDataHandler(new DataHandler(ds));
+												part.setFileName(thisAttachment.getFilename());
+												return part;
+						                    } catch (MessagingException e) {
+												// Must wrap because the method only allows IOException
+												throw new IOException("Failed to create MimeBodyPart", e);
+                   							}	
+										}
+									}
+							);
+						}
+						catch(Exception ae)
+						{
+							goodAtts = false;
+							plog.error("Error adding attachment: " + attachment.getFilename() + " - " + ae.getMessage());
+							continue;
+						}
+
+
 						multipart.addBodyPart(attachBody);
 				    }
 
