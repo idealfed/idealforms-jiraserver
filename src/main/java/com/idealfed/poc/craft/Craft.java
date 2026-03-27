@@ -15,6 +15,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.file.StandardCopyOption;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.Map;
@@ -69,7 +70,9 @@ import com.atlassian.sal.api.user.UserManager;
 import com.atlassian.jira.security.groups.GroupManager;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.jira.issue.AttachmentManager;
+import com.atlassian.jira.issue.IssueManager;
 import com.atlassian.jira.issue.attachment.Attachment;
+import com.atlassian.jira.issue.attachment.CreateAttachmentParamsBean;
 //import com.atlassian.jira.util.AttachmentUtils;
 import com.atlassian.jira.security.JiraAuthenticationContext;
 
@@ -79,11 +82,14 @@ import com.atlassian.jira.project.ProjectManager;
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.upm.api.license.PluginLicenseManager;
 import com.atlassian.upm.api.license.entity.PluginLicense;
+import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.config.properties.ApplicationProperties;
 import com.google.common.collect.Maps;
 import com.idealfed.jiraforms.ao.*;
-
+import java.nio.file.Files;
 import net.java.ao.Query;
+import com.atlassian.jira.issue.Issue;
+import com.atlassian.jira.issue.IssueManager;
 
 public class Craft extends HttpServlet
 {
@@ -153,7 +159,7 @@ public class Craft extends HttpServlet
     	String username = userManager.getRemoteUsername(request);
 
 //section to comment or uncomment license
-
+/*
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -175,7 +181,7 @@ public class Craft extends HttpServlet
             w.close();
             return;
 		}
-
+*/
 //end comment section
 
 
@@ -225,7 +231,7 @@ public class Craft extends HttpServlet
 //comment for unlicensed running
 //determine if Admin call or a Craft call, either way, require Administrator....
 
-
+/*
         if(iwfAction.equals("noAction"))
         {
 			if ((craftFlag.equals("true")) || (formId.equals("")))
@@ -247,7 +253,7 @@ public class Craft extends HttpServlet
 				}
 			}
 	    }
-
+*/
 
 //end comment section
 
@@ -638,6 +644,7 @@ public class Craft extends HttpServlet
 				{
 					try
 					{
+						
 						attachment = attachmentManager.getAttachment(Long.parseLong(attArray[i]));
 
 						plog.info("Verifying type attachment: " + attachment.getClass().toString());
@@ -645,8 +652,51 @@ public class Craft extends HttpServlet
 						plog.info("Verifying type attMng: " + attachmentManager.getClass().toString());
                         plog.info("Copying file " + attachment.getFilename() + " by " + au.getUsername() + " to issue " + targetIssue);
 
-						Object cpRes = attachmentManager.copyAttachment(attachment, au, targetIssue);
+						//Object cpRes = attachmentManager.copyAttachment(attachment, au, targetIssue);
 						//attachmentManager.copyAttachment(att,currentUser,"TPO-2");
+
+
+
+							//AttachmentManager attachmentManager = ComponentAccessor.getComponent(AttachmentManager.class);
+
+						IssueManager issueManager = ComponentAccessor.getComponent(IssueManager.class);
+						// Get the target issue - by key or by id
+						final Issue targetIssueObj = issueManager.getIssueByCurrentKey(targetIssue);
+						// or: Issue targetIssue = issueManager.getIssueObject(issueId);
+
+						final Attachment thisAttachment = attachment;
+						final ApplicationUser thisAu = au;
+						attachmentManager.streamAttachmentContent(thisAttachment, new InputStreamConsumer<Void>() {
+							@Override
+							public Void withInputStream(InputStream inputStream) {
+								File tempFile = null;
+								try {
+									tempFile = File.createTempFile("jira-attach-", thisAttachment.getFilename());
+									Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+									CreateAttachmentParamsBean params = new CreateAttachmentParamsBean.Builder(
+											tempFile,
+											thisAttachment.getFilename(),
+											thisAttachment.getMimetype(),
+											thisAu,
+											targetIssueObj
+									).build();
+
+									attachmentManager.createAttachment(params);
+								} catch (Exception e) {
+									throw new RuntimeException("Failed to copy attachment: " + thisAttachment.getFilename(), e);
+								} finally {
+									if (tempFile != null) {
+										tempFile.delete();
+									}
+								}
+								return null;
+							}
+						});
+
+
+
+
                         retS.append(attArray[i] + " copied\n");
 					}
 					catch(Exception ae)
@@ -1361,6 +1411,7 @@ public class Craft extends HttpServlet
  		    	 if(attString==null)
  		    	 {
 					 //no attachments
+					 plog.debug("Simple email, no attachments...");
 					 email = new Email("tbd@tbd.com").setSubject(subject).setBody(body);
 					 if(fromEmail != null) email.setFrom(fromEmail);
 					 email.setMimeType("text/html");
@@ -1368,6 +1419,7 @@ public class Craft extends HttpServlet
 				 }
 				 else
 				 {
+					plog.debug("Complex email, has attachments...");
 					 //get atts....
 	  			    String attArray[] = attString.split(",");
 
@@ -1383,10 +1435,12 @@ public class Craft extends HttpServlet
 				   {
 					   try
 					   {
+							plog.debug("Processessing attachment ID: " + String.valueOf(attArray[i]));
 							attachment = attachmentManager.getAttachment(Long.parseLong(attArray[i]));
 						}
 						catch(Exception ae)
 						{
+							plog.error("Failed to get attachment by id, continuing.",ae);
 							goodAtts=false;
 							continue;
 						}
@@ -1432,6 +1486,7 @@ public class Craft extends HttpServlet
 
 
 						multipart.addBodyPart(attachBody);
+						plog.debug("Added mime attachment: " + thisAttachment.getFilename());
 				    }
 
 
@@ -1453,7 +1508,7 @@ public class Craft extends HttpServlet
 					 email.setBody(body);
 				 }
 
-
+				 plog.debug("Email body is ready for sending.");
 
 				 //no changes yet
 				   for(int i=0;i<targets.length;i++)
@@ -1461,6 +1516,8 @@ public class Craft extends HttpServlet
  	 				    plog.info("Sending email to: " + targets[i]);
 					    email.setTo(targets[i]);
   					    mailServer.send(email);
+						plog.info("Sent email to: " + targets[i]);
+
 						//SMTPMailServer  mailServer = MailFactory.getServerManager().getDefaultSMTPMailServer();
 						//if (html.equals("true"))
 						//	mailServer.send(new Email(targets[i]).setSubject(subject).setBody(body).setMimeType("text/html"));
@@ -1474,6 +1531,7 @@ public class Craft extends HttpServlet
 			}
 			catch(Exception e)
 			{
+				plog.error("Fatal email error",e);
 				final PrintWriter w = res.getWriter();
 				w.print("Failed to send: " + e.getMessage());
 				w.close();
