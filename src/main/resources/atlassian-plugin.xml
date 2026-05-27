@@ -70,6 +70,9 @@
   <!-- publish our component -->
   <servlet name="craft" class="com.idealfed.poc.craft.Craft" key="fCraft">
     <url-pattern>/iforms</url-pattern>
+    <url-pattern>/iforms/*</url-pattern>
+    <url-pattern>/cforms</url-pattern>
+    <url-pattern>/cforms/*</url-pattern>
   </servlet>
   <ao key="ao-module">
      <description>The module configuring the Active Objects service used by this plugin</description>
