@@ -1,8 +1,8 @@
 package com.idealfed.poc.craft;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -32,27 +32,27 @@ import java.util.concurrent.*;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.ServletException;
-import javax.servlet.SessionTrackingMode;
-import javax.servlet.annotation.MultipartConfig;
-import javax.servlet.annotation.WebListener;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.Part;
-import javax.servlet.http.Cookie;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.annotation.MultipartConfig;
+import jakarta.servlet.annotation.WebListener;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
+import jakarta.servlet.http.Cookie;
 
-import javax.mail.Multipart;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.util.ByteArrayDataSource;
-import javax.mail.BodyPart;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.MessagingException;
-import javax.activation.FileDataSource;
-import javax.activation.DataHandler;
+import jakarta.mail.Multipart;
+import jakarta.mail.internet.MimeMultipart;
+import jakarta.mail.util.ByteArrayDataSource;
+import jakarta.mail.BodyPart;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.MessagingException;
+import jakarta.activation.FileDataSource;
+import jakarta.activation.DataHandler;
 
 import com.atlassian.activeobjects.external.ActiveObjects;
 import com.atlassian.mail.Email;
@@ -79,6 +79,11 @@ import com.atlassian.jira.security.JiraAuthenticationContext;
 import com.atlassian.jira.project.Project;
 import com.atlassian.jira.project.ProjectManager;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+
 import com.atlassian.templaterenderer.TemplateRenderer;
 import com.atlassian.upm.api.license.PluginLicenseManager;
 import com.atlassian.upm.api.license.entity.PluginLicense;
@@ -91,11 +96,9 @@ import net.java.ao.Query;
 import com.atlassian.jira.issue.Issue;
 import com.atlassian.jira.issue.IssueManager;
 
+@Named
 public class Craft extends HttpServlet
 {
-
-    //@ComponentImport
-    private final PluginLicenseManager pluginLicenseManager;
 
 	private final AttachmentManager attachmentManager;
 	private final UserManager userManager;
@@ -110,10 +113,21 @@ public class Craft extends HttpServlet
 	private final ApplicationProperties applicationProperties;
 	private final ProjectManager projectManager;
 
-	public Craft(PluginLicenseManager pluginLicenseManager, ActiveObjects ao, UserManager userManager, com.atlassian.jira.user.util.UserManager userManager2, GroupManager groupManager, LoginUriProvider loginUriProvider, TemplateRenderer templateRenderer, PluginSettingsFactory pluginSettingsFactory, AttachmentManager attachmentManager,JiraAuthenticationContext jiraAuthenticationContext, ApplicationProperties applicationProperties,ProjectManager projectManager) {
+	@Inject
+	public Craft(
+			ActiveObjects ao,
+			@Qualifier("salUserManager") UserManager userManager,
+			@Qualifier("jiraUserManager") com.atlassian.jira.user.util.UserManager userManager2,
+			GroupManager groupManager,
+			LoginUriProvider loginUriProvider,
+			TemplateRenderer templateRenderer,
+			PluginSettingsFactory pluginSettingsFactory,
+			AttachmentManager attachmentManager,
+			JiraAuthenticationContext jiraAuthenticationContext,
+			ApplicationProperties applicationProperties,
+			ProjectManager projectManager) {
 		this.jiraAuthenticationContext = jiraAuthenticationContext;
 		this.attachmentManager = attachmentManager;
-        this.pluginLicenseManager = pluginLicenseManager;
 		this.userManager = userManager;
 		this.userManager2 = userManager2;
 		this.groupManager = groupManager;
@@ -156,10 +170,11 @@ public class Craft extends HttpServlet
     {
 
 
-    	String username = userManager.getRemoteUsername(request);
+    	String username = userManager.getRemoteUsername();
 
 //section to comment or uncomment license
 /*
+		PluginLicenseManager pluginLicenseManager = ComponentAccessor.getOSGiComponentInstanceOfType(PluginLicenseManager.class);
 		if (pluginLicenseManager.getLicense().isDefined())
 		{
 		   PluginLicense license = pluginLicenseManager.getLicense().get();
@@ -1232,7 +1247,7 @@ public class Craft extends HttpServlet
 
 
 		//only admin can be in here...
-     	String username = userManager.getRemoteUsername(req);
+     	String username = userManager.getRemoteUsername();
 		if (username == null)
 		{
 	    		final PrintWriter w = res.getWriter();
@@ -1720,7 +1735,7 @@ public class Craft extends HttpServlet
 
 				Version v = ao.create(Version.class);
 				v.setDate(new Date());
-				v.setAuthor(userManager.getRemoteUsername(req));
+				v.setAuthor(userManager.getRemoteUsername());
 				v.setConfig(cConfig.toString());
 				v.save();
 				cleanVersions(50);
@@ -2047,7 +2062,7 @@ plog.debug("Configurations cleaned");
 
         		Version v = ao.create(Version.class);
         		v.setDate(new Date());
-        		v.setAuthor(userManager.getRemoteUsername(req));
+        		v.setAuthor(userManager.getRemoteUsername());
         		v.setConfig(cConfig.toString());
         		v.save();
         		cleanVersions(50);
@@ -2229,7 +2244,7 @@ plog.debug("Configurations cleaned");
 
         		Version v = ao.create(Version.class);
         		v.setDate(new Date());
-        		v.setAuthor(userManager.getRemoteUsername(req));
+        		v.setAuthor(userManager.getRemoteUsername());
         		v.setConfig(cConfig.toString());
         		v.save();
         		cleanVersions(50);
